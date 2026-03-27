@@ -3,70 +3,221 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Q&A Admin Auth</title>
+  <title>Админка — Altera Q&A</title>
   <link rel="stylesheet" href="./theme.css" />
+  <style>
+    /* Переключатели ON/OFF */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+    }
+    .toggle-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .toggle-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .toggle-pill {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-pill input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      left: 3px; top: 3px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.2s;
+    }
+    .toggle-pill input:checked + .toggle-track { background: var(--blue); border-color: var(--blue-light); }
+    .toggle-pill input:checked + .toggle-track::after { transform: translateX(20px); }
+
+    /* Спикер-карточка в списке */
+    .speaker-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .speaker-row:hover { border-color: rgba(59,130,246,0.3); background: rgba(255,255,255,0.05); }
+    .speaker-row.active { border-color: rgba(59,130,246,0.5); background: rgba(26,79,216,0.12); }
+    .speaker-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+    }
+    .speaker-info { flex: 1; min-width: 0; }
+    .speaker-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .speaker-meta { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  </style>
 </head>
 <body>
   <div class="app">
     <main class="shell">
-      <section class="card"><div class="card-inner hero-grid">
-        <div>
-          <div class="eyebrow"><span class="live-dot"></span><span id="roomLabel">LIVE ROOM</span></div>
-          <h1>Админка Q&A Auth</h1>
-          <p class="subcopy">Защищённая админка на Supabase Auth. После логина доступны управление комнатой, спикерами и вопросами.</p>
+
+      <!-- Шапка -->
+      <section class="card">
+        <div class="card-inner hero-grid">
+          <div>
+            <div class="altera-logo">
+              <div class="altera-logo-mark">A</div>
+              <span class="altera-logo-text">Altera Q&A · Админ</span>
+            </div>
+            <h1 style="font-size:clamp(22px,3.5vw,42px);">Панель управления</h1>
+            <p class="subcopy" id="roomLabel">Загрузка…</p>
+          </div>
+          <div class="links-grid">
+            <button class="btn primary" id="openGuestBtn">↗ Открыть гостевую</button>
+            <button class="btn ghost"   id="openModBtn">↗ Открыть модератора</button>
+            <button class="btn danger"  id="logoutBtn">Выйти</button>
+          </div>
         </div>
-        <div class="links-grid">
-          <button class="btn primary" id="openGuestBtn">Открыть guest</button>
-          <button class="btn ghost" id="openModBtn">Открыть moderator</button>
-          <button class="btn danger" id="logoutBtn">Выйти</button>
-        </div>
-      </div></section>
+      </section>
 
       <section class="grid-2">
-        <div class="stack">
-          <section class="card"><div class="card-inner stack">
-            <h2 class="section-title">Состояние комнаты</h2>
-            <div class="row"><button class="btn primary" id="openBtn">Открыть вопросы</button><button class="btn warn" id="closeBtn">Закрыть вопросы</button></div>
-            <div class="row"><button class="btn ghost" id="moderationOnBtn">Премодерация ON</button><button class="btn ghost" id="moderationOffBtn">Премодерация OFF</button></div>
-            <div class="status" id="status"></div>
-          </div></section>
 
-          <section class="card"><div class="card-inner stack">
-            <h2 class="section-title">Редактор активного спикера</h2>
-            <select class="select" id="speakerSelect"></select>
-            <input class="input" id="nameInput" placeholder="Имя" />
-            <input class="input" id="regaliaInput" placeholder="Регалии" />
-            <input class="input" id="topicInput" placeholder="Тема" />
-            <input class="input" id="fallbackInput" placeholder="Fallback label" />
-            <div class="row"><button class="btn primary" id="saveBtn">Сохранить поля</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div>
-          </div></section>
+        <!-- Левая колонка: управление -->
+        <div class="stack">
+
+          <!-- Состояние комнаты -->
+          <section class="card">
+            <div class="card-inner stack" style="gap:12px;">
+              <h2 class="section-title">Состояние комнаты</h2>
+
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Приём вопросов</div>
+                  <div class="toggle-sub" id="questionsOpenSub">Загрузка…</div>
+                </div>
+                <label class="toggle-pill">
+                  <input type="checkbox" id="questionsOpenToggle" />
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Премодерация</div>
+                  <div class="toggle-sub" id="moderationSub">Загрузка…</div>
+                </div>
+                <label class="toggle-pill">
+                  <input type="checkbox" id="moderationToggle" />
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+
+              <div class="status" id="status"></div>
+            </div>
+          </section>
+
+          <!-- Редактор спикера -->
+          <section class="card">
+            <div class="card-inner stack" style="gap:10px;">
+              <h2 class="section-title">Редактор спикера</h2>
+              <select class="select" id="speakerSelect"></select>
+              <input class="input" id="nameInput"     placeholder="Имя спикера" />
+              <input class="input" id="regaliaInput"  placeholder="Должность / регалии" />
+              <input class="input" id="topicInput"    placeholder="Тема выступления" />
+              <div class="row" style="gap:8px;">
+                <button class="btn primary" id="saveBtn"     style="flex:1;">Сохранить</button>
+                <button class="btn ghost"   id="activateBtn" style="flex:1;">Сделать активным</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Список спикеров -->
+          <section class="card">
+            <div class="card-inner">
+              <h2 class="section-title">Спикеры</h2>
+              <div class="list" id="speakersList"></div>
+            </div>
+          </section>
+
         </div>
 
+        <!-- Правая колонка: вопросы -->
         <div class="stack">
-          <section class="card"><div class="card-inner">
-            <h2 class="section-title">Последние вопросы</h2>
-            <div class="list" id="questionsList"></div>
-          </div></section>
+
+          <!-- Быстрый срез -->
+          <section class="card">
+            <div class="card-inner">
+              <h2 class="section-title">Статистика</h2>
+              <div class="meta-grid">
+                <div class="stat"><div class="stat-label">Всего</div>  <div class="stat-value" id="statTotal">0</div></div>
+                <div class="stat"><div class="stat-label">Открытые</div><div class="stat-value" id="statOpen">0</div></div>
+                <div class="stat"><div class="stat-label">Заданные</div><div class="stat-value" id="statAsked">0</div></div>
+                <div class="stat"><div class="stat-label">Скрытые</div> <div class="stat-value" id="statHidden">0</div></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Последние вопросы -->
+          <section class="card">
+            <div class="card-inner">
+              <h2 class="section-title">Последние вопросы</h2>
+              <div class="list" id="questionsList"></div>
+            </div>
+          </section>
+
         </div>
       </section>
     </main>
   </div>
 
   <script type="module">
-    import { supabase, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker, setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration, listQuestions, subscribeRoom, escapeHtml, formatClock } from './supabase-qna.js';
+    import {
+      supabase, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker,
+      setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
+      listQuestions, subscribeRoom, escapeHtml, formatClock
+    } from './supabase-qna.js';
 
     const roomSlug = getRoomSlug();
-    const roomLabel = document.getElementById('roomLabel');
-    const statusEl = document.getElementById('status');
-    const speakerSelect = document.getElementById('speakerSelect');
-    const nameInput = document.getElementById('nameInput');
-    const regaliaInput = document.getElementById('regaliaInput');
-    const topicInput = document.getElementById('topicInput');
-    const fallbackInput = document.getElementById('fallbackInput');
-    const questionsList = document.getElementById('questionsList');
+    const roomLabel       = document.getElementById('roomLabel');
+    const statusEl        = document.getElementById('status');
+    const speakerSelect   = document.getElementById('speakerSelect');
+    const nameInput       = document.getElementById('nameInput');
+    const regaliaInput    = document.getElementById('regaliaInput');
+    const topicInput      = document.getElementById('topicInput');
+    const speakersList    = document.getElementById('speakersList');
+    const questionsList   = document.getElementById('questionsList');
+    const qOpenToggle     = document.getElementById('questionsOpenToggle');
+    const modToggle       = document.getElementById('moderationToggle');
+    const qOpenSub        = document.getElementById('questionsOpenSub');
+    const modSub          = document.getElementById('moderationSub');
 
     const state = { room: null, speakers: [], questions: [] };
     let unsubscribe = null;
+    let _busy = false;
 
     boot();
 
@@ -76,63 +227,119 @@
         location.href = `./login-auth.html?room=${encodeURIComponent(roomSlug)}`;
         return;
       }
-      roomLabel.textContent = `LIVE ROOM · ${roomSlug}`;
+
       document.getElementById('openGuestBtn').addEventListener('click', () => window.open(`./ask.html?room=${roomSlug}`, '_blank', 'noopener'));
-      document.getElementById('openModBtn').addEventListener('click', () => window.open(`./mod-auth.html?room=${roomSlug}`, '_blank', 'noopener'));
+      document.getElementById('openModBtn').addEventListener('click',   () => window.open(`./mod-auth.html?room=${roomSlug}`, '_blank', 'noopener'));
       document.getElementById('logoutBtn').addEventListener('click', logout);
-      document.getElementById('openBtn').addEventListener('click', async () => mutate(async () => setRoomQuestionsOpen(state.room.id, true), 'Приём вопросов открыт.'));
-      document.getElementById('closeBtn').addEventListener('click', async () => mutate(async () => setRoomQuestionsOpen(state.room.id, false), 'Приём вопросов закрыт.'));
-      document.getElementById('moderationOnBtn').addEventListener('click', async () => mutate(async () => setRoomModeration(state.room.id, true), 'Премодерация включена.'));
-      document.getElementById('moderationOffBtn').addEventListener('click', async () => mutate(async () => setRoomModeration(state.room.id, false), 'Премодерация выключена.'));
+
+      qOpenToggle.addEventListener('change', async () => {
+        if (_busy) { qOpenToggle.checked = !qOpenToggle.checked; return; }
+        await mutate(() => setRoomQuestionsOpen(state.room.id, qOpenToggle.checked),
+          qOpenToggle.checked ? 'Приём вопросов открыт.' : 'Приём вопросов закрыт.');
+      });
+      modToggle.addEventListener('change', async () => {
+        if (_busy) { modToggle.checked = !modToggle.checked; return; }
+        await mutate(() => setRoomModeration(state.room.id, modToggle.checked),
+          modToggle.checked ? 'Премодерация включена.' : 'Премодерация выключена.');
+      });
+
       document.getElementById('saveBtn').addEventListener('click', async () => {
         const id = Number(speakerSelect.value);
-        await mutate(async () => updateSpeaker(id, { name: nameInput.value, regalia: regaliaInput.value, topic: topicInput.value, fallback_label: fallbackInput.value }), 'Данные спикера сохранены.');
+        await mutate(() => updateSpeaker(id, { name: nameInput.value, regalia: regaliaInput.value, topic: topicInput.value }), 'Данные спикера сохранены.');
       });
       document.getElementById('activateBtn').addEventListener('click', async () => {
         const id = Number(speakerSelect.value);
-        await mutate(async () => setActiveSpeaker(state.room.id, id), 'Активный спикер обновлён.');
+        await mutate(() => setActiveSpeaker(state.room.id, id), 'Активный спикер обновлён.');
       });
       speakerSelect.addEventListener('change', fillFormFromSelect);
+
       await refresh();
       if (unsubscribe) unsubscribe();
       unsubscribe = subscribeRoom(state.room.id, refresh);
     }
 
     async function refresh() {
-      state.room = await getRoomBySlug(roomSlug);
-      state.speakers = await listSpeakers(state.room.id);
+      state.room      = await getRoomBySlug(roomSlug);
+      state.speakers  = await listSpeakers(state.room.id);
       state.questions = await listQuestions(state.room.id, null, { includeHidden: true, includeAsked: true });
       render();
     }
 
     function render() {
-      speakerSelect.innerHTML = state.speakers.map((speaker) => `<option value="${speaker.id}" ${speaker.is_active ? 'selected' : ''}>${escapeHtml(speaker.name || speaker.topic || `speaker-${speaker.id}`)}</option>`).join('');
+      roomLabel.textContent = `Комната: ${state.room?.slug || roomSlug}`;
+
+      // Тоглы
+      qOpenToggle.checked = Boolean(state.room?.is_questions_open);
+      modToggle.checked   = Boolean(state.room?.moderation_enabled);
+      qOpenSub.textContent = state.room?.is_questions_open ? 'Гости могут задавать вопросы' : 'Приём приостановлен';
+      modSub.textContent   = state.room?.moderation_enabled ? 'Вопросы проходят проверку' : 'Вопросы публикуются сразу';
+
+      // Select спикеров
+      speakerSelect.innerHTML = state.speakers.map((s) =>
+        `<option value="${s.id}" ${s.is_active ? 'selected' : ''}>${escapeHtml(s.name || s.topic || `спикер-${s.id}`)}</option>`
+      ).join('');
       fillFormFromSelect();
-      questionsList.innerHTML = state.questions.length ? state.questions.slice(0, 16).map((item) => `
-        <div class="question-card">
-          <div class="row" style="justify-content:space-between; align-items:flex-start;">
-            <div class="question-text">${escapeHtml(item.text)}</div>
-            <span class="badge ${item.status === 'asked' ? 'asked' : item.status === 'hidden' ? 'hidden' : 'open'}">${item.status}</span>
-          </div>
-          <div class="question-meta">${formatClock(item.created_at)} · +1: ${item.votes_count || 0}</div>
-        </div>`).join('') : '<div class="empty">Пока вопросов нет.</div>';
+
+      // Список спикеров
+      speakersList.innerHTML = state.speakers.length
+        ? state.speakers.map((s) => {
+            const initials = (s.name || '?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
+            return `
+              <div class="speaker-row ${s.is_active ? 'active' : ''}">
+                <div class="speaker-avatar">${initials}</div>
+                <div class="speaker-info">
+                  <div class="speaker-name">${escapeHtml(s.name || 'Без имени')} ${s.is_active ? '<span class="badge open" style="font-size:9px;padding:3px 8px;">ACTIVE</span>' : ''}</div>
+                  <div class="speaker-meta">${escapeHtml([s.regalia, s.topic].filter(Boolean).join(' · ') || '—')}</div>
+                </div>
+              </div>`;
+          }).join('')
+        : '<div class="empty">Список спикеров пуст.</div>';
+
+      // Вопросы
+      const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
+      const qs = state.questions.slice(0, 20);
+      questionsList.innerHTML = qs.length
+        ? qs.map((item) => {
+            const sp     = speakerMap.get(String(item.speaker_id));
+            const author = [item.author_name, item.author_company].filter(Boolean).join(' · ');
+            const st     = item.status;
+            return `
+              <div class="question-card" style="${st === 'asked' ? 'opacity:0.6;' : ''}">
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                  <div class="question-text" style="font-size:14px;">${escapeHtml(item.text)}</div>
+                  <span class="badge ${st === 'asked' ? 'asked' : st === 'hidden' ? 'hidden' : 'open'}" style="flex-shrink:0;">${st}</span>
+                </div>
+                <div class="question-meta">
+                  ${sp?.name ? escapeHtml(sp.name) + ' · ' : ''}${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)} · +${item.votes_count || 0}
+                </div>
+              </div>`;
+          }).join('')
+        : '<div class="empty">Вопросов пока нет.</div>';
+
+      // Статистика
+      document.getElementById('statTotal').textContent  = state.questions.length;
+      document.getElementById('statOpen').textContent   = state.questions.filter(q => q.status === 'open').length;
+      document.getElementById('statAsked').textContent  = state.questions.filter(q => q.status === 'asked').length;
+      document.getElementById('statHidden').textContent = state.questions.filter(q => q.status === 'hidden').length;
     }
 
     function fillFormFromSelect() {
-      const selected = state.speakers.find((speaker) => String(speaker.id) === String(speakerSelect.value));
-      nameInput.value = selected?.name || '';
-      regaliaInput.value = selected?.regalia || '';
-      topicInput.value = selected?.topic || '';
-      fallbackInput.value = selected?.fallback_label || state.room?.fallback_label || 'Вопросы спикеру';
+      const s = state.speakers.find(sp => String(sp.id) === String(speakerSelect.value));
+      nameInput.value    = s?.name    || '';
+      regaliaInput.value = s?.regalia || '';
+      topicInput.value   = s?.topic   || '';
     }
 
-    async function mutate(fn, successMessage) {
+    async function mutate(fn, successMsg) {
+      _busy = true;
       try {
         await fn();
-        setStatus(successMessage, 'success');
+        setStatus(successMsg, 'success');
         await refresh();
-      } catch (error) {
-        setStatus(error.message || 'Не удалось выполнить действие.', 'error');
+      } catch (e) {
+        setStatus(e.message || 'Не удалось выполнить действие.', 'error');
+      } finally {
+        _busy = false;
       }
     }
 

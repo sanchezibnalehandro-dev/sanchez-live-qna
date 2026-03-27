@@ -3,125 +3,229 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Вопросы спикеру</title>
+  <title>Задать вопрос — Altera</title>
   <link rel="stylesheet" href="./theme.css" />
+  <style>
+    /* Страница гостя — центрированная, максимум 680px */
+    .guest-shell { max-width: 680px; }
+
+    /* Кнопка отправки — полная ширина */
+    #submitBtn { width: 100%; padding: 14px; font-size: 15px; }
+
+    /* Вопрос с голосованием */
+    .q-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .q-body { flex: 1; min-width: 0; }
+    .vote-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .vote-count {
+      font-size: 13px;
+      font-weight: 700;
+      color: #93c5fd;
+      line-height: 1;
+    }
+    .vote-btn-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(59,130,246,0.28);
+      background: rgba(59,130,246,0.10);
+      color: #93c5fd;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, transform 0.15s;
+      font-family: inherit;
+    }
+    .vote-btn-circle:hover { background: rgba(59,130,246,0.22); transform: scale(1.08); }
+    .vote-btn-circle:active { transform: scale(0.95); }
+    .vote-btn-circle.voted { background: rgba(59,130,246,0.28); border-color: rgba(59,130,246,0.5); }
+
+    /* Статус закрытия приёма */
+    .closed-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: var(--radius-lg);
+      background: rgba(251,191,36,0.07);
+      border: 1px solid rgba(251,191,36,0.18);
+      color: #fde68a;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  </style>
 </head>
 <body>
   <div class="app">
-    <main class="shell" style="max-width:760px;">
-      <section class="card"><div class="card-inner">
-        <div class="eyebrow"><span class="live-dot"></span><span id="roomLabel">LIVE ROOM</span></div>
-        <h1>Вопросы спикеру</h1>
-        <p class="subcopy">Задайте вопрос текущему спикеру. Имя и компания опциональны.</p>
-      </div></section>
+    <main class="shell guest-shell">
 
-      <section class="card"><div class="card-inner">
-        <h2 class="section-title">Текущий спикер</h2>
-        <div class="panel">
-          <div class="question-text" id="speakerName">Вопросы спикеру</div>
-          <div class="question-meta" id="speakerMeta">Данные спикера появятся здесь после настройки.</div>
+      <!-- Шапка -->
+      <section class="card">
+        <div class="card-inner" style="padding:24px;">
+          <div class="altera-logo">
+            <div class="altera-logo-mark">A</div>
+            <span class="altera-logo-text">Altera · Live Q&A</span>
+          </div>
+          <h1 id="speakerName" style="margin-top:4px;">Задать вопрос</h1>
+          <p class="subcopy" id="speakerMeta">Загрузка данных спикера…</p>
         </div>
-      </div></section>
+      </section>
 
-      <section class="card"><div class="card-inner stack">
-        <h2 class="section-title">Задать вопрос</h2>
-        <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос текущему спикеру"></textarea>
-        <div class="meta-grid">
-          <input class="input" id="nameInput" placeholder="Ваше имя — опционально" />
-          <input class="input" id="companyInput" placeholder="Компания — опционально" />
+      <!-- Баннер закрытия (скрыт по умолчанию) -->
+      <div class="closed-banner" id="closedBanner" style="display:none;">
+        <span>⏸</span>
+        <span>Приём вопросов временно приостановлен.</span>
+      </div>
+
+      <!-- Форма вопроса -->
+      <section class="card" id="formCard">
+        <div class="card-inner stack" style="gap:14px;">
+          <h2 class="section-title">Ваш вопрос</h2>
+          <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" style="min-height:110px;"></textarea>
+          <div class="meta-grid">
+            <input class="input" id="nameInput" placeholder="Ваше имя (опционально)" />
+            <input class="input" id="companyInput" placeholder="Компания (опционально)" />
+          </div>
+          <button class="btn primary" id="submitBtn">Отправить вопрос</button>
+          <div class="status" id="status"></div>
         </div>
-        <div class="row"><button class="btn primary" id="submitBtn">Отправить вопрос</button></div>
-        <div class="status" id="status"></div>
-      </div></section>
+      </section>
 
-      <section class="card"><div class="card-inner">
-        <h2 class="section-title">Лента вопросов</h2>
-        <div class="list" id="questionsList"></div>
-      </div></section>
+      <!-- Лента вопросов -->
+      <section class="card">
+        <div class="card-inner">
+          <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h2 class="section-title" style="margin:0;">Вопросы</h2>
+            <span class="badge open" id="countBadge">0</span>
+          </div>
+          <div class="list" id="questionsList">
+            <div class="empty">Вопросов пока нет — задайте первый!</div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
   <script type="module">
-    import { getRoomSlug, getGuestSessionId, getRoomBySlug, getActiveSpeaker, listQuestions, submitQuestion, addVote, subscribeRoom, escapeHtml, formatClock, normalizeQuestion } from './supabase-qna.js';
+    import {
+      getRoomSlug, getGuestSessionId, getRoomBySlug, getActiveSpeaker,
+      listQuestions, submitQuestion, addVote, subscribeRoom,
+      escapeHtml, formatClock, normalizeQuestion
+    } from './supabase-qna.js';
 
     const roomSlug = getRoomSlug();
     const sessionId = getGuestSessionId(roomSlug);
-    const roomLabel = document.getElementById('roomLabel');
-    const speakerName = document.getElementById('speakerName');
-    const speakerMeta = document.getElementById('speakerMeta');
-    const questionInput = document.getElementById('questionInput');
-    const nameInput = document.getElementById('nameInput');
-    const companyInput = document.getElementById('companyInput');
-    const submitBtn = document.getElementById('submitBtn');
-    const statusEl = document.getElementById('status');
-    const questionsList = document.getElementById('questionsList');
+
+    const speakerNameEl = document.getElementById('speakerName');
+    const speakerMetaEl = document.getElementById('speakerMeta');
+    const questionInput  = document.getElementById('questionInput');
+    const nameInput      = document.getElementById('nameInput');
+    const companyInput   = document.getElementById('companyInput');
+    const submitBtn      = document.getElementById('submitBtn');
+    const statusEl       = document.getElementById('status');
+    const questionsList  = document.getElementById('questionsList');
+    const closedBanner   = document.getElementById('closedBanner');
+    const formCard       = document.getElementById('formCard');
+    const countBadge     = document.getElementById('countBadge');
+
+    // Голоса текущей сессии (local set для UI)
+    const myVotes = new Set(JSON.parse(localStorage.getItem(`qna-votes:${roomSlug}`) || '[]'));
+    function saveVotes() { localStorage.setItem(`qna-votes:${roomSlug}`, JSON.stringify([...myVotes])); }
 
     const state = { room: null, speaker: null, questions: [] };
     let unsubscribe = null;
 
-    roomLabel.textContent = `LIVE ROOM · ${roomSlug}`;
     submitBtn.addEventListener('click', onSubmit);
     boot();
 
     async function boot() {
-      state.room = await getRoomBySlug(roomSlug);
-      state.speaker = await getActiveSpeaker(state.room.id);
-      await refresh();
-      if (unsubscribe) unsubscribe();
-      unsubscribe = subscribeRoom(state.room.id, refresh);
+      try {
+        state.room    = await getRoomBySlug(roomSlug);
+        state.speaker = await getActiveSpeaker(state.room.id);
+        await refresh();
+        if (unsubscribe) unsubscribe();
+        unsubscribe = subscribeRoom(state.room.id, refresh);
+      } catch (e) {
+        setStatus('Не удалось загрузить данные комнаты.', 'error');
+      }
     }
 
     async function refresh() {
-      state.room = await getRoomBySlug(roomSlug);
-      state.speaker = await getActiveSpeaker(state.room.id);
+      state.room     = await getRoomBySlug(roomSlug);
+      state.speaker  = await getActiveSpeaker(state.room.id);
       state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: false, includeAsked: true });
       render();
     }
 
     function render() {
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
-      const title = state.speaker?.name || state.speaker?.fallback_label || fallback;
-      const regalia = state.speaker?.regalia || '';
-      const topic = state.speaker?.topic || '';
-      speakerName.textContent = title;
-      speakerMeta.textContent = [regalia, topic].filter(Boolean).join(' · ') || 'Активный спикер пока не заполнен.';
+      const name     = state.speaker?.name || state.speaker?.fallback_label || fallback;
+      const regalia  = state.speaker?.regalia || '';
+      const topic    = state.speaker?.topic   || '';
 
-      if (!state.room?.is_questions_open) {
-        submitBtn.disabled = true;
-        setStatus('Приём вопросов сейчас закрыт.', 'error');
-      } else {
-        submitBtn.disabled = false;
-      }
+      speakerNameEl.textContent = name;
+      speakerMetaEl.textContent = [regalia, topic].filter(Boolean).join(' · ') || 'Готовимся к сессии…';
 
-      if (!state.questions.length) {
-        questionsList.innerHTML = '<div class="empty">Пока вопросов нет. Можно задать первый.</div>';
+      const isOpen = state.room?.is_questions_open;
+      closedBanner.style.display = isOpen ? 'none' : 'flex';
+      submitBtn.disabled = !isOpen;
+      formCard.style.opacity = isOpen ? '1' : '0.65';
+
+      // Лента вопросов
+      const qs = state.questions.filter(q => q.status !== 'hidden');
+      countBadge.textContent = String(qs.length);
+
+      if (!qs.length) {
+        questionsList.innerHTML = '<div class="empty">Вопросов пока нет — задайте первый!</div>';
         return;
       }
 
-      questionsList.innerHTML = state.questions.map((item) => {
-        const author = [item.author_name, item.author_company].filter(Boolean).join(' · ');
-        const badges = [
-          item.is_pinned ? '<span class="badge pinned">PIN</span>' : '',
-          item.status === 'asked' ? '<span class="badge asked">Задан</span>' : '<span class="badge open">Открыт</span>'
-        ].join(' ');
+      questionsList.innerHTML = qs.map((item) => {
+        const author  = [item.author_name, item.author_company].filter(Boolean).join(' · ');
+        const voted   = myVotes.has(item.id);
+        const isAsked = item.status === 'asked';
         return `
-          <div class="question-card">
-            <div class="row" style="justify-content:space-between; align-items:flex-start;">
-              <div class="question-text">${escapeHtml(item.text)}</div>
-              <div>${badges}</div>
+          <div class="question-card" style="${isAsked ? 'opacity:0.6;' : ''}">
+            <div class="q-row">
+              <div class="q-body">
+                <div class="question-text">${escapeHtml(item.text)}</div>
+                <div class="question-meta" style="margin-top:6px;">
+                  ${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)}
+                  ${item.is_pinned ? ' · <span class="badge pinned" style="font-size:9px;">закреплён</span>' : ''}
+                  ${isAsked ? ' · <span class="badge asked" style="font-size:9px;">задан</span>' : ''}
+                </div>
+              </div>
+              <div class="vote-col">
+                <button class="vote-btn-circle ${voted ? 'voted' : ''}" data-id="${item.id}" title="${voted ? 'Вы уже поддержали' : 'Поддержать вопрос'}">+1</button>
+                <span class="vote-count">${item.votes_count || 0}</span>
+              </div>
             </div>
-            <div class="question-meta">${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)}</div>
-            <div class="question-actions"><button class="btn ghost vote-btn" data-id="${item.id}">+1 · ${item.votes_count || 0}</button></div>
           </div>`;
       }).join('');
 
-      questionsList.querySelectorAll('.vote-btn').forEach((button) => {
-        button.addEventListener('click', async () => {
+      questionsList.querySelectorAll('.vote-btn-circle').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (myVotes.has(Number(btn.dataset.id))) return; // уже голосовал
           try {
-            await addVote(Number(button.dataset.id), sessionId);
+            await addVote(Number(btn.dataset.id), sessionId);
+            myVotes.add(Number(btn.dataset.id));
+            saveVotes();
             await refresh();
-          } catch (error) {
-            setStatus(error.message || 'Не удалось поставить +1', 'error');
+          } catch (e) {
+            setStatus('Не удалось поставить +1', 'error');
           }
         });
       });
@@ -129,19 +233,29 @@
 
     async function onSubmit() {
       const text = normalizeQuestion(questionInput.value);
-      if (!text) {
-        setStatus('Напишите вопрос.', 'error');
-        return;
-      }
+      if (!text) { setStatus('Напишите вопрос.', 'error'); return; }
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Отправляю…';
       try {
-        await submitQuestion({ roomId: state.room.id, speakerId: state.speaker?.id || null, text, authorName: nameInput.value, authorCompany: companyInput.value, sessionId, moderationEnabled: Boolean(state.room.moderation_enabled) });
+        await submitQuestion({
+          roomId: state.room.id,
+          speakerId: state.speaker?.id || null,
+          text,
+          authorName: nameInput.value,
+          authorCompany: companyInput.value,
+          sessionId,
+          moderationEnabled: Boolean(state.room.moderation_enabled)
+        });
         questionInput.value = '';
         nameInput.value = '';
         companyInput.value = '';
-        setStatus(state.room.moderation_enabled ? 'Вопрос отправлен в очередь.' : 'Вопрос опубликован.', 'success');
+        setStatus(state.room.moderation_enabled ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
         await refresh();
-      } catch (error) {
-        setStatus(error.message || 'Не удалось отправить вопрос.', 'error');
+      } catch (e) {
+        setStatus(e.message || 'Не удалось отправить вопрос.', 'error');
+      } finally {
+        submitBtn.disabled = !state.room?.is_questions_open;
+        submitBtn.textContent = 'Отправить вопрос';
       }
     }
 
