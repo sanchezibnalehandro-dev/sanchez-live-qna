@@ -166,8 +166,11 @@
 
           <!-- Список спикеров -->
           <section class="card">
-            <div class="card-inner">
-              <h2 class="section-title">Спикеры</h2>
+            <div class="card-inner stack" style="gap:10px;">
+              <div class="row" style="justify-content:space-between;align-items:center;">
+                <h2 class="section-title" style="margin:0;">Спикеры</h2>
+                <button class="btn primary" id="addSpeakerBtn" style="padding:6px 12px;font-size:12px;">+ Добавить</button>
+              </div>
               <div class="list" id="speakersList"></div>
             </div>
           </section>
@@ -191,11 +194,31 @@
             </div>
           </section>
 
+          <!-- God mode: добавить вопрос вручную -->
+          <section class="card">
+            <div class="card-inner stack" style="gap:10px;">
+              <h2 class="section-title">✦ Добавить вопрос вручную</h2>
+              <textarea class="textarea" id="godQuestionInput" placeholder="Текст вопроса…" maxlength="200" style="min-height:70px;"></textarea>
+              <div class="meta-grid">
+                <input class="input" id="godNameInput"    placeholder="Имя (опционально)"    maxlength="120" />
+                <input class="input" id="godCompanyInput" placeholder="Компания (опционально)" maxlength="120" />
+              </div>
+              <button class="btn primary" id="godSubmitBtn" style="width:100%;">Опубликовать вопрос</button>
+              <div class="status" id="godStatus"></div>
+            </div>
+          </section>
+
           <!-- Вопросы с управлением -->
           <section class="card">
             <div class="card-inner">
-              <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:nowrap;">
-                <h2 class="section-title" style="margin:0;">Вопросы</h2>
+              <div style="margin-bottom:14px;">
+                <div class="row" style="justify-content:space-between; align-items:center; flex-wrap:nowrap; margin-bottom:8px;">
+                  <h2 class="section-title" style="margin:0;">Вопросы <span id="speakerFilterLabel" style="font-size:11px;color:var(--muted);font-weight:400;"></span></h2>
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <button class="btn ghost" id="clearSpeakerFilter" style="padding:4px 10px;font-size:11px;display:none;">✕ Все спикеры</button>
+                    <button class="btn ghost" id="exportCsvBtn" style="padding:4px 10px;font-size:11px;">↓ CSV</button>
+                  </div>
+                </div>
                 <div class="row" style="gap:6px; flex-wrap:nowrap;">
                   <button class="filter-tab active" data-filter="all"    style="padding:5px 10px; font-size:11px;">Все</button>
                   <button class="filter-tab" data-filter="open"   style="padding:5px 10px; font-size:11px;">Открытые</button>
@@ -236,7 +259,9 @@
       supabase, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker,
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
-      subscribeRoom, escapeHtml, formatClock
+      submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
+      subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
+      createSpeaker, deleteSpeaker
     } from './supabase-qna.js';
 
     const roomSlug = getRoomSlug();
@@ -280,11 +305,14 @@
           dropdown.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
           opt.classList.add('selected');
           fillFormFromId(selectedSpeakerId);
+          // Фильтруем вопросы по выбранному спикеру
+          state.speakerFilter = selectedSpeakerId;
+          render();
         });
       });
     }
 
-    const state = { room: null, speakers: [], questions: [], filter: 'all' };
+    const state = { room: null, speakers: [], questions: [], filter: 'all', speakerFilter: null };
     let unsubscribe = null;
     let _busy = false;
     let _refreshing = false;
@@ -303,6 +331,128 @@
       document.getElementById('openModBtn').addEventListener('click',   () => window.open(`./mod-auth.html?room=${roomSlug}`, '_blank', 'noopener'));
       document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; refresh(); });
       document.getElementById('logoutBtn').addEventListener('click', logout);
+
+      // Добавить нового спикера
+      document.getElementById('addSpeakerBtn').addEventListener('click', async () => {
+        try {
+          const s = await createSpeaker(state.room.id, { name: 'Новый спикер' });
+          selectedSpeakerId = String(s.id);
+          await refresh();
+          selectLabel.textContent = s.name;
+          fillFormFromId(selectedSpeakerId);
+          setStatus('Спикер добавлен. Заполните данные и сохраните.', 'success');
+        } catch (e) { setStatus(e.message || 'Ошибка', 'error'); }
+      });
+
+      // Сброс фильтра по спикеру
+      document.getElementById('clearSpeakerFilter').addEventListener('click', () => {
+        state.speakerFilter = null;
+        document.getElementById('speakerFilterLabel').textContent = '';
+        document.getElementById('clearSpeakerFilter').style.display = 'none';
+        render();
+      });
+
+      // Экспорт CSV
+      document.getElementById('exportCsvBtn').addEventListener('click', () => {
+        const qs = state.speakerFilter
+          ? state.questions.filter(q => String(q.speaker_id) === String(state.speakerFilter))
+          : state.questions;
+        const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
+        const header = ['ID', 'Спикер', 'Вопрос', 'Автор', 'Компания', 'Статус', 'Голоса', 'Время'];
+        const rows = qs.map(q => [
+          q.id,
+          speakerMap.get(String(q.speaker_id))?.name || '',
+          `"${(q.text||'').replace(/"/g,'""')}"`,
+          `"${(q.author_name||'').replace(/"/g,'""')}"`,
+          `"${(q.author_company||'').replace(/"/g,'""')}"`,
+          q.status,
+          q.votes_count || 0,
+          new Date(q.created_at).toLocaleString('ru-RU')
+        ]);
+        const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `questions-${roomSlug}-${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+      });
+
+      // Добавить нового спикера
+      document.getElementById('addSpeakerBtn').addEventListener('click', async () => {
+        try {
+          const s = await createSpeaker(state.room.id, { name: 'Новый спикер' });
+          await refresh();
+          selectedSpeakerId = String(s.id);
+          selectLabel.textContent = s.name;
+          fillFormFromId(selectedSpeakerId);
+          setStatus('Спикер добавлен. Заполните данные и нажмите «Сохранить».', 'success');
+        } catch(e) { setStatus(e.message || 'Ошибка', 'error'); }
+      });
+
+      // Сбросить фильтр по спикеру
+      document.getElementById('clearSpeakerFilter').addEventListener('click', () => {
+        state.speakerFilter = null;
+        document.getElementById('speakerFilterLabel').textContent = '';
+        document.getElementById('clearSpeakerFilter').style.display = 'none';
+        render();
+      });
+
+      // Экспорт CSV
+      document.getElementById('exportCsvBtn').addEventListener('click', () => {
+        const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
+        const qs = state.speakerFilter
+          ? state.questions.filter(q => String(q.speaker_id) === String(state.speakerFilter))
+          : state.questions;
+        const rows = [['ID','Спикер','Вопрос','Автор','Компания','Статус','Голоса','Время']];
+        qs.forEach(q => {
+          const sp = speakerMap.get(String(q.speaker_id));
+          rows.push([
+            q.id,
+            sp?.name || '',
+            `"${(q.text||'').replace(/"/g,'""')}"`,
+            `"${(q.author_name||'').replace(/"/g,'""')}"`,
+            `"${(q.author_company||'').replace(/"/g,'""')}"`,
+            q.status,
+            q.votes_count || 0,
+            new Date(q.created_at).toLocaleString('ru-RU')
+          ]);
+        });
+        const csv = rows.map(r => r.join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = `altera-qna-${roomSlug}-${new Date().toISOString().slice(0,10)}.csv`;
+        a.click(); URL.revokeObjectURL(url);
+      });
+
+      // God mode — добавить вопрос вручную
+      const godSessionId = getGuestSessionId(roomSlug + '-admin');
+      document.getElementById('godSubmitBtn').addEventListener('click', async () => {
+        const text = normalizeQuestion(document.getElementById('godQuestionInput').value);
+        if (!text) return;
+        const godStatus = document.getElementById('godStatus');
+        try {
+          const activeSpeaker = await getActiveSpeaker(state.room.id);
+          await submitQuestion({
+            roomId: state.room.id,
+            speakerId: activeSpeaker?.id || null,
+            text,
+            authorName: document.getElementById('godNameInput').value,
+            authorCompany: document.getElementById('godCompanyInput').value,
+            sessionId: godSessionId,
+            moderationEnabled: false   // god mode всегда публикует сразу
+          });
+          document.getElementById('godQuestionInput').value = '';
+          document.getElementById('godNameInput').value = '';
+          document.getElementById('godCompanyInput').value = '';
+          godStatus.textContent = 'Вопрос опубликован.';
+          godStatus.className = 'status success';
+          await refresh();
+        } catch (e) {
+          godStatus.textContent = e.message || 'Ошибка.';
+          godStatus.className = 'status error';
+        }
+      });
 
       // Двухшаговая очистка вопросов
       const clearBtn        = document.getElementById('clearQuestionsBtn');
@@ -402,16 +552,47 @@
       speakersList.innerHTML = state.speakers.length
         ? state.speakers.map(s => {
             const initials = (s.name || '?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
+            const qCount = state.questions.filter(q => String(q.speaker_id) === String(s.id)).length;
             return `
-              <div class="speaker-row ${s.is_active ? 'active' : ''}">
+              <div class="speaker-row ${s.is_active ? 'active' : ''}" style="cursor:default;">
                 <div class="speaker-avatar">${initials}</div>
                 <div class="speaker-info">
                   <div class="speaker-name">${escapeHtml(s.name || 'Без имени')} ${s.is_active ? '<span class="badge open" style="font-size:9px;padding:3px 8px;">ACTIVE</span>' : ''}</div>
-                  <div class="speaker-meta">${escapeHtml([s.regalia, s.topic].filter(Boolean).join(' · ') || '—')}</div>
+                  <div class="speaker-meta">${escapeHtml([s.regalia, s.topic].filter(Boolean).join(' · ') || '—')} · ${qCount} вопр.</div>
+                </div>
+                <div style="display:flex;gap:4px;flex-shrink:0;">
+                  <button class="btn ghost" style="padding:4px 8px;font-size:11px;" data-sp-filter="${s.id}" data-sp-name="${escapeHtml(s.name||'Спикер')}">Вопросы</button>
+                  ${!s.is_active ? `<button class="btn ghost" style="padding:4px 8px;font-size:11px;color:#f87171;border-color:rgba(248,113,113,0.3);" data-sp-delete="${s.id}">✕</button>` : ''}
                 </div>
               </div>`;
           }).join('')
         : '<div class="empty">Список спикеров пуст.</div>';
+
+      // Фильтр по спикеру из списка
+      speakersList.querySelectorAll('[data-sp-filter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.spFilter;
+          const name = btn.dataset.spName;
+          state.speakerFilter = id;
+          document.getElementById('speakerFilterLabel').textContent = `— ${name}`;
+          document.getElementById('clearSpeakerFilter').style.display = 'inline-flex';
+          render();
+        });
+      });
+      // Удалить спикера
+      speakersList.querySelectorAll('[data-sp-delete]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Удалить этого спикера? Его вопросы останутся в БД.')) return;
+          try {
+            await deleteSpeaker(Number(btn.dataset.spDelete));
+            if (String(selectedSpeakerId) === String(btn.dataset.spDelete)) {
+              selectedSpeakerId = null;
+              selectLabel.textContent = 'Выберите спикера';
+            }
+            await refresh();
+          } catch (e) { setStatus(e.message || 'Ошибка удаления', 'error'); }
+        });
+      });
 
       // Статистика
       document.getElementById('statTotal').textContent   = state.questions.length;
@@ -422,7 +603,10 @@
 
       // Вопросы с управлением
       const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
-      const rows = state.filter === 'all' ? state.questions : state.questions.filter(q => q.status === state.filter);
+      let rows = state.speakerFilter
+        ? state.questions.filter(q => String(q.speaker_id) === String(state.speakerFilter))
+        : state.questions;
+      if (state.filter !== 'all') rows = rows.filter(q => q.status === state.filter);
 
       questionsList.innerHTML = rows.length
         ? rows.slice(0, 30).map(item => {
@@ -453,6 +637,7 @@
                   ${!isHidden ? `<button class="btn warn"    style="padding:7px 12px;font-size:11px;" data-action="hide" data-id="${item.id}">Скрыть</button>` : ''}
                   ${isHidden || isAsked ? `<button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="open" data-id="${item.id}">Вернуть</button>` : ''}
                   ${!isPending ? `<button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="pin" data-id="${item.id}" data-pinned="${isPinned ? '1' : '0'}">${isPinned ? 'Открепить' : 'Закрепить'}</button>` : ''}
+                  <button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="addvote" data-id="${item.id}">+1 ✦</button>
                 </div>
               </div>`;
           }).join('')
@@ -462,10 +647,11 @@
         try {
           const id = Number(btn.dataset.id);
           if (btn.dataset.action === 'approve') await approveQuestion(id);
-          if (btn.dataset.action === 'ask')  await setQuestionStatus(id, 'asked');
-          if (btn.dataset.action === 'hide') await setQuestionStatus(id, 'hidden');
-          if (btn.dataset.action === 'open') await setQuestionStatus(id, 'open');
-          if (btn.dataset.action === 'pin')  await setQuestionPinned(id, btn.dataset.pinned !== '1');
+          if (btn.dataset.action === 'ask')     await setQuestionStatus(id, 'asked');
+          if (btn.dataset.action === 'hide')    await setQuestionStatus(id, 'hidden');
+          if (btn.dataset.action === 'open')    await setQuestionStatus(id, 'open');
+          if (btn.dataset.action === 'pin')     await setQuestionPinned(id, btn.dataset.pinned !== '1');
+          if (btn.dataset.action === 'addvote') await addVote(id, getGuestSessionId(roomSlug + '-admin-' + id));
           await refresh();
         } catch (e) {
           setStatus(e.message || 'Ошибка', 'error');

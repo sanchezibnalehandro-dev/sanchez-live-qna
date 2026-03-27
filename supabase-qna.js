@@ -100,6 +100,15 @@ export async function addVote(questionId, sessionId) {
   return data || null;
 }
 
+export async function removeVote(questionId, sessionId) {
+  const { error } = await supabase
+    .from('qna_question_votes')
+    .delete()
+    .eq('question_id', questionId)
+    .eq('session_id', sessionId);
+  if (error) throw error;
+}
+
 export async function setQuestionStatus(questionId, status) {
   const patch = { status };
   if (status === 'asked') patch.asked_at = new Date().toISOString();
@@ -161,6 +170,24 @@ export async function updateSpeaker(speakerId, patch) {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function createSpeaker(roomId, patch = {}) {
+  const { data, error } = await supabase
+    .from('qna_speakers')
+    .insert({ room_id: roomId, name: patch.name || null, regalia: patch.regalia || null, topic: patch.topic || null, is_active: false })
+    .select('id, name, regalia, topic, is_active')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteSpeaker(speakerId) {
+  const { error } = await supabase
+    .from('qna_speakers')
+    .delete()
+    .eq('id', speakerId);
+  if (error) throw error;
 }
 
 export async function setActiveSpeaker(roomId, speakerId) {

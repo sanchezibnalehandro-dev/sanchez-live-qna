@@ -52,7 +52,40 @@
     .vote-btn-circle:active { transform: scale(0.95); }
     .vote-btn-circle.voted { background: rgba(59,130,246,0.28); border-color: rgba(59,130,246,0.5); }
 
-    /* Статус закрытия приёма */
+    /* Индикатор состояния приёма */
+    .reception-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .reception-indicator.open {
+      background: rgba(34,211,170,0.12);
+      border: 1px solid rgba(34,211,170,0.3);
+      color: #34d399;
+    }
+    .reception-indicator.closed {
+      background: rgba(251,191,36,0.08);
+      border: 1px solid rgba(251,191,36,0.2);
+      color: #fbbf24;
+    }
+    .reception-indicator .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .reception-indicator.open  .dot { background: #34d399; box-shadow: 0 0 6px #34d399; animation: pulse-dot 1.8s infinite; }
+    .reception-indicator.closed .dot { background: #fbbf24; }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+
+    /* Баннер закрытия (оставляем для совместимости) */
     .closed-banner {
       display: flex;
       align-items: center;
@@ -74,9 +107,15 @@
       <!-- Шапка -->
       <section class="card">
         <div class="card-inner" style="padding:24px;">
-          <div class="altera-logo">
-            <div class="altera-logo-mark">A</div>
-            <span class="altera-logo-text">Altera · Live Q&A</span>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div class="altera-logo">
+              <div class="altera-logo-mark">A</div>
+              <span class="altera-logo-text">Altera · Live Q&A</span>
+            </div>
+            <span id="receptionIndicator" class="reception-indicator open">
+              <span class="dot"></span>
+              <span id="receptionLabel">Приём открыт</span>
+            </span>
           </div>
           <h1 id="speakerName" style="margin-top:4px;">Задать вопрос</h1>
           <p class="subcopy" id="speakerMeta">Загрузка данных спикера…</p>
@@ -125,7 +164,7 @@
   <script type="module">
     import {
       getRoomSlug, getGuestSessionId, getRoomBySlug, getActiveSpeaker,
-      listQuestions, submitQuestion, addVote, subscribeRoom,
+      listQuestions, submitQuestion, addVote, removeVote, subscribeRoom,
       escapeHtml, formatClock, normalizeQuestion
     } from './supabase-qna.js';
 
@@ -155,7 +194,9 @@
 
     // Счётчик символов
     const charCount = document.getElementById('charCount');
-    const LIMIT = 600;
+    const LIMIT = 200;
+    questionInput.setAttribute('maxlength', LIMIT);
+    charCount.textContent = `0 / ${LIMIT}`;
     questionInput.addEventListener('input', () => {
       const len = questionInput.value.length;
       charCount.textContent = `${len} / ${LIMIT}`;
@@ -212,6 +253,12 @@
       submitBtn.disabled = !isOpen;
       formCard.style.opacity = isOpen ? '1' : '0.65';
 
+      // Индикатор приёма
+      const indicator = document.getElementById('receptionIndicator');
+      const label     = document.getElementById('receptionLabel');
+      indicator.className = `reception-indicator ${isOpen ? 'open' : 'closed'}`;
+      label.textContent   = isOpen ? 'Приём открыт' : 'Приём закрыт';
+
       // Лента вопросов
       const qs = state.questions.filter(q => q.status !== 'hidden');
       countBadge.textContent = String(qs.length);
@@ -225,7 +272,7 @@
         const author  = [item.author_name, item.author_company].filter(Boolean).join(' · ');
         const voted    = myVotes.has(item.id);
         const isAsked  = item.status === 'asked';
-        const canVote  = !voted && !isAsked;
+        const isOwn    = myVotes.has(item.id) && item.id; // свой вопрос тоже в myVotes
         return `
           <div class="question-card" style="${isAsked ? 'opacity:0.6;' : ''}">
             <div class="q-row">
@@ -241,9 +288,9 @@
                 <button
                   class="vote-btn-circle ${voted ? 'voted' : ''}"
                   data-id="${item.id}"
-                  ${canVote ? '' : 'disabled style="opacity:0.35;cursor:default;transform:none;"'}
-                  title="${isAsked ? 'Вопрос уже задан' : voted ? 'Вы уже поддержали' : 'Поддержать вопрос'}"
-                >+1</button>
+                  ${isAsked ? 'disabled style="opacity:0.35;cursor:default;transform:none;"' : ''}
+                  title="${isAsked ? 'Вопрос уже задан' : voted ? 'Нажмите чтобы снять голос' : 'Поддержать вопрос'}"
+                >${voted ? '✓' : '+1'}</button>
                 <span class="vote-count">${item.votes_count || 0}</span>
               </div>
             </div>
@@ -252,14 +299,21 @@
 
       questionsList.querySelectorAll('.vote-btn-circle').forEach((btn) => {
         btn.addEventListener('click', async () => {
-          if (btn.disabled || myVotes.has(Number(btn.dataset.id))) return;
+          if (btn.disabled) return;
+          const id = Number(btn.dataset.id);
+          const alreadyVoted = myVotes.has(id);
           try {
-            await addVote(Number(btn.dataset.id), sessionId);
-            myVotes.add(Number(btn.dataset.id));
+            if (alreadyVoted) {
+              await removeVote(id, sessionId);
+              myVotes.delete(id);
+            } else {
+              await addVote(id, sessionId);
+              myVotes.add(id);
+            }
             saveVotes();
             await refresh();
           } catch (e) {
-            setStatus('Не удалось поставить +1', 'error');
+            setStatus(alreadyVoted ? 'Не удалось снять голос' : 'Не удалось поставить +1', 'error');
           }
         });
       });
