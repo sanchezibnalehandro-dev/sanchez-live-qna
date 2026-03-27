@@ -112,6 +112,7 @@ export async function removeVote(questionId, sessionId) {
 export async function setQuestionStatus(questionId, status) {
   const patch = { status };
   if (status === 'asked') patch.asked_at = new Date().toISOString();
+  if (status === 'open')  patch.asked_at = null;
   const { data, error } = await supabase
     .from('qna_questions')
     .update(patch)

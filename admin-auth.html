@@ -332,51 +332,6 @@
       document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; refresh(); });
       document.getElementById('logoutBtn').addEventListener('click', logout);
 
-      // Добавить нового спикера
-      document.getElementById('addSpeakerBtn').addEventListener('click', async () => {
-        try {
-          const s = await createSpeaker(state.room.id, { name: 'Новый спикер' });
-          selectedSpeakerId = String(s.id);
-          await refresh();
-          selectLabel.textContent = s.name;
-          fillFormFromId(selectedSpeakerId);
-          setStatus('Спикер добавлен. Заполните данные и сохраните.', 'success');
-        } catch (e) { setStatus(e.message || 'Ошибка', 'error'); }
-      });
-
-      // Сброс фильтра по спикеру
-      document.getElementById('clearSpeakerFilter').addEventListener('click', () => {
-        state.speakerFilter = null;
-        document.getElementById('speakerFilterLabel').textContent = '';
-        document.getElementById('clearSpeakerFilter').style.display = 'none';
-        render();
-      });
-
-      // Экспорт CSV
-      document.getElementById('exportCsvBtn').addEventListener('click', () => {
-        const qs = state.speakerFilter
-          ? state.questions.filter(q => String(q.speaker_id) === String(state.speakerFilter))
-          : state.questions;
-        const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
-        const header = ['ID', 'Спикер', 'Вопрос', 'Автор', 'Компания', 'Статус', 'Голоса', 'Время'];
-        const rows = qs.map(q => [
-          q.id,
-          speakerMap.get(String(q.speaker_id))?.name || '',
-          `"${(q.text||'').replace(/"/g,'""')}"`,
-          `"${(q.author_name||'').replace(/"/g,'""')}"`,
-          `"${(q.author_company||'').replace(/"/g,'""')}"`,
-          q.status,
-          q.votes_count || 0,
-          new Date(q.created_at).toLocaleString('ru-RU')
-        ]);
-        const csv = [header, ...rows].map(r => r.join(',')).join('\n');
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `questions-${roomSlug}-${new Date().toISOString().slice(0,10)}.csv`;
-        a.click();
-      });
-
       // Добавить нового спикера (защита от двойного клика)
       let _addingSpeaker = false;
       document.getElementById('addSpeakerBtn').addEventListener('click', async () => {

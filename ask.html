@@ -187,6 +187,10 @@
     const myVotes = new Set(JSON.parse(localStorage.getItem(`qna-votes:${roomSlug}`) || '[]'));
     function saveVotes() { localStorage.setItem(`qna-votes:${roomSlug}`, JSON.stringify([...myVotes])); }
 
+    // Свои вопросы — отдельно от голосов
+    const myQuestions = new Set(JSON.parse(localStorage.getItem(`qna-own-questions:${roomSlug}`) || '[]'));
+    function saveMyQuestions() { localStorage.setItem(`qna-own-questions:${roomSlug}`, JSON.stringify([...myQuestions])); }
+
     const state = { room: null, speaker: null, questions: [] };
     let unsubscribe = null;
     let _refreshing = false;
@@ -271,15 +275,16 @@
       questionsList.innerHTML = qs.map((item) => {
         const author  = [item.author_name, item.author_company].filter(Boolean).join(' · ');
         const voted    = myVotes.has(item.id);
+        const isOwn    = myQuestions.has(item.id);
         const isAsked  = item.status === 'asked';
-        const isOwn    = myVotes.has(item.id) && item.id; // свой вопрос тоже в myVotes
+        const blocked  = isAsked || isOwn;
         return `
           <div class="question-card" style="${isAsked ? 'opacity:0.6;' : ''}">
             <div class="q-row">
               <div class="q-body">
                 <div class="question-text">${escapeHtml(item.text)}</div>
                 <div class="question-meta" style="margin-top:6px;">
-                  ${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)}
+                  ${isOwn ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ваш</span> · ' : ''}${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)}
                   ${item.is_pinned ? ' · <span class="badge pinned" style="font-size:9px;">закреплён</span>' : ''}
                   ${isAsked ? ' · <span class="badge asked" style="font-size:9px;">задан</span>' : ''}
                 </div>
@@ -288,9 +293,9 @@
                 <button
                   class="vote-btn-circle ${voted ? 'voted' : ''}"
                   data-id="${item.id}"
-                  ${isAsked ? 'disabled style="opacity:0.35;cursor:default;transform:none;"' : ''}
-                  title="${isAsked ? 'Вопрос уже задан' : voted ? 'Нажмите чтобы снять голос' : 'Поддержать вопрос'}"
-                >${voted ? '✓' : '+1'}</button>
+                  ${blocked ? 'disabled style="opacity:0.35;cursor:default;transform:none;"' : ''}
+                  title="${isOwn ? 'Нельзя голосовать за свой вопрос' : isAsked ? 'Вопрос уже задан' : voted ? 'Нажмите чтобы снять голос' : 'Поддержать вопрос'}"
+                >${isOwn ? '—' : voted ? '✓' : '+1'}</button>
                 <span class="vote-count">${item.votes_count || 0}</span>
               </div>
             </div>
@@ -334,8 +339,8 @@
           sessionId,
           moderationEnabled: Boolean(state.room.moderation_enabled)
         });
-        // Нельзя голосовать за свой вопрос
-        if (newQ?.id) { myVotes.add(newQ.id); saveVotes(); }
+        // Запоминаем свой вопрос (отдельно от голосов)
+        if (newQ?.id) { myQuestions.add(newQ.id); saveMyQuestions(); }
         questionInput.value = '';
         nameInput.value = '';
         companyInput.value = '';
