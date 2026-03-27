@@ -21,7 +21,7 @@ Live Q&A-инструмент для мероприятий Altera: гости �
 ## Основные файлы
 
 - `supabase-qna.js` — весь слой работы с Supabase (запросы, подписки, утилиты)
-- `supabase-qna-config.js` — URL и anon key проекта Supabase (не коммитится)
+- `supabase-qna-config.js` — URL и anon key проекта Supabase (закоммичен; содержит только публичный anon key, не service role)
 - `theme.css` — дизайн-система (палитра Altera: тёмно-синий фон, электрик-синие акценты)
 - `vercel.json` — редирект корня на login-auth
 
