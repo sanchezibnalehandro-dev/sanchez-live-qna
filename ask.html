@@ -147,6 +147,7 @@
 
     const state = { room: null, speaker: null, questions: [] };
     let unsubscribe = null;
+    let _refreshing = false;
 
     submitBtn.addEventListener('click', onSubmit);
     boot();
@@ -164,10 +165,16 @@
     }
 
     async function refresh() {
-      state.room     = await getRoomBySlug(roomSlug);
-      state.speaker  = await getActiveSpeaker(state.room.id);
-      state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: false, includeAsked: true });
-      render();
+      if (_refreshing) return;
+      _refreshing = true;
+      try {
+        state.room      = await getRoomBySlug(roomSlug);
+        state.speaker   = await getActiveSpeaker(state.room.id);
+        state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: false, includeAsked: true });
+        render();
+      } finally {
+        _refreshing = false;
+      }
     }
 
     function render() {

@@ -157,6 +157,7 @@
     const state = { room: null, speaker: null, questions: [], filter: 'all' };
     let unsubscribe = null;
     let maxVotes = 1;
+    let _refreshing = false;
 
     boot();
 
@@ -181,11 +182,17 @@
     }
 
     async function refresh() {
-      state.room     = await getRoomBySlug(roomSlug);
-      state.speaker  = await getActiveSpeaker(state.room.id);
-      state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: true, includeAsked: true });
-      maxVotes = Math.max(1, ...state.questions.map(q => q.votes_count || 0));
-      render();
+      if (_refreshing) return;
+      _refreshing = true;
+      try {
+        state.room      = await getRoomBySlug(roomSlug);
+        state.speaker   = await getActiveSpeaker(state.room.id);
+        state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: true, includeAsked: true });
+        maxVotes = Math.max(1, ...state.questions.map(q => q.votes_count || 0));
+        render();
+      } finally {
+        _refreshing = false;
+      }
     }
 
     function render() {

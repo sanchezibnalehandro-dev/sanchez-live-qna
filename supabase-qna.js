@@ -187,13 +187,21 @@ export async function setActiveSpeaker(roomId, speakerId) {
 }
 
 export function subscribeRoom(roomId, onChange) {
+  // Дебаунс: если приходит несколько событий подряд — делаем один refresh
+  let timer = null;
+  const debounced = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => onChange(), 120);
+  };
+
   const channel = supabase.channel(`qna-room-${roomId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_rooms', filter: `id=eq.${roomId}` }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers', filter: `room_id=eq.${roomId}` }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions', filter: `room_id=eq.${roomId}` }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_question_votes' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_rooms',          filter: `id=eq.${roomId}` }, debounced)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers',       filter: `room_id=eq.${roomId}` }, debounced)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions',      filter: `room_id=eq.${roomId}` }, debounced)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_question_votes' }, debounced)
     .subscribe();
-  return () => supabase.removeChannel(channel);
+
+  return () => { clearTimeout(timer); supabase.removeChannel(channel); };
 }
 
 export function normalizeQuestion(value) {
