@@ -2,10 +2,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-qna-config.js';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const DEFAULT_ROOM_SLUG = 'altera-forum';
 
+// Single-room mode: intentionally ignore ?room= in the URL
+// to avoid desync between guest / moderator / admin windows.
 export function getRoomSlug() {
-  const params = new URLSearchParams(location.search);
-  return slug(params.get('room') || 'demo-room');
+  return slug(DEFAULT_ROOM_SLUG);
 }
 
 export function getGuestSessionId(room) {
@@ -51,7 +53,7 @@ export async function listSpeakers(roomId) {
   return data || [];
 }
 
-export async function listQuestions(roomId, speakerId, { includeHidden = false, includeAsked = true } = {}) {
+export async function listQuestions(roomId, speakerId, { includeHidden = false, includeAsked = true, includePending = false } = {}) {
   let query = supabase
     .from('qna_questions')
     .select('id, room_id, speaker_id, text, author_name, author_company, status, is_pinned, votes_count, created_at, asked_at')
@@ -63,6 +65,7 @@ export async function listQuestions(roomId, speakerId, { includeHidden = false, 
   if (speakerId) query = query.eq('speaker_id', speakerId);
   if (!includeHidden) query = query.neq('status', 'hidden');
   if (!includeAsked) query = query.neq('status', 'asked');
+  if (!includePending) query = query.neq('status', 'pending');
 
   const { data, error } = await query;
   if (error) throw error;
@@ -99,9 +102,19 @@ export async function addVote(questionId, sessionId) {
   return data || null;
 }
 
+export async function removeVote(questionId, sessionId) {
+  const { error } = await supabase
+    .from('qna_question_votes')
+    .delete()
+    .eq('question_id', questionId)
+    .eq('session_id', sessionId);
+  if (error) throw error;
+}
+
 export async function setQuestionStatus(questionId, status) {
   const patch = { status };
   if (status === 'asked') patch.asked_at = new Date().toISOString();
+  if (status === 'open')  patch.asked_at = null;
   const { data, error } = await supabase
     .from('qna_questions')
     .update(patch)
@@ -162,6 +175,24 @@ export async function updateSpeaker(speakerId, patch) {
   return data;
 }
 
+export async function createSpeaker(roomId, patch = {}) {
+  const { data, error } = await supabase
+    .from('qna_speakers')
+    .insert({ room_id: roomId, name: patch.name || null, regalia: patch.regalia || null, topic: patch.topic || null, is_active: false })
+    .select('id, name, regalia, topic, is_active')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteSpeaker(speakerId) {
+  const { error } = await supabase
+    .from('qna_speakers')
+    .delete()
+    .eq('id', speakerId);
+  if (error) throw error;
+}
+
 export async function setActiveSpeaker(roomId, speakerId) {
   const { error: resetError } = await supabase
     .from('qna_speakers')
@@ -187,12 +218,45 @@ export async function setActiveSpeaker(roomId, speakerId) {
 }
 
 export function subscribeRoom(roomId, onChange) {
+  // Дебаунш: схлопгогяем частые событии в один вызов
+  let timer = null;
+  const debounced = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => onChange(), 150);
+  };
+
   const channel = supabase.channel(`qna-room-${roomId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_rooms', filter: `id=eq.${roomId}` }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers', filter: `room_id=eq.${roomId}` }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions', filter: `room_id=eq.${roomId}` }, onChange)
-    .subscribe();
-  return () => supabase.removeChannel(channel);
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_rooms',           filter: `id=eq.${roomId}` }, debounced)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers',       filter: `room_id=eq.${roomId}` }, debounced)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions',      filter: `room_id=eq.${roomId}` }, debounced)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_question_votes' }, debounced)
+    .subscribe((status) => {
+      // Переподключаемся при разрыве
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setTimeout(() => onChange(), 1000);
+      }
+    });
+
+  return () => { clearTimeout(timer); supabase.removeChannel(channel); };
+}
+
+export async function deleteAllQuestions(roomId) {
+  const { error } = await supabase
+    .from('qna_questions')
+    .delete()
+    .eq('room_id', roomId);
+  if (error) throw error;
+}
+
+export async function approveQuestion(questionId) {
+  const { data, error } = await supabase
+    .from('qna_questions')
+    .update({ status: 'open' })
+    .eq('id', questionId)
+    .select('id, status')
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export function normalizeQuestion(value) {
@@ -210,7 +274,7 @@ export function escapeHtml(value) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+    .replace(/\"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
 export function slug(value) {

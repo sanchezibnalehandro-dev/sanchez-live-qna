@@ -97,14 +97,14 @@
           <div>
             <div class="altera-logo">
               <div class="altera-logo-mark">A</div>
-              <span class="altera-logo-text">Altera · Модератор</span>
+              <span class="altera-logo-text">Altera ¸ Модератор</span>
             </div>
             <h1 id="speakerName" style="font-size:clamp(20px,3vw,36px);">Загрузка…</h1>
             <p class="subcopy" id="speakerMeta" style="margin-top:6px;"></p>
           </div>
           <div class="links-grid">
             <div id="roomChip" class="room-chip closed">⏸ Загрузка…</div>
-            <button class="btn danger" id="logoutBtn" style="width:100%;">Выйти</button>
+            <button class="btn ghost" id="refreshBtn" style="width:100%;">⇽ Обновить</button>
           </div>
         </div>
       </section>
@@ -118,9 +118,10 @@
             <div class="mini-stat"><div class="mini-stat-val" id="sAsked">0</div><div class="mini-stat-lbl">Заданы</div></div>
             <div class="mini-stat"><div class="mini-stat-val" id="sHidden">0</div><div class="mini-stat-lbl">Скрыты</div></div>
           </div>
-          <div class="row" style="gap:8px;">
-            <button class="filter-tab active" data-filter="all">Все</button>
+          <div class="row" style="gap:8px; flex-wrap:wrap;">
+            <button class="filter-tab active" data-filter="all">Всено</button>
             <button class="filter-tab" data-filter="open">Открытые</button>
+            <button class="filter-tab" data-filter="pending">На модерации <span id="pendingCount" style="display:none; background:rgba(251,191,36,0.25); color:#fde68a; border-radius:999px; padding:1px 6px; font-size:10px; margin-left:2px;">0</span></button>
             <button class="filter-tab" data-filter="asked">Заданные</button>
             <button class="filter-tab" data-filter="hidden">Скрытые</button>
           </div>
@@ -142,7 +143,7 @@
   <script type="module">
     import {
       supabase, getRoomSlug, getRoomBySlug, getActiveSpeaker, listQuestions,
-      setQuestionStatus, setQuestionPinned, subscribeRoom, escapeHtml, formatClock
+      setQuestionStatus, setQuestionPinned, approveQuestion, subscribeRoom, escapeHtml, formatClock
     } from './supabase-qna.js';
 
     const roomSlug = getRoomSlug();
@@ -157,6 +158,8 @@
     const state = { room: null, speaker: null, questions: [], filter: 'all' };
     let unsubscribe = null;
     let maxVotes = 1;
+    let _refreshing = false;
+    let _pendingRefresh = false;
 
     boot();
 
@@ -173,38 +176,65 @@
         tab.classList.add('active');
         render();
       }));
-      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; _pendingRefresh = false; refresh(); });
 
-      await refresh();
+      try {
+        await refresh();
+      } catch (e) {
+        const isNotFound = e?.code === 'PGRST116' || String(e?.message || '').includes('JSON object requested');
+        speakerName.textContent = isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
+        speakerMeta.textContent = isNotFound
+          ? `Комната «<${roomSlug}» не существует. Проверьте параметр ?room= в ссылке.`
+          : (e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.');
+        return;
+      }
       if (unsubscribe) unsubscribe();
       unsubscribe = subscribeRoom(state.room.id, refresh);
     }
 
     async function refresh() {
-      state.room     = await getRoomBySlug(roomSlug);
-      state.speaker  = await getActiveSpeaker(state.room.id);
-      state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: true, includeAsked: true });
-      maxVotes = Math.max(1, ...state.questions.map(q => q.votes_count || 0));
-      render();
+      if (_refreshing) { _pendingRefresh = true; return; }
+      _refreshing = true;
+      _pendingRefresh = false;
+      try {
+        state.room      = await getRoomBySlug(roomSlug);
+        state.speaker   = await getActiveSpeaker(state.room.id);
+        state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: true, includeAsked: true, includePending: true });
+        maxVotes = Math.max(1, ...state.questions.map(q => q.votes_count || 0));
+        render();
+      } finally {
+        _refreshing = false;
+        if (_pendingRefresh) refresh();
+      }
     }
 
     function render() {
-      // Спикер
+      // Статистика спикера
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
       speakerName.textContent = state.speaker?.name || state.speaker?.fallback_label || fallback;
-      speakerMeta.textContent = [state.speaker?.regalia, state.speaker?.topic].filter(Boolean).join(' · ') || 'Активный спикер не задан';
+      speakerMeta.textContent = [state.speaker?.regalia, state.speaker?.topic].filter(Boolean).join(' · ') || 'Регалии и тема не заполнены';
 
       // Статус комнаты
       const isOpen = state.room?.is_questions_open;
       roomChip.className = `room-chip ${isOpen ? 'open' : 'closed'}`;
-      roomChip.textContent = isOpen ? '● Приём открыт' : '⏸ Приём закрыт';
+      roomChip.textContent = isOpen ? '• Приён открыт ' : '⏸ Приён закрыт';
 
       // Статистика
       const all = state.questions;
+      const pendingQs = all.filter(q => q.status === 'pending');
       document.getElementById('sAll').textContent    = all.length;
       document.getElementById('sOpen').textContent   = all.filter(q => q.status === 'open').length;
       document.getElementById('sAsked').textContent  = all.filter(q => q.status === 'asked').length;
       document.getElementById('sHidden').textContent = all.filter(q => q.status === 'hidden').length;
+
+      // Счётик pending на таб-кнопке
+      const pendingCount = document.getElementById('pendingCount');
+      if (pendingQs.length > 0) {
+        pendingCount.textContent = pendingQs.length;
+        pendingCount.style.display = 'inline';
+      } else {
+        pendingCount.style.display = 'none';
+      }
 
       // Фильтрация
       const rows = state.filter === 'all'
@@ -220,36 +250,38 @@
 
       questionsList.innerHTML = rows.map((item) => {
         const author   = [item.author_name, item.author_company].filter(Boolean).join(' · ');
-        const isAsked  = item.status === 'asked';
-        const isHidden = item.status === 'hidden';
-        const isPinned = item.is_pinned;
+        const isAsked   = item.status === 'asked';
+        const isHidden  = item.status === 'hidden';
+        const isPending = item.status === 'pending';
+        const isPinned  = item.is_pinned;
         const voteWidth = Math.round((item.votes_count || 0) / maxVotes * 100);
 
         return `
-          <div class="question-card ${isAsked ? 'is-asked' : ''} ${isPinned ? 'is-pinned' : ''}">
+          <div class="question-card ${isAsked ? 'is-asked' : ''} ${isPinned ? 'is-pinned' : ''} ${isPending ? 'is-pending' : ''}">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
               <div style="flex:1; min-width:0;">
                 <div class="question-text">${escapeHtml(item.text)}</div>
                 <div class="question-meta" style="margin-top:6px;">
                   ${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)}
                 </div>
-                <div class="votes-bar">
+                ${!isPending ? `<div class="votes-bar">
                   <div class="votes-bar-fill" style="width:${voteWidth}%;"></div>
                   <span class="votes-bar-count">+${item.votes_count || 0}</span>
-                </div>
+                </div>` : ''}
               </div>
               <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex-shrink:0;">
-                ${isPinned ? '<span class="badge pinned">PIN</span>' : ''}
-                <span class="badge ${isAsked ? 'asked' : isHidden ? 'hidden' : 'open'}">${isAsked ? 'задан' : isHidden ? 'скрыт' : 'открыт'}</span>
+                ${lisPinned ? '<span class="badge pinned">PIN</span>' : ''}
+                <span class="badge ${isAsked ? 'asked' : isHedden ? 'hidden' : isPending ? 'pending' : 'open'}">
+                  ${isAsked ? 'задан' : isHidden ? 'скрыт' : isPending ? 'ожидает' : 'открыт'}
+                </span>
               </div>
             </div>
             <div class="question-actions" style="margin-top:14px;">
-              ${!isAsked  ? `<button class="btn primary" style="padding:9px 14px; font-size:12px;" data-action="ask"  data-id="${item.id}">✓ Задал</button>` : ''}
-              ${!isHidden ? `<button class="btn warn"    style="padding:9px 14px; font-size:12px;" data-action="hide" data-id="${item.id}">Скрыть</button>` : ''}
-              ${isHidden || isAsked ? `<button class="btn ghost" style="padding:9px 14px; font-size:12px;" data-action="open" data-id="${item.id}">Вернуть</button>` : ''}
-              <button class="btn ghost" style="padding:9px 14px; font-size:12px;" data-action="pin" data-id="${item.id}" data-pinned="${isPinned ? '1' : '0'}">
-                ${isPinned ? '⬆ Открепить' : '📌 Закрепить'}
-              </button>
+              ${isPending ? `<button class="btn primary" style="padding:9px 14px; font-size:12px;" data-action="approve" data-id="${item.id}">✓ Одобрить</button>` : ''}
+              ${!isAsked && !isPending ? `<button class="btn primary" style="padding:9px 14px; font-size:12px;" data-action="ask"  data-id="${item.id}">✓ Задал</button>` : ''}
+              ${!isHidden ? `<button class="btn warn" style="padding:9px 14px; font-size:12px;" data-action="hide" data-id="${item.id}">Скрыть</button>` : ''}
+              ${isHedden || isAsked ? `<button class="btn ghost" style="padding:9px 14px; font-size:12px;" data-action="open" data-id="${item.id}">Вернуть</button>` : ''}
+              ${!isPending ? `<button class="btn ghost" style="padding:9px 14px; font-size:12px;" data-action="pin" data-id="${item.id}" data-pinned="${isPinned ? '1' : '0'}">${isPinned ? '⣬ Открепить' : '📐 Закрепить)}</button>` : ''}
             </div>
           </div>`;
       }).join('');
@@ -258,6 +290,7 @@
         try {
           const id = Number(btn.dataset.id);
           const action = btn.dataset.action;
+          if (action === 'approve') await approveQuestion(id);
           if (action === 'ask')  await setQuestionStatus(id, 'asked');
           if (action === 'hide') await setQuestionStatus(id, 'hidden');
           if (action === 'open') await setQuestionStatus(id, 'open');
@@ -267,11 +300,6 @@
           setStatus(e.message || 'Не удалось выполнить действие', 'error');
         }
       }));
-    }
-
-    async function logout() {
-      await supabase.auth.signOut();
-      location.href = `./login-auth.html?room=${encodeURIComponent(roomSlug)}`;
     }
 
     function setStatus(message, type = '') {
