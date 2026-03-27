@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Вопросы спикеру</title>
+  <link rel="stylesheet" href="./theme.css" />
+</head>
+<body>
+  <div class="app">
+    <main class="shell" style="max-width:760px;">
+      <section class="card"><div class="card-inner">
+        <div class="eyebrow"><span class="live-dot"></span><span id="roomLabel">LIVE ROOM</span></div>
+        <h1>Вопросы спикеру</h1>
+        <p class="subcopy">Задайте вопрос текущему спикеру. Имя и компания опциональны.</p>
+      </div></section>
+
+      <section class="card"><div class="card-inner">
+        <h2 class="section-title">Текущий спикер</h2>
+        <div class="panel">
+          <div class="question-text" id="speakerName">Вопросы спикеру</div>
+          <div class="question-meta" id="speakerMeta">Данные спикера появятся здесь после настройки.</div>
+        </div>
+      </div></section>
+
+      <section class="card"><div class="card-inner stack">
+        <h2 class="section-title">Задать вопрос</h2>
+        <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос текущему спикеру"></textarea>
+        <div class="meta-grid">
+          <input class="input" id="nameInput" placeholder="Ваше имя — опционально" />
+          <input class="input" id="companyInput" placeholder="Компания — опционально" />
+        </div>
+        <div class="row"><button class="btn primary" id="submitBtn">Отправить вопрос</button></div>
+        <div class="status" id="status"></div>
+      </div></section>
+
+      <section class="card"><div class="card-inner">
+        <h2 class="section-title">Лента вопросов</h2>
+        <div class="list" id="questionsList"></div>
+      </div></section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { getRoomSlug, getGuestSessionId, getRoomBySlug, getActiveSpeaker, listQuestions, submitQuestion, addVote, subscribeRoom, escapeHtml, formatClock, normalizeQuestion } from './supabase-qna.js';
+
+    const roomSlug = getRoomSlug();
+    const sessionId = getGuestSessionId(roomSlug);
+    const roomLabel = document.getElementById('roomLabel');
+    const speakerName = document.getElementById('speakerName');
+    const speakerMeta = document.getElementById('speakerMeta');
+    const questionInput = document.getElementById('questionInput');
+    const nameInput = document.getElementById('nameInput');
+    const companyInput = document.getElementById('companyInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusEl = document.getElementById('status');
+    const questionsList = document.getElementById('questionsList');
+
+    const state = { room: null, speaker: null, questions: [] };
+    let unsubscribe = null;
+
+    roomLabel.textContent = `LIVE ROOM · ${roomSlug}`;
+    submitBtn.addEventListener('click', onSubmit);
+    boot();
+
+    async function boot() {
+      state.room = await getRoomBySlug(roomSlug);
+      state.speaker = await getActiveSpeaker(state.room.id);
+      await refresh();
+      if (unsubscribe) unsubscribe();
+      unsubscribe = subscribeRoom(state.room.id, refresh);
+    }
+
+    async function refresh() {
+      state.room = await getRoomBySlug(roomSlug);
+      state.speaker = await getActiveSpeaker(state.room.id);
+      state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: false, includeAsked: true });
+      render();
+    }
+
+    function render() {
+      const fallback = state.room?.fallback_label || 'Вопросы спикеру';
+      const title = state.speaker?.name || state.speaker?.fallback_label || fallback;
+      const regalia = state.speaker?.regalia || '';
+      const topic = state.speaker?.topic || '';
+      speakerName.textContent = title;
+      speakerMeta.textContent = [regalia, topic].filter(Boolean).join(' · ') || 'Активный спикер пока не заполнен.';
+
+      if (!state.room?.is_questions_open) {
+        submitBtn.disabled = true;
+        setStatus('Приём вопросов сейчас закрыт.', 'error');
+      } else {
+        submitBtn.disabled = false;
+      }
+
+      if (!state.questions.length) {
+        questionsList.innerHTML = '<div class="empty">Пока вопросов нет. Можно задать первый.</div>';
+        return;
+      }
+
+      questionsList.innerHTML = state.questions.map((item) => {
+        const author = [item.author_name, item.author_company].filter(Boolean).join(' · ');
+        const badges = [
+          item.is_pinned ? '<span class="badge pinned">PIN</span>' : '',
+          item.status === 'asked' ? '<span class="badge asked">Задан</span>' : '<span class="badge open">Открыт</span>'
+        ].join(' ');
+        return `
+          <div class="question-card">
+            <div class="row" style="justify-content:space-between; align-items:flex-start;">
+              <div class="question-text">${escapeHtml(item.text)}</div>
+              <div>${badges}</div>
+            </div>
+            <div class="question-meta">${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)}</div>
+            <div class="question-actions"><button class="btn ghost vote-btn" data-id="${item.id}">+1 · ${item.votes_count || 0}</button></div>
+          </div>`;
+      }).join('');
+
+      questionsList.querySelectorAll('.vote-btn').forEach((button) => {
+        button.addEventListener('click', async () => {
+          try {
+            await addVote(Number(button.dataset.id), sessionId);
+            await refresh();
+          } catch (error) {
+            setStatus(error.message || 'Не удалось поставить +1', 'error');
+          }
+        });
+      });
+    }
+
+    async function onSubmit() {
+      const text = normalizeQuestion(questionInput.value);
+      if (!text) {
+        setStatus('Напишите вопрос.', 'error');
+        return;
+      }
+      try {
+        await submitQuestion({ roomId: state.room.id, speakerId: state.speaker?.id || null, text, authorName: nameInput.value, authorCompany: companyInput.value, sessionId, moderationEnabled: Boolean(state.room.moderation_enabled) });
+        questionInput.value = '';
+        nameInput.value = '';
+        companyInput.value = '';
+        setStatus(state.room.moderation_enabled ? 'Вопрос отправлен в очередь.' : 'Вопрос опубликован.', 'success');
+        await refresh();
+      } catch (error) {
+        setStatus(error.message || 'Не удалось отправить вопрос.', 'error');
+      }
+    }
+
+    function setStatus(message, type = '') {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`.trim();
+    }
+  </script>
+</body>
+</html>
