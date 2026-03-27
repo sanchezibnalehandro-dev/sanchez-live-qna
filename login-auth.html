@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Q&A Login Auth</title>
+  <link rel="stylesheet" href="./theme.css" />
+</head>
+<body>
+  <div class="app">
+    <main class="shell" style="max-width:620px;">
+      <section class="card">
+        <div class="card-inner stack">
+          <div class="eyebrow"><span class="live-dot"></span><span>SUPABASE AUTH</span></div>
+          <h1>Вход в админку</h1>
+          <p class="subcopy">Вход через Supabase Auth: email + пароль. После логина сразу открывается защищённая админка.</p>
+          <input class="input" id="emailInput" type="email" placeholder="Email" autocomplete="username" />
+          <input class="input" id="passwordInput" type="password" placeholder="Пароль" autocomplete="current-password" />
+          <div class="row"><button class="btn primary" id="enterBtn">Войти</button></div>
+          <div class="status" id="status"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { supabase, getRoomSlug } from './supabase-qna.js';
+
+    const room = getRoomSlug();
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const statusEl = document.getElementById('status');
+    const enterBtn = document.getElementById('enterBtn');
+
+    boot();
+    enterBtn.addEventListener('click', login);
+    passwordInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') login(); });
+
+    async function boot() {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        location.href = `./admin-auth.html?room=${encodeURIComponent(room)}`;
+      }
+    }
+
+    async function login() {
+      statusEl.textContent = '';
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      if (!email || !password) {
+        setStatus('Введите email и пароль.', 'error');
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setStatus(error.message || 'Не удалось войти.', 'error');
+        return;
+      }
+      location.href = `./admin-auth.html?room=${encodeURIComponent(room)}`;
+    }
+
+    function setStatus(message, type = '') {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`.trim();
+    }
+  </script>
+</body>
+</html>
