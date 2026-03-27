@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Модератор вопросов</title>
+  <link rel="stylesheet" href="./theme.css" />
+</head>
+<body>
+  <div class="app">
+    <main class="shell">
+      <section class="card"><div class="card-inner hero-grid">
+        <div>
+          <div class="eyebrow"><span class="live-dot"></span><span id="roomLabel">LIVE ROOM</span></div>
+          <h1>Панель модератора</h1>
+          <p class="subcopy">Отслеживайте актуальные вопросы к текущему спикеру, отмечайте заданные и скрывайте лишнее.</p>
+        </div>
+        <div class="links-grid">
+          <div class="link-box"><div class="link-label">Сортировка</div><div class="link-value">PIN → +1 → новые</div></div>
+          <div class="link-box"><div class="link-label">Статус комнаты</div><div class="link-value" id="roomStatus">Загрузка…</div></div>
+        </div>
+      </div></section>
+
+      <section class="grid-2">
+        <div class="stack">
+          <section class="card"><div class="card-inner">
+            <h2 class="section-title">Текущий спикер</h2>
+            <div class="panel"><div class="question-text" id="speakerName">Вопросы спикеру</div><div class="question-meta" id="speakerMeta">Данные активного спикера появятся после настройки.</div></div>
+          </div></section>
+
+          <section class="card"><div class="card-inner">
+            <h2 class="section-title">Фильтр</h2>
+            <div class="row">
+              <button class="btn ghost filter-btn" data-filter="all">Все</button>
+              <button class="btn ghost filter-btn" data-filter="open">Открытые</button>
+              <button class="btn ghost filter-btn" data-filter="asked">Заданные</button>
+              <button class="btn ghost filter-btn" data-filter="hidden">Скрытые</button>
+            </div>
+            <div class="status" id="status"></div>
+          </div></section>
+        </div>
+
+        <section class="card"><div class="card-inner">
+          <h2 class="section-title">Вопросы</h2>
+          <div class="list" id="questionsList"></div>
+        </div></section>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { getRoomSlug, getRoomBySlug, getActiveSpeaker, listQuestions, setQuestionStatus, setQuestionPinned, subscribeRoom, escapeHtml, formatClock } from './supabase-qna.js';
+
+    const roomSlug = getRoomSlug();
+    const roomLabel = document.getElementById('roomLabel');
+    const roomStatus = document.getElementById('roomStatus');
+    const speakerName = document.getElementById('speakerName');
+    const speakerMeta = document.getElementById('speakerMeta');
+    const questionsList = document.getElementById('questionsList');
+    const statusEl = document.getElementById('status');
+    const filterButtons = Array.from(document.querySelectorAll('.filter-btn'));
+
+    const state = { room: null, speaker: null, questions: [], filter: 'all' };
+    let unsubscribe = null;
+
+    roomLabel.textContent = `LIVE ROOM · ${roomSlug}`;
+    filterButtons.forEach((button) => button.addEventListener('click', () => { state.filter = button.dataset.filter; render(); }));
+    boot();
+
+    async function boot() {
+      state.room = await getRoomBySlug(roomSlug);
+      state.speaker = await getActiveSpeaker(state.room.id);
+      await refresh();
+      if (unsubscribe) unsubscribe();
+      unsubscribe = subscribeRoom(state.room.id, refresh);
+    }
+
+    async function refresh() {
+      state.room = await getRoomBySlug(roomSlug);
+      state.speaker = await getActiveSpeaker(state.room.id);
+      state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: true, includeAsked: true });
+      render();
+    }
+
+    function render() {
+      const fallback = state.room?.fallback_label || 'Вопросы спикеру';
+      const title = state.speaker?.name || state.speaker?.fallback_label || fallback;
+      speakerName.textContent = title;
+      speakerMeta.textContent = [state.speaker?.regalia, state.speaker?.topic].filter(Boolean).join(' · ') || 'Активный спикер пока не заполнен.';
+      roomStatus.textContent = state.room?.is_questions_open ? 'Приём открыт' : 'Приём закрыт';
+
+      const rows = state.questions.filter((item) => state.filter === 'all' ? true : item.status === state.filter);
+      if (!rows.length) {
+        questionsList.innerHTML = '<div class="empty">По текущему фильтру пока ничего нет.</div>';
+        return;
+      }
+
+      questionsList.innerHTML = rows.map((item) => {
+        const author = [item.author_name, item.author_company].filter(Boolean).join(' · ');
+        return `
+          <div class="question-card">
+            <div class="row" style="justify-content:space-between; align-items:flex-start;">
+              <div class="question-text">${escapeHtml(item.text)}</div>
+              <div class="row">${item.is_pinned ? '<span class="badge pinned">PIN</span>' : ''}<span class="badge ${item.status === 'asked' ? 'asked' : item.status === 'hidden' ? 'hidden' : 'open'}">${item.status}</span></div>
+            </div>
+            <div class="question-meta">${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)} · +1: ${item.votes_count || 0}</div>
+            <div class="question-actions">
+              <button class="btn ghost act-btn" data-action="ask" data-id="${item.id}">Задал</button>
+              <button class="btn warn act-btn" data-action="hide" data-id="${item.id}">Скрыть</button>
+              <button class="btn ghost act-btn" data-action="open" data-id="${item.id}">Вернуть</button>
+              <button class="btn ghost act-btn" data-action="pin" data-id="${item.id}" data-pinned="${item.is_pinned ? '1' : '0'}">${item.is_pinned ? 'Unpin' : 'Pin'}</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      questionsList.querySelectorAll('.act-btn').forEach((button) => button.addEventListener('click', async () => {
+        try {
+          const id = Number(button.dataset.id);
+          const action = button.dataset.action;
+          if (action === 'ask') await setQuestionStatus(id, 'asked');
+          if (action === 'hide') await setQuestionStatus(id, 'hidden');
+          if (action === 'open') await setQuestionStatus(id, 'open');
+          if (action === 'pin') await setQuestionPinned(id, button.dataset.pinned !== '1');
+          await refresh();
+        } catch (error) {
+          setStatus(error.message || 'Не удалось выполнить действие', 'error');
+        }
+      }));
+    }
+
+    function setStatus(message, type = '') {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`.trim();
+    }
+  </script>
+</body>
+</html>
