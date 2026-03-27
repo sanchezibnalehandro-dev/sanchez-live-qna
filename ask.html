@@ -107,8 +107,8 @@
       <section class="card">
         <div class="card-inner">
           <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <h2 class="section-title" style="margin:0;">Вопросы</h2>
-            <span class="badge open" id="countBadge">0</span>
+            <h2 class="section-title" style="margin:0;">Вопросы <span class="badge open" id="countBadge" style="vertical-align:middle;">0</span></h2>
+            <button class="btn ghost" id="refreshBtn" style="padding:7px 12px; font-size:12px;">↻ Обновить</button>
           </div>
           <div class="list" id="questionsList">
             <div class="empty">Вопросов пока нет — задайте первый!</div>
@@ -148,8 +148,10 @@
     const state = { room: null, speaker: null, questions: [] };
     let unsubscribe = null;
     let _refreshing = false;
+    let _pendingRefresh = false;
 
     submitBtn.addEventListener('click', onSubmit);
+    document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; _pendingRefresh = false; refresh(); });
     boot();
 
     async function boot() {
@@ -165,8 +167,9 @@
     }
 
     async function refresh() {
-      if (_refreshing) return;
+      if (_refreshing) { _pendingRefresh = true; return; }
       _refreshing = true;
+      _pendingRefresh = false;
       try {
         state.room      = await getRoomBySlug(roomSlug);
         state.speaker   = await getActiveSpeaker(state.room.id);
@@ -174,6 +177,7 @@
         render();
       } finally {
         _refreshing = false;
+        if (_pendingRefresh) refresh();
       }
     }
 

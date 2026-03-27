@@ -187,11 +187,11 @@ export async function setActiveSpeaker(roomId, speakerId) {
 }
 
 export function subscribeRoom(roomId, onChange) {
-  // Дебаунс: если приходит несколько событий подряд — делаем один refresh
+  // Дебаунс: схлопываем частые события в один вызов
   let timer = null;
   const debounced = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => onChange(), 120);
+    timer = setTimeout(() => onChange(), 150);
   };
 
   const channel = supabase.channel(`qna-room-${roomId}`)
@@ -199,7 +199,12 @@ export function subscribeRoom(roomId, onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers',       filter: `room_id=eq.${roomId}` }, debounced)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions',      filter: `room_id=eq.${roomId}` }, debounced)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_question_votes' }, debounced)
-    .subscribe();
+    .subscribe((status) => {
+      // Переподключаемся при разрыве
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setTimeout(() => onChange(), 1000);
+      }
+    });
 
   return () => { clearTimeout(timer); supabase.removeChannel(channel); };
 }
