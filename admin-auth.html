@@ -182,10 +182,11 @@
             <div class="card-inner">
               <h2 class="section-title">Статистика</h2>
               <div class="meta-grid">
-                <div class="stat"><div class="stat-label">Всего</div>  <div class="stat-value" id="statTotal">0</div></div>
-                <div class="stat"><div class="stat-label">Открытые</div><div class="stat-value" id="statOpen">0</div></div>
-                <div class="stat"><div class="stat-label">Заданные</div><div class="stat-value" id="statAsked">0</div></div>
-                <div class="stat"><div class="stat-label">Скрытые</div> <div class="stat-value" id="statHidden">0</div></div>
+                <div class="stat"><div class="stat-label">Всего</div>      <div class="stat-value" id="statTotal">0</div></div>
+                <div class="stat"><div class="stat-label">Открытые</div>    <div class="stat-value" id="statOpen">0</div></div>
+                <div class="stat"><div class="stat-label">Заданные</div>    <div class="stat-value" id="statAsked">0</div></div>
+                <div class="stat"><div class="stat-label">Скрытые</div>     <div class="stat-value" id="statHidden">0</div></div>
+                <div class="stat"><div class="stat-label">Модерация</div>   <div class="stat-value" id="statPending" style="color:#fbbf24;">0</div></div>
               </div>
             </div>
           </section>
@@ -234,7 +235,7 @@
     import {
       supabase, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker,
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
-      listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions,
+      listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       subscribeRoom, escapeHtml, formatClock
     } from './supabase-qna.js';
 
@@ -370,7 +371,7 @@
       try {
         state.room      = await getRoomBySlug(roomSlug);
         state.speakers  = await listSpeakers(state.room.id);
-        state.questions = await listQuestions(state.room.id, null, { includeHidden: true, includeAsked: true });
+        state.questions = await listQuestions(state.room.id, null, { includeHidden: true, includeAsked: true, includePending: true });
         render();
       } finally {
         _refreshing = false;
@@ -413,10 +414,11 @@
         : '<div class="empty">Список спикеров пуст.</div>';
 
       // Статистика
-      document.getElementById('statTotal').textContent  = state.questions.length;
-      document.getElementById('statOpen').textContent   = state.questions.filter(q => q.status === 'open').length;
-      document.getElementById('statAsked').textContent  = state.questions.filter(q => q.status === 'asked').length;
-      document.getElementById('statHidden').textContent = state.questions.filter(q => q.status === 'hidden').length;
+      document.getElementById('statTotal').textContent   = state.questions.length;
+      document.getElementById('statOpen').textContent    = state.questions.filter(q => q.status === 'open').length;
+      document.getElementById('statAsked').textContent   = state.questions.filter(q => q.status === 'asked').length;
+      document.getElementById('statHidden').textContent  = state.questions.filter(q => q.status === 'hidden').length;
+      document.getElementById('statPending').textContent = state.questions.filter(q => q.status === 'pending').length;
 
       // Вопросы с управлением
       const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
@@ -426,27 +428,31 @@
         ? rows.slice(0, 30).map(item => {
             const sp     = speakerMap.get(String(item.speaker_id));
             const author = [item.author_name, item.author_company].filter(Boolean).join(' · ');
-            const st     = item.status;
-            const isAsked  = st === 'asked';
-            const isHidden = st === 'hidden';
-            const isPinned = item.is_pinned;
+            const st        = item.status;
+            const isPending = st === 'pending';
+            const isAsked   = st === 'asked';
+            const isHidden  = st === 'hidden';
+            const isPinned  = item.is_pinned;
+            const badgeClass = isPending ? 'pending' : isAsked ? 'asked' : isHidden ? 'hidden' : 'open';
+            const badgeText  = isPending ? 'модерация' : isAsked ? 'задан' : isHidden ? 'скрыт' : 'открыт';
             return `
-              <div class="question-card" style="${isAsked ? 'opacity:0.65;' : ''}">
+              <div class="question-card" style="${isAsked ? 'opacity:0.65;' : ''}${isPending ? 'border-color:rgba(251,191,36,0.3);' : ''}">
                 <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
                   <div class="question-text" style="font-size:14px;">${escapeHtml(item.text)}</div>
                   <div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
                     ${isPinned ? '<span class="badge pinned">PIN</span>' : ''}
-                    <span class="badge ${isAsked ? 'asked' : isHidden ? 'hidden' : 'open'}">${isAsked ? 'задан' : isHidden ? 'скрыт' : 'открыт'}</span>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
                   </div>
                 </div>
                 <div class="question-meta">
                   ${sp?.name ? escapeHtml(sp.name) + ' · ' : ''}${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)} · +${item.votes_count || 0}
                 </div>
                 <div class="question-actions">
-                  ${!isAsked  ? `<button class="btn primary" style="padding:7px 12px;font-size:11px;" data-action="ask"  data-id="${item.id}">✓ Задал</button>` : ''}
+                  ${isPending ? `<button class="btn primary" style="padding:7px 12px;font-size:11px;" data-action="approve" data-id="${item.id}">✓ Одобрить</button>` : ''}
+                  ${!isPending && !isAsked  ? `<button class="btn primary" style="padding:7px 12px;font-size:11px;" data-action="ask"  data-id="${item.id}">✓ Задал</button>` : ''}
                   ${!isHidden ? `<button class="btn warn"    style="padding:7px 12px;font-size:11px;" data-action="hide" data-id="${item.id}">Скрыть</button>` : ''}
                   ${isHidden || isAsked ? `<button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="open" data-id="${item.id}">Вернуть</button>` : ''}
-                  <button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="pin" data-id="${item.id}" data-pinned="${isPinned ? '1' : '0'}">${isPinned ? 'Открепить' : 'Закрепить'}</button>
+                  ${!isPending ? `<button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="pin" data-id="${item.id}" data-pinned="${isPinned ? '1' : '0'}">${isPinned ? 'Открепить' : 'Закрепить'}</button>` : ''}
                 </div>
               </div>`;
           }).join('')
@@ -455,6 +461,7 @@
       questionsList.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', async () => {
         try {
           const id = Number(btn.dataset.id);
+          if (btn.dataset.action === 'approve') await approveQuestion(id);
           if (btn.dataset.action === 'ask')  await setQuestionStatus(id, 'asked');
           if (btn.dataset.action === 'hide') await setQuestionStatus(id, 'hidden');
           if (btn.dataset.action === 'open') await setQuestionStatus(id, 'open');
