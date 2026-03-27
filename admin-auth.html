@@ -377,8 +377,11 @@
         a.click();
       });
 
-      // Добавить нового спикера
+      // Добавить нового спикера (защита от двойного клика)
+      let _addingSpeaker = false;
       document.getElementById('addSpeakerBtn').addEventListener('click', async () => {
+        if (_addingSpeaker) return;
+        _addingSpeaker = true;
         try {
           const s = await createSpeaker(state.room.id, { name: 'Новый спикер' });
           await refresh();
@@ -387,6 +390,7 @@
           fillFormFromId(selectedSpeakerId);
           setStatus('Спикер добавлен. Заполните данные и нажмите «Сохранить».', 'success');
         } catch(e) { setStatus(e.message || 'Ошибка', 'error'); }
+        finally { _addingSpeaker = false; }
       });
 
       // Сбросить фильтр по спикеру
@@ -554,15 +558,15 @@
             const initials = (s.name || '?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
             const qCount = state.questions.filter(q => String(q.speaker_id) === String(s.id)).length;
             return `
-              <div class="speaker-row ${s.is_active ? 'active' : ''}" style="cursor:default;">
-                <div class="speaker-avatar">${initials}</div>
-                <div class="speaker-info">
-                  <div class="speaker-name">${escapeHtml(s.name || 'Без имени')} ${s.is_active ? '<span class="badge open" style="font-size:9px;padding:3px 8px;">ACTIVE</span>' : ''}</div>
+              <div class="speaker-row ${s.is_active ? 'active' : ''}" style="cursor:default;flex-wrap:wrap;gap:8px;">
+                <div class="speaker-avatar" style="flex-shrink:0;">${initials}</div>
+                <div class="speaker-info" style="flex:1;min-width:80px;">
+                  <div class="speaker-name">${escapeHtml(s.name || 'Без имени')} ${s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
                   <div class="speaker-meta">${escapeHtml([s.regalia, s.topic].filter(Boolean).join(' · ') || '—')} · ${qCount} вопр.</div>
                 </div>
-                <div style="display:flex;gap:4px;flex-shrink:0;">
-                  <button class="btn ghost" style="padding:4px 8px;font-size:11px;" data-sp-filter="${s.id}" data-sp-name="${escapeHtml(s.name||'Спикер')}">Вопросы</button>
-                  ${!s.is_active ? `<button class="btn ghost" style="padding:4px 8px;font-size:11px;color:#f87171;border-color:rgba(248,113,113,0.3);" data-sp-delete="${s.id}">✕</button>` : ''}
+                <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+                  <button class="btn ghost" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-sp-filter="${s.id}" data-sp-name="${escapeHtml(s.name||'Спикер')}">Вопросы</button>
+                  ${!s.is_active ? `<button class="btn ghost" style="padding:4px 8px;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.3);" data-sp-delete="${s.id}" title="Удалить спикера">✕</button>` : ''}
                 </div>
               </div>`;
           }).join('')
