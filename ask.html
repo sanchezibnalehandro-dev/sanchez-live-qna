@@ -195,8 +195,9 @@
 
       questionsList.innerHTML = qs.map((item) => {
         const author  = [item.author_name, item.author_company].filter(Boolean).join(' · ');
-        const voted   = myVotes.has(item.id);
-        const isAsked = item.status === 'asked';
+        const voted    = myVotes.has(item.id);
+        const isAsked  = item.status === 'asked';
+        const canVote  = !voted && !isAsked;
         return `
           <div class="question-card" style="${isAsked ? 'opacity:0.6;' : ''}">
             <div class="q-row">
@@ -209,7 +210,12 @@
                 </div>
               </div>
               <div class="vote-col">
-                <button class="vote-btn-circle ${voted ? 'voted' : ''}" data-id="${item.id}" title="${voted ? 'Вы уже поддержали' : 'Поддержать вопрос'}">+1</button>
+                <button
+                  class="vote-btn-circle ${voted ? 'voted' : ''}"
+                  data-id="${item.id}"
+                  ${canVote ? '' : 'disabled style="opacity:0.35;cursor:default;transform:none;"'}
+                  title="${isAsked ? 'Вопрос уже задан' : voted ? 'Вы уже поддержали' : 'Поддержать вопрос'}"
+                >+1</button>
                 <span class="vote-count">${item.votes_count || 0}</span>
               </div>
             </div>
@@ -218,7 +224,7 @@
 
       questionsList.querySelectorAll('.vote-btn-circle').forEach((btn) => {
         btn.addEventListener('click', async () => {
-          if (myVotes.has(Number(btn.dataset.id))) return; // уже голосовал
+          if (btn.disabled || myVotes.has(Number(btn.dataset.id))) return;
           try {
             await addVote(Number(btn.dataset.id), sessionId);
             myVotes.add(Number(btn.dataset.id));
@@ -237,7 +243,7 @@
       submitBtn.disabled = true;
       submitBtn.textContent = 'Отправляю…';
       try {
-        await submitQuestion({
+        const newQ = await submitQuestion({
           roomId: state.room.id,
           speakerId: state.speaker?.id || null,
           text,
@@ -246,6 +252,8 @@
           sessionId,
           moderationEnabled: Boolean(state.room.moderation_enabled)
         });
+        // Нельзя голосовать за свой вопрос
+        if (newQ?.id) { myVotes.add(newQ.id); saveVotes(); }
         questionInput.value = '';
         nameInput.value = '';
         companyInput.value = '';

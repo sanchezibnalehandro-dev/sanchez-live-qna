@@ -191,6 +191,7 @@ export function subscribeRoom(roomId, onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_rooms', filter: `id=eq.${roomId}` }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers', filter: `room_id=eq.${roomId}` }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions', filter: `room_id=eq.${roomId}` }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_question_votes' }, onChange)
     .subscribe();
   return () => supabase.removeChannel(channel);
 }
