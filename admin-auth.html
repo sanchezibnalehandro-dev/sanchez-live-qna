@@ -209,10 +209,22 @@
         </div>
       </section>
 
-      <!-- Зона выхода — внизу страницы -->
+      <!-- Зона опасных действий — внизу страницы -->
       <div class="danger-zone">
-        <div class="danger-zone-label">Выход из системы</div>
-        <button class="btn danger" id="logoutBtn" style="width:100%;">Выйти из аккаунта</button>
+        <div class="danger-zone-label">Опасная зона</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div>
+            <button class="btn warn" id="clearQuestionsBtn" style="width:100%;">🗑 Очистить все вопросы</button>
+            <div id="clearConfirmRow" style="display:none; margin-top:8px;">
+              <p style="font-size:12px; color:#fde68a; margin:0 0 8px 0;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p>
+              <div style="display:flex; gap:8px;">
+                <button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button>
+                <button class="btn ghost"  id="clearCancelBtn" style="flex:1;">Отмена</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn danger" id="logoutBtn" style="width:100%;">Выйти из аккаунта</button>
+        </div>
       </div>
 
     </main>
@@ -222,7 +234,7 @@
     import {
       supabase, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker,
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
-      listQuestions, setQuestionStatus, setQuestionPinned,
+      listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions,
       subscribeRoom, escapeHtml, formatClock
     } from './supabase-qna.js';
 
@@ -290,6 +302,34 @@
       document.getElementById('openModBtn').addEventListener('click',   () => window.open(`./mod-auth.html?room=${roomSlug}`, '_blank', 'noopener'));
       document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; refresh(); });
       document.getElementById('logoutBtn').addEventListener('click', logout);
+
+      // Двухшаговая очистка вопросов
+      const clearBtn        = document.getElementById('clearQuestionsBtn');
+      const clearConfirmRow = document.getElementById('clearConfirmRow');
+      let clearTimer = null;
+
+      clearBtn.addEventListener('click', () => {
+        clearConfirmRow.style.display = 'block';
+        clearBtn.style.display = 'none';
+        clearTimer = setTimeout(() => resetClearUI(), 8000);
+      });
+      document.getElementById('clearCancelBtn').addEventListener('click', resetClearUI);
+      document.getElementById('clearConfirmBtn').addEventListener('click', async () => {
+        clearTimeout(clearTimer);
+        try {
+          await deleteAllQuestions(state.room.id);
+          setStatus('Все вопросы удалены.', 'success');
+          await refresh();
+        } catch (e) {
+          setStatus(e.message || 'Не удалось удалить вопросы.', 'error');
+        }
+        resetClearUI();
+      });
+      function resetClearUI() {
+        clearTimeout(clearTimer);
+        clearConfirmRow.style.display = 'none';
+        clearBtn.style.display = 'block';
+      }
 
       filterTabs.forEach(tab => tab.addEventListener('click', () => {
         state.filter = tab.dataset.filter;

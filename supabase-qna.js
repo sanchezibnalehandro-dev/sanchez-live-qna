@@ -51,7 +51,7 @@ export async function listSpeakers(roomId) {
   return data || [];
 }
 
-export async function listQuestions(roomId, speakerId, { includeHidden = false, includeAsked = true } = {}) {
+export async function listQuestions(roomId, speakerId, { includeHidden = false, includeAsked = true, includePending = false } = {}) {
   let query = supabase
     .from('qna_questions')
     .select('id, room_id, speaker_id, text, author_name, author_company, status, is_pinned, votes_count, created_at, asked_at')
@@ -63,6 +63,7 @@ export async function listQuestions(roomId, speakerId, { includeHidden = false, 
   if (speakerId) query = query.eq('speaker_id', speakerId);
   if (!includeHidden) query = query.neq('status', 'hidden');
   if (!includeAsked) query = query.neq('status', 'asked');
+  if (!includePending) query = query.neq('status', 'pending');
 
   const { data, error } = await query;
   if (error) throw error;
@@ -207,6 +208,25 @@ export function subscribeRoom(roomId, onChange) {
     });
 
   return () => { clearTimeout(timer); supabase.removeChannel(channel); };
+}
+
+export async function deleteAllQuestions(roomId) {
+  const { error } = await supabase
+    .from('qna_questions')
+    .delete()
+    .eq('room_id', roomId);
+  if (error) throw error;
+}
+
+export async function approveQuestion(questionId) {
+  const { data, error } = await supabase
+    .from('qna_questions')
+    .update({ status: 'open' })
+    .eq('id', questionId)
+    .select('id, status')
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export function normalizeQuestion(value) {

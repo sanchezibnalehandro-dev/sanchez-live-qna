@@ -92,11 +92,14 @@
       <!-- Форма вопроса -->
       <section class="card" id="formCard">
         <div class="card-inner stack" style="gap:14px;">
-          <h2 class="section-title">Ваш вопрос</h2>
-          <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" style="min-height:110px;"></textarea>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+            <h2 class="section-title" style="margin:0;">Ваш вопрос</h2>
+            <span id="charCount" style="font-size:11px; color:var(--muted);">0 / 600</span>
+          </div>
+          <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" maxlength="600" style="min-height:110px;"></textarea>
           <div class="meta-grid">
-            <input class="input" id="nameInput" placeholder="Ваше имя (опционально)" />
-            <input class="input" id="companyInput" placeholder="Компания (опционально)" />
+            <input class="input" id="nameInput" placeholder="Ваше имя (опционально)" maxlength="120" />
+            <input class="input" id="companyInput" placeholder="Компания (опционально)" maxlength="120" />
           </div>
           <button class="btn primary" id="submitBtn">Отправить вопрос</button>
           <div class="status" id="status"></div>
@@ -150,6 +153,15 @@
     let _refreshing = false;
     let _pendingRefresh = false;
 
+    // Счётчик символов
+    const charCount = document.getElementById('charCount');
+    const LIMIT = 600;
+    questionInput.addEventListener('input', () => {
+      const len = questionInput.value.length;
+      charCount.textContent = `${len} / ${LIMIT}`;
+      charCount.style.color = len > LIMIT * 0.9 ? (len >= LIMIT ? 'var(--danger)' : 'var(--yellow)') : 'var(--muted)';
+    });
+
     submitBtn.addEventListener('click', onSubmit);
     document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; _pendingRefresh = false; refresh(); });
     boot();
@@ -162,7 +174,12 @@
         if (unsubscribe) unsubscribe();
         unsubscribe = subscribeRoom(state.room.id, refresh);
       } catch (e) {
-        setStatus('Не удалось загрузить данные комнаты.', 'error');
+        const isNotFound = e?.code === 'PGRST116' || String(e?.message || '').includes('JSON object requested');
+        speakerNameEl.textContent = isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
+        speakerMetaEl.textContent = isNotFound
+          ? `Комната «${roomSlug}» не существует. Проверьте QR-код или ссылку.`
+          : (e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.');
+        document.getElementById('formCard').style.display = 'none';
       }
     }
 
