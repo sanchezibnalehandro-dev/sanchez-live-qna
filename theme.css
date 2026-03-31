@@ -214,10 +214,24 @@ h1 {
   font-weight: 900;
   letter-spacing: -0.04em;
   line-height: 1.0;
-  background: linear-gradient(135deg, #ffffff 0%, #c8dfff 50%, #7eb5ff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #f0f6ff;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  h1 {
+    background: linear-gradient(135deg, #ffffff 0%, #c8dfff 50%, #7eb5ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* #speakerName: bypass gradient-clip; use solid readable color on all browsers */
+#speakerName {
+  background: none;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  color: #e8f4ff;
 }
 
 .subcopy {
