@@ -226,6 +226,14 @@ h1 {
   }
 }
 
+/* #speakerName: bypass gradient-clip; use solid readable color on all browsers */
+#speakerName {
+  background: none;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  color: #e8f4ff;
+}
+
 .subcopy {
   margin: 10px 0 0;
   font-size: 14px;
