@@ -105,6 +105,11 @@
             <button class="btn primary" id="openGuestBtn">↗ Гостевая</button>
             <button class="btn ghost"   id="openModBtn">↗ Модератор</button>
             <button class="btn ghost"   id="refreshBtn">↻ Обновить</button>
+            <button class="btn ghost"   id="qrBtn">⬛ QR</button>
+          </div>
+          <div id="qrPanel" style="display:none; margin-top:12px; text-align:center;">
+            <img id="qrImg" src="" width="160" height="160" style="border-radius:8px; background:#fff; padding:6px;">
+            <div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div>
           </div>
         </div>
       </section>
@@ -180,34 +185,6 @@
         <!-- Правая колонка -->
         <div class="stack">
 
-          <!-- Статистика -->
-          <section class="card">
-            <div class="card-inner">
-              <h2 class="section-title">Статистика</h2>
-              <div class="meta-grid">
-                <div class="stat"><div class="stat-label">Всего</div>      <div class="stat-value" id="statTotal">0</div></div>
-                <div class="stat"><div class="stat-label">Открытые</div>    <div class="stat-value" id="statOpen">0</div></div>
-                <div class="stat"><div class="stat-label">Заданные</div>    <div class="stat-value" id="statAsked">0</div></div>
-                <div class="stat"><div class="stat-label">Скрытые</div>     <div class="stat-value" id="statHidden">0</div></div>
-                <div class="stat"><div class="stat-label">Модерация</div>   <div class="stat-value" id="statPending" style="color:#fbbf24;">0</div></div>
-              </div>
-            </div>
-          </section>
-
-          <!-- God mode: добавить вопрос вручную -->
-          <section class="card">
-            <div class="card-inner stack" style="gap:10px;">
-              <h2 class="section-title">✦ Добавить вопрос вручную</h2>
-              <textarea class="textarea" id="godQuestionInput" placeholder="Текст вопроса…" maxlength="200" style="min-height:70px;"></textarea>
-              <div class="meta-grid">
-                <input class="input" id="godNameInput"    placeholder="Имя (опционально)"    maxlength="120" />
-                <input class="input" id="godCompanyInput" placeholder="Компания (опционально)" maxlength="120" />
-              </div>
-              <button class="btn primary" id="godSubmitBtn" style="width:100%;">Опубликовать вопрос</button>
-              <div class="status" id="godStatus"></div>
-            </div>
-          </section>
-
           <!-- Вопросы с управлением -->
           <section class="card">
             <div class="card-inner">
@@ -227,6 +204,33 @@
                 </div>
               </div>
               <div class="list" id="questionsList" style="contain: layout style"></div>
+            </div>
+          </section>
+
+          <!-- Статистика -->
+          <section class="card">
+            <div class="card-inner">
+              <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Всего</div>      <div class="stat-value" style="font-size:18px;" id="statTotal">0</div></div>
+                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Открытые</div>    <div class="stat-value" style="font-size:18px;" id="statOpen">0</div></div>
+                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Заданные</div>    <div class="stat-value" style="font-size:18px;" id="statAsked">0</div></div>
+                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Скрытые</div>     <div class="stat-value" style="font-size:18px;" id="statHidden">0</div></div>
+                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Модерация</div>   <div class="stat-value" style="font-size:18px;color:#fbbf24;" id="statPending">0</div></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- God mode: добавить вопрос вручную -->
+          <section class="card">
+            <div class="card-inner stack" style="gap:10px;">
+              <h2 class="section-title">✦ Добавить вопрос вручную</h2>
+              <textarea class="textarea" id="godQuestionInput" placeholder="Текст вопроса…" maxlength="200" style="min-height:70px;"></textarea>
+              <div class="meta-grid">
+                <input class="input" id="godNameInput"    placeholder="Имя (опционально)"    maxlength="120" />
+                <input class="input" id="godCompanyInput" placeholder="Компания (опционально)" maxlength="120" />
+              </div>
+              <button class="btn primary" id="godSubmitBtn" style="width:100%;">Опубликовать вопрос</button>
+              <div class="status" id="godStatus"></div>
             </div>
           </section>
 
@@ -471,6 +475,23 @@
       await refresh();
       if (unsubscribe) unsubscribe();
       unsubscribe = subscribeRoom(state.room.id, refresh);
+
+      // QR toggle
+      const qrBtn   = document.getElementById('qrBtn');
+      const qrPanel = document.getElementById('qrPanel');
+      const qrImg   = document.getElementById('qrImg');
+      const qrUrlEl = document.getElementById('qrUrl');
+      let qrReady = false;
+      qrBtn.addEventListener('click', () => {
+        const open = qrPanel.style.display !== 'none';
+        if (!open && !qrReady) {
+          const url = location.origin + '/ask.html?room=' + roomSlug;
+          qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(url);
+          qrUrlEl.textContent = url;
+          qrReady = true;
+        }
+        qrPanel.style.display = open ? 'none' : 'block';
+      });
     }
 
     async function refresh() {
