@@ -73,6 +73,7 @@ body::before {
     linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.5) 10%, rgba(0,0,0,0.8) 60%, transparent);
+  will-change: transform;
 }
 
 /* =============================================
@@ -108,11 +109,9 @@ body::before {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-xl);
-  background: var(--surface);
+  background: rgba(7, 17, 31, 0.93);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-card);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
 /* Синий блик сверху */
@@ -336,7 +335,7 @@ h1 {
   padding: 14px;
   transition: border-color 0.2s, background 0.2s;
 }
-.question-card:hover { border-color: rgba(59,130,246,0.22); background: rgba(255,255,255,0.04); }
+.question-card:hover { border-color: rgba(59,130,246,0.22); background: rgba(255,255,255,0.04); will-change: border-color, background; }
 
 .question-text {
   font-size: 15px;
