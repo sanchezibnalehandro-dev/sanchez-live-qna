@@ -534,10 +534,10 @@
             const initials = (s.name || '?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
             const qCount = state.questions.filter(q => String(q.speaker_id) === String(s.id)).length;
             return `
-              <div class="speaker-row ${s.is_active ? 'active' : ''}" style="cursor:default;flex-wrap:wrap;gap:8px;">
+              <div class="speaker-row ${s.is_active ? 'active' : ''}" style="cursor:default;flex-wrap:nowrap;gap:8px;">
                 <div class="speaker-avatar" style="flex-shrink:0;">${initials}</div>
-                <div class="speaker-info" style="flex:1;min-width:80px;">
-                  <div class="speaker-name">${escapeHtml(s.name || 'Без имени')} ${s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
+                <div class="speaker-info" style="flex:1;min-width:0;overflow:hidden;">
+                  <div class="speaker-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.name || 'Без имени')} ${s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
                   <div class="speaker-meta">${escapeHtml([s.regalia, s.topic].filter(Boolean).join(' · ') || '—')} · ${qCount} вопр.</div>
                 </div>
                 <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
