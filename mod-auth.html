@@ -58,6 +58,17 @@
       color: #93c5fd;
     }
 
+    /* Live-индикатор */
+    .live-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .live-tag-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); animation: pulse-dot 2s infinite;
+    }
+
     /* Комнатный статус-чип */
     .room-chip {
       display: inline-flex;
@@ -72,6 +83,10 @@
     .room-chip.open   { background: rgba(34,211,170,0.1); color: var(--green); border: 1px solid rgba(34,211,170,0.2); }
     .room-chip.closed { background: rgba(251,191,36,0.1); color: #fde68a; border: 1px solid rgba(251,191,36,0.2); }
 
+    /* Кнопки действий — крупнее для живого форума */
+    .question-actions { gap: 12px; }
+    .question-actions .btn { padding: 10px 16px; }
+
     /* Счётчики вверху */
     .stats-row { display: flex; gap: 10px; flex-wrap: wrap; }
     .mini-stat {
@@ -83,8 +98,12 @@
       border: 1px solid var(--border-2);
       text-align: center;
     }
-    .mini-stat-val  { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.04em; line-height: 1; }
+    .mini-stat-val  { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.04em; line-height: 1; display: inline-block; padding-bottom: 3px; }
     .mini-stat-lbl  { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+    .mini-stat-val[data-type="total"]  { border-bottom: 2px solid rgba(255,255,255,0.3); }
+    .mini-stat-val[data-type="open"]   { border-bottom: 2px solid rgba(59,130,246,0.6); }
+    .mini-stat-val[data-type="asked"]  { border-bottom: 2px solid rgba(34,211,170,0.6); }
+    .mini-stat-val[data-type="hidden"] { border-bottom: 2px solid rgba(148,163,184,0.4); }
   </style>
 </head>
 <body>
@@ -102,9 +121,9 @@
             <h1 id="speakerName" style="font-size:clamp(20px,3vw,36px);">Загрузка…</h1>
             <p class="subcopy" id="speakerMeta" style="margin-top:6px;"></p>
           </div>
-          <div class="links-grid">
+          <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
             <div id="roomChip" class="room-chip closed">⏸ Загрузка…</div>
-            <button class="btn ghost" id="refreshBtn" style="width:100%;">↻ Обновить</button>
+            <span class="live-tag"><span class="live-tag-dot"></span> live</span>
           </div>
         </div>
       </section>
@@ -113,11 +132,12 @@
       <section class="card">
         <div class="card-inner" style="display:grid; gap:14px;">
           <div class="stats-row" id="statsRow">
-            <div class="mini-stat"><div class="mini-stat-val" id="sAll">0</div><div class="mini-stat-lbl">Всего</div></div>
-            <div class="mini-stat"><div class="mini-stat-val" id="sOpen">0</div><div class="mini-stat-lbl">Открыты</div></div>
-            <div class="mini-stat"><div class="mini-stat-val" id="sAsked">0</div><div class="mini-stat-lbl">Заданы</div></div>
-            <div class="mini-stat"><div class="mini-stat-val" id="sHidden">0</div><div class="mini-stat-lbl">Скрыты</div></div>
+            <div class="mini-stat"><div class="mini-stat-val" id="sAll"    data-type="total">0</div><div class="mini-stat-lbl">Всего</div></div>
+            <div class="mini-stat"><div class="mini-stat-val" id="sOpen"   data-type="open">0</div><div class="mini-stat-lbl">Открыты</div></div>
+            <div class="mini-stat"><div class="mini-stat-val" id="sAsked"  data-type="asked">0</div><div class="mini-stat-lbl">Заданы</div></div>
+            <div class="mini-stat"><div class="mini-stat-val" id="sHidden" data-type="hidden">0</div><div class="mini-stat-lbl">Скрыты</div></div>
           </div>
+          <div class="divider"></div>
           <div class="row" style="gap:8px; flex-wrap:wrap;">
             <button class="filter-tab active" data-filter="all">Все</button>
             <button class="filter-tab" data-filter="open">Открытые</button>
@@ -176,7 +196,6 @@
         tab.classList.add('active');
         render();
       }));
-      document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; _pendingRefresh = false; refresh(); });
 
       try {
         await refresh();
@@ -244,7 +263,19 @@
       countLabel.textContent = rows.length;
 
       if (!rows.length) {
-        questionsList.innerHTML = '<div class="empty">По выбранному фильтру вопросов нет.</div>';
+        const emptyMessages = {
+          all:     { icon: '💬', title: 'Вопросов ещё нет',   sub: 'Сессия только начинается' },
+          open:    { icon: '📋', title: 'Открытых нет',       sub: 'Все вопросы уже обработаны' },
+          pending: { icon: '✓',  title: 'Всё проверено',      sub: 'Нет вопросов на модерации' },
+          asked:   { icon: '🎤', title: 'Ещё не спросили',    sub: 'Помечайте заданные вопросы' },
+          hidden:  { icon: '🙈', title: 'Ничего скрытого',    sub: 'Скрытые вопросы появятся здесь' },
+        };
+        const em = emptyMessages[state.filter] || emptyMessages.all;
+        questionsList.innerHTML = `<div class="empty" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:32px 20px;">
+          <div style="font-size:28px;line-height:1;">${em.icon}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-top:4px;">${em.title}</div>
+          <div style="font-size:12px;color:var(--muted);">${em.sub}</div>
+        </div>`;
         return;
       }
 
@@ -278,7 +309,7 @@
             </div>
             <div class="question-actions" style="margin-top:14px;">
               ${isPending ? `<button class="btn primary" style="padding:9px 14px; font-size:12px;" data-action="approve" data-id="${item.id}">✓ Одобрить</button>` : ''}
-              ${!isAsked && !isPending ? `<button class="btn primary" style="padding:9px 14px; font-size:12px;" data-action="ask"  data-id="${item.id}">✓ Задал</button>` : ''}
+              ${!isAsked && !isPending ? `<button class="btn primary" style="flex:1;" data-action="ask"  data-id="${item.id}">✓ Задал</button>` : ''}
               ${!isHidden ? `<button class="btn warn" style="padding:9px 14px; font-size:12px;" data-action="hide" data-id="${item.id}">Скрыть</button>` : ''}
               ${isHidden || isAsked ? `<button class="btn ghost" style="padding:9px 14px; font-size:12px;" data-action="open" data-id="${item.id}">Вернуть</button>` : ''}
               ${!isPending ? `<button class="btn ghost" style="padding:9px 14px; font-size:12px;" data-action="pin" data-id="${item.id}" data-pinned="${isPinned ? '1' : '0'}">${isPinned ? '⬆ Открепить' : '📌 Закрепить'}</button>` : ''}

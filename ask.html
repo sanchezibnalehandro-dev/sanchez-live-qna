@@ -39,18 +39,52 @@
       border: 1px solid rgba(59,130,246,0.28);
       background: rgba(59,130,246,0.10);
       color: #93c5fd;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s, transform 0.15s;
+      transition: background 0.15s, transform 0.15s, box-shadow 0.15s, border-color 0.15s;
       font-family: inherit;
     }
     .vote-btn-circle:hover { background: rgba(59,130,246,0.22); transform: scale(1.08); }
     .vote-btn-circle:active { transform: scale(0.95); }
-    .vote-btn-circle.voted { background: rgba(59,130,246,0.28); border-color: rgba(59,130,246,0.5); }
+    .vote-btn-circle.voted {
+      background: rgba(59,130,246,0.35);
+      border-color: rgba(59,130,246,0.7);
+    }
+    .vote-btn-circle.voted + .vote-count {
+      text-shadow: 0 0 8px rgba(59,130,246,0.5);
+    }
+    .vote-btn-circle.burst {
+      animation: vote-burst 0.4s ease-out;
+    }
+    @keyframes vote-burst {
+      0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(59,130,246,0.6); }
+      40%  { transform: scale(1.25); box-shadow: 0 0 16px 4px rgba(59,130,246,0.6); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+    }
+
+    #nameInput, #companyInput { font-size: 13px; }
+
+    .live-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .live-tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 2s infinite;
+    }
 
     /* Индикатор состояния приёма */
     .reception-indicator {
@@ -83,6 +117,47 @@
     @keyframes pulse-dot {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0.35; }
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      pointer-events: none;
+    }
+    .toast-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: rgba(7,17,31,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      animation: toastIn 0.35s ease-out;
+      pointer-events: auto;
+    }
+    .toast-item.success { border-color: rgba(34,211,170,0.4); }
+    .toast-item.success .toast-icon { color: var(--green); }
+    .toast-item.error { border-color: rgba(248,113,113,0.4); }
+    .toast-item.error .toast-icon { color: var(--danger); }
+    .toast-item.out { animation: toastOut 0.3s ease-in forwards; }
+    .toast-icon { font-size: 15px; line-height: 1; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(10px); }
     }
 
     /* Баннер закрытия (оставляем для совместимости) */
@@ -136,12 +211,13 @@
             <span id="charCount" style="font-size:11px; color:var(--muted);">0 / 600</span>
           </div>
           <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" maxlength="600" style="min-height:110px;"></textarea>
+          <div class="divider"></div>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:-4px;">Имя и компания (опционально)</div>
           <div class="meta-grid">
             <input class="input" id="nameInput" placeholder="Ваше имя (опционально)" maxlength="120" />
             <input class="input" id="companyInput" placeholder="Компания (опционально)" maxlength="120" />
           </div>
           <button class="btn primary" id="submitBtn">Отправить вопрос</button>
-          <div class="status" id="status"></div>
         </div>
       </section>
 
@@ -150,7 +226,7 @@
         <div class="card-inner">
           <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px;">
             <h2 class="section-title" style="margin:0;">Вопросы <span class="badge open" id="countBadge" style="vertical-align:middle;">0</span></h2>
-            <button class="btn ghost" id="refreshBtn" style="padding:7px 12px; font-size:12px;">↻ Обновить</button>
+            <span class="live-tag"><span class="live-tag-dot"></span> live</span>
           </div>
           <div class="list" id="questionsList">
             <div class="empty">Вопросов пока нет — задайте первый!</div>
@@ -161,6 +237,7 @@
     </main>
   </div>
 
+  <div id="toast"></div>
   <script type="module">
     import {
       getRoomSlug, getGuestSessionId, getRoomBySlug, getActiveSpeaker,
@@ -177,7 +254,7 @@
     const nameInput      = document.getElementById('nameInput');
     const companyInput   = document.getElementById('companyInput');
     const submitBtn      = document.getElementById('submitBtn');
-    const statusEl       = document.getElementById('status');
+    const toastEl        = document.getElementById('toast');
     const questionsList  = document.getElementById('questionsList');
     const closedBanner   = document.getElementById('closedBanner');
     const formCard       = document.getElementById('formCard');
@@ -208,7 +285,6 @@
     });
 
     submitBtn.addEventListener('click', onSubmit);
-    document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; _pendingRefresh = false; refresh(); });
     boot();
 
     async function boot() {
@@ -268,7 +344,18 @@
       countBadge.textContent = String(qs.length);
 
       if (!qs.length) {
-        questionsList.innerHTML = '<div class="empty">Вопросов пока нет — задайте первый!</div>';
+        questionsList.innerHTML = `<div class="empty">
+          <svg class="empty-icon" width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect x="8" y="12" width="32" height="26" rx="6" stroke="#7a96c2" stroke-width="1.5"/>
+            <path d="M8 30l10-6 6 4 8-8 8 6" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+            <circle cx="24" cy="8" r="3" stroke="#7a96c2" stroke-width="1.5"/>
+            <line x1="24" y1="5" x2="24" y2="2" stroke="#7a96c2" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="28" y1="6" x2="30" y2="4" stroke="#7a96c2" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="20" y1="6" x2="18" y2="4" stroke="#7a96c2" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <div class="empty-title">Будьте первым</div>
+          <div class="empty-sub">Задайте вопрос спикеру</div>
+        </div>`;
         return;
       }
 
@@ -295,7 +382,7 @@
                   data-id="${item.id}"
                   ${blocked ? 'disabled style="opacity:0.35;cursor:default;transform:none;"' : ''}
                   title="${isOwn ? 'Нельзя голосовать за свой вопрос' : isAsked ? 'Вопрос уже задан' : voted ? 'Нажмите чтобы снять голос' : 'Поддержать вопрос'}"
-                >${isOwn ? '—' : voted ? '✓' : '+1'}</button>
+                >${isOwn ? '—' : voted ? '✓' : '▲'}</button>
                 <span class="vote-count">${item.votes_count || 0}</span>
               </div>
             </div>
@@ -307,6 +394,10 @@
           if (btn.disabled) return;
           const id = Number(btn.dataset.id);
           const alreadyVoted = myVotes.has(id);
+          btn.classList.remove('burst');
+          void btn.offsetWidth;
+          btn.classList.add('burst');
+          btn.addEventListener('animationend', () => btn.classList.remove('burst'), { once: true });
           try {
             if (alreadyVoted) {
               await removeVote(id, sessionId);
@@ -318,7 +409,7 @@
             saveVotes();
             await refresh();
           } catch (e) {
-            setStatus(alreadyVoted ? 'Не удалось снять голос' : 'Не удалось поставить +1', 'error');
+            showToast(alreadyVoted ? 'Не удалось снять голос' : 'Не удалось поставить +1', 'error');
           }
         });
       });
@@ -326,7 +417,7 @@
 
     async function onSubmit() {
       const text = normalizeQuestion(questionInput.value);
-      if (!text) { setStatus('Напишите вопрос.', 'error'); return; }
+      if (!text) { showToast('Напишите вопрос.', 'error'); return; }
       submitBtn.disabled = true;
       submitBtn.textContent = 'Отправляю…';
       try {
@@ -344,19 +435,27 @@
         questionInput.value = '';
         nameInput.value = '';
         companyInput.value = '';
-        setStatus(state.room.moderation_enabled ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
+        showToast(state.room.moderation_enabled ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
         await refresh();
       } catch (e) {
-        setStatus(e.message || 'Не удалось отправить вопрос.', 'error');
+        showToast(e.message || 'Не удалось отправить вопрос.', 'error');
       } finally {
         submitBtn.disabled = !state.room?.is_questions_open;
         submitBtn.textContent = 'Отправить вопрос';
       }
     }
 
-    function setStatus(message, type = '') {
-      statusEl.textContent = message;
-      statusEl.className = `status ${type}`.trim();
+    function showToast(message, type = '') {
+      toastEl.innerHTML = '';
+      const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : '';
+      const el = document.createElement('div');
+      el.className = `toast-item ${type}`.trim();
+      el.innerHTML = icon ? `<span class="toast-icon">${icon}</span>${message}` : message;
+      toastEl.appendChild(el);
+      setTimeout(() => {
+        el.classList.add('out');
+        el.addEventListener('animationend', () => el.remove(), { once: true });
+      }, 3000);
     }
   </script>
 </body>
