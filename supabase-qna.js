@@ -198,27 +198,11 @@ export async function deleteSpeaker(speakerId) {
 }
 
 export async function setActiveSpeaker(roomId, speakerId) {
-  const { error: resetError } = await supabase
-    .from('qna_speakers')
-    .update({ is_active: false })
-    .eq('room_id', roomId);
-  if (resetError) throw resetError;
-
-  const { error: setError } = await supabase
-    .from('qna_speakers')
-    .update({ is_active: true })
-    .eq('id', speakerId)
-    .eq('room_id', roomId);
-  if (setError) throw setError;
-
-  const { data, error } = await supabase
-    .from('qna_rooms')
-    .update({ active_speaker_id: speakerId })
-    .eq('id', roomId)
-    .select('id, active_speaker_id')
-    .single();
+  const { error } = await supabase.rpc('set_active_qna_speaker', {
+    p_room_id: roomId,
+    p_speaker_id: speakerId
+  });
   if (error) throw error;
-  return data;
 }
 
 export function subscribeRoom(roomId, onChange) {
