@@ -102,11 +102,10 @@ export async function addVote(questionId, sessionId) {
 }
 
 export async function removeVote(questionId, sessionId) {
-  const { error } = await supabase
-    .from('qna_question_votes')
-    .delete()
-    .eq('question_id', questionId)
-    .eq('session_id', sessionId);
+  const { error } = await supabase.rpc('remove_vote', {
+    p_question_id: questionId,
+    p_session_id: sessionId
+  });
   if (error) throw error;
 }
 
