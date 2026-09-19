@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-qna-config.js';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-export const DEFAULT_ROOM_SLUG = 'altera-forum';
+export const DEFAULT_ROOM_SLUG = 'sanchez-live';
 
 export function getRoomSlug() {
   return DEFAULT_ROOM_SLUG;
