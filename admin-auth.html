@@ -159,6 +159,7 @@
     .questions-actions, .question-filter-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
     .question-search { min-width: 180px; flex: 1; max-width: 300px; }
     .admin-console .filter-tab { min-height: 32px; padding: 0 11px; border-radius: 999px; font-size: 11px; }
+    .new-questions-banner { align-self: center; margin: 8px 12px 0; padding: 6px 10px; font-size: 11px; }
     .question-feed { min-height: 0; flex: 1; overflow: auto; padding: 0; }
     .admin-console #questionsList { display: grid; gap: 0; }
     .admin-console .question-card { border: 0; border-bottom: 1px solid var(--border-2); border-radius: 0; padding: 16px 18px; background: transparent; }
@@ -217,8 +218,9 @@
         <section class="card console-panel questions-panel">
           <div class="questions-toolbar">
             <div class="questions-toolbar-top"><div><h2 class="questions-title">Очередь вопросов <span id="speakerFilterLabel" style="font-size:11px;color:var(--muted);font-weight:500;"></span></h2><p class="questions-summary">Все вопросы и новые поступления в реальном времени</p></div><div class="questions-actions"><button class="btn ghost" id="exportCsvBtn" style="padding:8px 10px;font-size:11px;">↓ CSV</button></div></div>
-            <div class="question-filter-row"><button class="filter-tab active" data-filter="all">Все <span id="filterAllCount">0</span></button><button class="filter-tab" data-filter="open">Открытые <span id="filterOpenCount">0</span></button><button class="filter-tab" data-filter="asked">Заданные <span id="filterAskedCount">0</span></button><button class="filter-tab" data-filter="hidden">Скрытые <span id="filterHiddenCount">0</span></button></div>
+            <div class="question-filter-row"><button class="filter-tab active" data-filter="all">Все <span id="filterAllCount">0</span></button><button class="filter-tab" data-filter="pending">На модерации <span id="filterPendingCount">0</span></button><button class="filter-tab" data-filter="open">Открытые <span id="filterOpenCount">0</span></button><button class="filter-tab" data-filter="asked">Заданные <span id="filterAskedCount">0</span></button><button class="filter-tab" data-filter="hidden">Скрытые <span id="filterHiddenCount">0</span></button></div>
           </div>
+          <button class="btn ghost new-questions-banner" id="newQuestionsBanner" type="button" hidden>↑ <span id="newQuestionsCount">0</span> новых вопросов</button>
           <div class="question-feed"><div class="list" id="questionsList" style="contain: layout style"></div></div>
           <details class="questions-manual"><summary>⊞ Добавить вопрос вручную</summary><div class="manual-grid"><textarea class="textarea" id="godQuestionInput" placeholder="Текст вопроса…" maxlength="200" style="min-height:44px;"></textarea><input class="input" id="godNameInput" placeholder="Имя" maxlength="120"><input class="input" id="godCompanyInput" placeholder="Компания" maxlength="120"><button class="btn primary" id="godSubmitBtn">Опубликовать</button></div><div class="status" id="godStatus"></div></details>
         </section>
@@ -254,6 +256,9 @@
     const editorBackgroundStatus = document.getElementById('editorBackgroundStatus');
     const speakersList    = document.getElementById('speakersList');
     const questionsList   = document.getElementById('questionsList');
+    const questionFeed    = document.querySelector('.question-feed');
+    const newQuestionsBanner = document.getElementById('newQuestionsBanner');
+    const newQuestionsCount = document.getElementById('newQuestionsCount');
     const qOpenToggle     = document.getElementById('questionsOpenToggle');
     const modToggle       = document.getElementById('moderationToggle');
     const qOpenSub        = document.getElementById('questionsOpenSub');
@@ -323,6 +328,10 @@
     const pendingToggles = new Set();
     const pendingQuestionActions = new Set();
     let activatingSpeaker = false;
+    let pendingSpeakerDeletionId = null;
+    let deletingSpeakerId = null;
+    let speakerDeleteTimer = null;
+    let newQuestionsSinceScrollTop = 0;
     const QUESTION_PAGE_SIZE = 50;
     let visibleQuestionLimit = QUESTION_PAGE_SIZE;
 
@@ -532,6 +541,12 @@
         render();
       }));
 
+      newQuestionsBanner.addEventListener('click', () => {
+        questionFeed.scrollTop = 0;
+        newQuestionsSinceScrollTop = 0;
+        updateNewQuestionsBanner();
+      });
+
       qOpenToggle.addEventListener('change', () => saveRoomToggle({
         toggle: qOpenToggle,
         status: qOpenSub,
@@ -561,7 +576,7 @@
 
       await refresh();
       if (unsubscribe) unsubscribe();
-      unsubscribe = subscribeRoom(state.room.id, refresh, setRealtimeStatus);
+      unsubscribe = subscribeRoom(state.room.id, () => refresh({ realtime: true }), setRealtimeStatus);
 
       // QR toggle
       const qrBtn   = document.getElementById('qrBtn');
@@ -581,8 +596,29 @@
       });
     }
 
-    async function refresh() {
+    function captureQuestionFeedSnapshot() {
+      return {
+        scrollTop: questionFeed.scrollTop,
+        scrollHeight: questionFeed.scrollHeight,
+        nearTop: questionFeed.scrollTop <= 24,
+        questionIds: new Set(state.questions.map(question => String(question.id))),
+      };
+    }
+
+    function updateNewQuestionsBanner() {
+      newQuestionsCount.textContent = newQuestionsSinceScrollTop;
+      newQuestionsBanner.hidden = newQuestionsSinceScrollTop === 0;
+    }
+
+    function resetSpeakerDeleteConfirmation() {
+      clearTimeout(speakerDeleteTimer);
+      speakerDeleteTimer = null;
+      pendingSpeakerDeletionId = null;
+    }
+
+    async function refresh({ realtime = false } = {}) {
       if (_refreshing || _sortingSpeakers) { _pendingRefresh = true; return; }
+      const questionFeedSnapshot = realtime ? captureQuestionFeedSnapshot() : null;
       _refreshing = true;
       _pendingRefresh = false;
       try {
@@ -590,6 +626,17 @@
         state.speakers  = await listSpeakers(state.room.id);
         state.questions = await listQuestions(state.room.id, null, { includeHidden: true, includeAsked: true, includePending: true });
         render();
+        if (questionFeedSnapshot) {
+          const newQuestionsTotal = state.questions.filter(question => !questionFeedSnapshot.questionIds.has(String(question.id))).length;
+          if (newQuestionsTotal && questionFeedSnapshot.nearTop) {
+            newQuestionsSinceScrollTop = 0;
+            updateNewQuestionsBanner();
+          } else if (newQuestionsTotal) {
+            newQuestionsSinceScrollTop += newQuestionsTotal;
+            questionFeed.scrollTop = questionFeedSnapshot.scrollTop + (questionFeed.scrollHeight - questionFeedSnapshot.scrollHeight);
+            updateNewQuestionsBanner();
+          }
+        }
       } finally {
         _refreshing = false;
         if (_pendingRefresh) refresh();
@@ -713,7 +760,9 @@
                 </div>
                 <div class="speaker-actions">
                   <button class="btn ghost" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-sp-filter="${s.id}" data-sp-name="${escapeHtml(s.name||'Спикер')}">Вопросы</button>
-                  ${!s.is_active ? `<button class="btn ghost" style="padding:4px 8px;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.3);" data-sp-delete="${s.id}" title="Удалить спикера">✕</button>` : ''}
+                  ${!s.is_active ? String(pendingSpeakerDeletionId) === String(s.id)
+                    ? `<span style="display:flex;gap:4px;"><button class="btn danger" style="padding:4px 7px;font-size:10px;" data-sp-delete-confirm="${s.id}">Да, удалить</button><button class="btn ghost" style="padding:4px 7px;font-size:10px;" data-sp-delete-cancel="${s.id}">Отмена</button></span>`
+                    : `<button class="btn ghost" style="padding:4px 8px;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.3);" data-sp-delete="${s.id}" title="Удалить спикера">✕</button>` : ''}
                 </div>
               </div>`;
           }).join('')
@@ -734,17 +783,50 @@
       });
       // Удалить спикера
       speakersList.querySelectorAll('[data-sp-delete]').forEach(btn => {
+        btn.addEventListener('click', event => {
+          event.stopPropagation();
+          if (deletingSpeakerId) return;
+          resetSpeakerDeleteConfirmation();
+          pendingSpeakerDeletionId = btn.dataset.spDelete;
+          speakerDeleteTimer = setTimeout(() => {
+            resetSpeakerDeleteConfirmation();
+            render();
+          }, 6000);
+          render();
+        });
+      });
+      speakersList.querySelectorAll('[data-sp-delete-cancel]').forEach(btn => {
+        btn.addEventListener('click', event => {
+          event.stopPropagation();
+          resetSpeakerDeleteConfirmation();
+          render();
+        });
+      });
+      speakersList.querySelectorAll('[data-sp-delete-confirm]').forEach(btn => {
         btn.addEventListener('click', async event => {
           event.stopPropagation();
-          if (!confirm('Удалить этого спикера? Его вопросы останутся в БД.')) return;
+          const speakerId = btn.dataset.spDeleteConfirm;
+          if (deletingSpeakerId || String(pendingSpeakerDeletionId) !== String(speakerId)) return;
+          deletingSpeakerId = speakerId;
+          clearTimeout(speakerDeleteTimer);
+          speakerDeleteTimer = null;
+          btn.disabled = true;
+          btn.textContent = 'Удаляю…';
           try {
-            await deleteSpeaker(Number(btn.dataset.spDelete));
-            if (String(selectedSpeakerId) === String(btn.dataset.spDelete)) {
+            await deleteSpeaker(Number(speakerId));
+            if (String(selectedSpeakerId) === String(speakerId)) {
               selectedSpeakerId = null;
               selectLabel.textContent = 'Выберите спикера';
             }
+            resetSpeakerDeleteConfirmation();
             await refresh();
-          } catch (e) { setStatus(e.message || 'Ошибка удаления', 'error'); }
+          } catch (e) {
+            resetSpeakerDeleteConfirmation();
+            render();
+            setStatus(e.message || 'Ошибка удаления', 'error');
+          } finally {
+            deletingSpeakerId = null;
+          }
         });
       });
       speakersList.querySelectorAll('.speaker-row').forEach(row => {
@@ -754,6 +836,7 @@
 
       // Счётчики текущих вкладок
       document.getElementById('filterAllCount').textContent    = state.questions.length;
+      document.getElementById('filterPendingCount').textContent = state.questions.filter(q => q.status === 'pending').length;
       document.getElementById('filterOpenCount').textContent   = state.questions.filter(q => q.status === 'open').length;
       document.getElementById('filterAskedCount').textContent  = state.questions.filter(q => q.status === 'asked').length;
       document.getElementById('filterHiddenCount').textContent = state.questions.filter(q => q.status === 'hidden').length;
