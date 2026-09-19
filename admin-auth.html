@@ -128,7 +128,13 @@
     .speaker-scroll { min-height: 0; flex: 1; overflow: auto; padding: 10px; }
     .admin-console .speaker-row { padding: 11px 10px; border-radius: 14px; gap: 9px; }
     .admin-console .speaker-avatar { width: 0; height: 0; display: none; }
-    .speaker-row::before { content: '⠿'; color: var(--muted); font-size: 17px; line-height: 1; }
+    .speaker-drag-handle { width: 28px; height: 32px; padding: 0; flex: 0 0 28px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: grab; font-size: 17px; line-height: 1; }
+    .speaker-drag-handle:hover { background: rgba(59,130,246,.12); color: #93c5fd; }
+    .speaker-drag-handle:active { cursor: grabbing; }
+    .speaker-drag-handle:focus-visible { outline: 2px solid rgba(59,130,246,.55); outline-offset: 1px; }
+    .speaker-row.dragging { opacity: .45; border-color: rgba(96,165,250,.55); background: rgba(59,130,246,.12); }
+    .speaker-row.drop-before { box-shadow: inset 0 3px 0 #60a5fa; }
+    .speaker-row.drop-after { box-shadow: inset 0 -3px 0 #60a5fa; }
     .speaker-row.active { box-shadow: inset 3px 0 0 var(--blue-light); }
     .speaker-action { width: 32px; height: 32px; padding: 0; flex: 0 0 32px; border-radius: 10px; }
     .speaker-footer { padding: 10px; border-top: 1px solid var(--border-2); }
@@ -229,7 +235,7 @@
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
       subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
-      createSpeaker, deleteSpeaker
+      createSpeaker, deleteSpeaker, updateSpeakerOrder
     } from './supabase-qna.js';
 
     const roomSlug = getRoomSlug();
@@ -312,6 +318,8 @@
     let _busy = false;
     let _refreshing = false;
     let _pendingRefresh = false;
+    let _sortingSpeakers = false;
+    let draggedSpeakerId = null;
 
     const workspace = document.getElementById('adminWorkspace');
     const speakersRail = document.getElementById('speakersRail');
@@ -532,7 +540,7 @@
     }
 
     async function refresh() {
-      if (_refreshing) { _pendingRefresh = true; return; }
+      if (_refreshing || _sortingSpeakers) { _pendingRefresh = true; return; }
       _refreshing = true;
       _pendingRefresh = false;
       try {
@@ -579,7 +587,8 @@
             const initials = (s.name || '?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
             const qCount = state.questions.filter(q => String(q.speaker_id) === String(s.id)).length;
             return `
-              <div class="speaker-row ${s.is_active ? 'active' : ''}" style="cursor:default;flex-wrap:nowrap;gap:8px;">
+              <div class="speaker-row ${s.is_active ? 'active' : ''}" data-speaker-id="${s.id}" style="cursor:default;flex-wrap:nowrap;gap:8px;">
+                <button class="speaker-drag-handle" type="button" draggable="true" aria-label="Переместить ${escapeHtml(s.name || 'спикера')}" title="Перетащите, чтобы изменить порядок">⠿</button>
                 <div class="speaker-avatar" style="flex-shrink:0;">${initials}</div>
                 <div class="speaker-info" style="flex:1;min-width:0;overflow:hidden;">
                   <div class="speaker-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.name || 'Без имени')} ${s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
@@ -618,6 +627,7 @@
           } catch (e) { setStatus(e.message || 'Ошибка удаления', 'error'); }
         });
       });
+      initSpeakerDragAndDrop();
 
       // Счётчики текущих вкладок
       document.getElementById('filterAllCount').textContent    = state.questions.length;
@@ -681,6 +691,88 @@
           setStatus(e.message || 'Ошибка', 'error');
         }
       }));
+    }
+
+    function clearSpeakerDropIndicators() {
+      speakersList.querySelectorAll('.drop-before, .drop-after').forEach(row => {
+        row.classList.remove('drop-before', 'drop-after');
+      });
+    }
+
+    function initSpeakerDragAndDrop() {
+      speakersList.querySelectorAll('.speaker-row').forEach(row => {
+        const handle = row.querySelector('.speaker-drag-handle');
+        handle.addEventListener('click', event => event.stopPropagation());
+        handle.addEventListener('dragstart', event => {
+          if (_sortingSpeakers) { event.preventDefault(); return; }
+          draggedSpeakerId = row.dataset.speakerId;
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', draggedSpeakerId);
+          requestAnimationFrame(() => row.classList.add('dragging'));
+        });
+        handle.addEventListener('dragend', () => {
+          draggedSpeakerId = null;
+          row.classList.remove('dragging');
+          clearSpeakerDropIndicators();
+        });
+        row.addEventListener('dragover', event => {
+          if (!draggedSpeakerId || draggedSpeakerId === row.dataset.speakerId) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          const insertBefore = event.clientY < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+          clearSpeakerDropIndicators();
+          row.classList.add(insertBefore ? 'drop-before' : 'drop-after');
+        });
+        row.addEventListener('drop', async event => {
+          event.preventDefault();
+          const sourceId = draggedSpeakerId || event.dataTransfer.getData('text/plain');
+          if (!sourceId || sourceId === row.dataset.speakerId) return;
+          const insertBefore = row.classList.contains('drop-before');
+          clearSpeakerDropIndicators();
+          await moveSpeaker(sourceId, row.dataset.speakerId, insertBefore);
+        });
+      });
+    }
+
+    async function moveSpeaker(sourceId, targetId, insertBefore) {
+      if (_sortingSpeakers) return;
+      const previousOrder = state.speakers.map(speaker => ({ ...speaker }));
+      const nextOrder = state.speakers.slice();
+      const sourceIndex = nextOrder.findIndex(speaker => String(speaker.id) === String(sourceId));
+      if (sourceIndex < 0) return;
+      const [movedSpeaker] = nextOrder.splice(sourceIndex, 1);
+      const targetIndex = nextOrder.findIndex(speaker => String(speaker.id) === String(targetId));
+      if (targetIndex < 0) return;
+      nextOrder.splice(targetIndex + (insertBefore ? 0 : 1), 0, movedSpeaker);
+      if (nextOrder.every((speaker, index) => String(speaker.id) === String(previousOrder[index].id))) return;
+
+      const orderedSpeakers = nextOrder.map((speaker, index) => ({ ...speaker, sort_order: index + 1 }));
+      _sortingSpeakers = true;
+      state.speakers = orderedSpeakers;
+      render();
+      try {
+        await updateSpeakerOrder(orderedSpeakers.map(({ id, sort_order }) => ({ id, sort_order })));
+        setStatus('Порядок спикеров сохранён.', 'success');
+      } catch (error) {
+        const updatedSpeakerIds = error.updatedSpeakerIds || [];
+        const rollbackOrder = previousOrder
+          .filter(speaker => updatedSpeakerIds.includes(speaker.id))
+          .map(({ id, sort_order }) => ({ id, sort_order }));
+        if (rollbackOrder.length) {
+          try {
+            await updateSpeakerOrder(rollbackOrder);
+          } catch {}
+        }
+        state.speakers = previousOrder;
+        render();
+        setStatus(error.message || 'Не удалось сохранить порядок спикеров.', 'error');
+      } finally {
+        _sortingSpeakers = false;
+        if (_pendingRefresh) {
+          _pendingRefresh = false;
+          refresh();
+        }
+      }
     }
 
     function fillFormFromId(id) {
