@@ -634,8 +634,7 @@
       activateBtn.disabled = true;
       activateBtn.textContent = 'Переключаю…';
       try {
-        const confirmedRoom = await setActiveSpeaker(state.room.id, Number(selectedSpeakerId));
-        state.room.active_speaker_id = confirmedRoom.active_speaker_id;
+        await setActiveSpeaker(state.room.id, Number(selectedSpeakerId));
         await refresh();
         setStatus('Активный спикер обновлён.', 'success');
       } catch (error) {
