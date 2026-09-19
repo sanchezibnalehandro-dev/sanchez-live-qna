@@ -158,6 +158,10 @@
     .editor-panel .panel-body { gap: 10px; }
     .editor-card { padding: 16px; border-bottom: 1px solid var(--border-2); }
     .editor-card .section-title { margin-bottom: 9px; }
+    .editor-header-status { display: grid; justify-items: end; gap: 4px; }
+    .editor-dirty-status, .editor-background-status { max-width: 150px; padding: 4px 6px; border-radius: 7px; font-size: 9px; font-weight: 700; line-height: 1.25; text-align: right; }
+    .editor-dirty-status { border: 1px solid rgba(251,191,36,.28); background: rgba(251,191,36,.1); color: #fde68a; }
+    .editor-background-status { border: 1px solid rgba(96,165,250,.28); background: rgba(59,130,246,.1); color: #bfdbfe; }
     .editor-note { margin-bottom: 12px; padding: 10px; border: 1px solid rgba(251,191,36,.22); border-radius: 12px; background: rgba(251,191,36,.08); color: #fde68a; font-size: 11px; line-height: 1.45; }
     .editor-actions { display: flex; gap: 8px; margin-top: 10px; }
     .editor-actions .btn { flex: 1; padding: 10px; font-size: 11px; }
@@ -209,7 +213,7 @@
 
         <button class="edge-rail" id="editorRail" type="button" aria-label="Свернуть редактор спикера" aria-expanded="true"><span>›</span><span class="edge-rail-label">Редактор</span></button>
         <aside class="card console-panel editor-panel" id="editorPanel"><div class="panel-body">
-          <div class="panel-head"><div><h2>Редактор спикера</h2><p>Выберите спикера</p></div><span class="badge pending">Черновик</span></div>
+          <div class="panel-head"><div><h2>Редактор спикера</h2><p>Выберите спикера</p></div><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div></div>
           <div class="editor-card"><div class="editor-note">Realtime-обновления не заменят локальный черновик.</div><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><span class="arrow">▼</span></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div>
           <div class="editor-card"><h2 class="section-title">Утилиты</h2><div class="utility-grid"><button class="btn ghost" id="qrBtn">▣ QR</button><button class="btn ghost" id="openGuestBtn">↗ Гостевая</button><button class="btn ghost" id="openModBtn">↗ Модератор</button><button class="btn ghost" id="exportCsvBtnDuplicate" disabled>↓ CSV</button></div><div id="qrPanel" style="display:none; margin-top:10px; text-align:center;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:#fff; padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div></div>
           <div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn">🗑 Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:#fde68a; margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button></div>
@@ -234,6 +238,8 @@
     const nameInput       = document.getElementById('nameInput');
     const regaliaInput    = document.getElementById('regaliaInput');
     const topicInput      = document.getElementById('topicInput');
+    const editorDirtyStatus = document.getElementById('editorDirtyStatus');
+    const editorBackgroundStatus = document.getElementById('editorBackgroundStatus');
     const speakersList    = document.getElementById('speakersList');
     const questionsList   = document.getElementById('questionsList');
     const qOpenToggle     = document.getElementById('questionsOpenToggle');
@@ -247,6 +253,31 @@
     const selectLabel    = document.getElementById('speakerSelectLabel');
     const dropdown       = document.getElementById('speakerDropdown');
     let selectedSpeakerId = null;
+    const editorState = { dirty: false, backgroundChanged: false, savedSpeaker: null, isFilling: false };
+
+    function readEditorForm() {
+      return { name: nameInput.value, regalia: regaliaInput.value, topic: topicInput.value };
+    }
+
+    function getSpeakerData(speaker) {
+      return { name: speaker?.name || '', regalia: speaker?.regalia || '', topic: speaker?.topic || '' };
+    }
+
+    function sameSpeakerData(left, right) {
+      return left.name === right.name && left.regalia === right.regalia && left.topic === right.topic;
+    }
+
+    function updateEditorStatus() {
+      editorDirtyStatus.hidden = !editorState.dirty;
+      editorBackgroundStatus.hidden = !editorState.dirty || !editorState.backgroundChanged;
+    }
+
+    [nameInput, regaliaInput, topicInput].forEach(input => input.addEventListener('input', () => {
+      if (!editorState.isFilling && selectedSpeakerId) {
+        editorState.dirty = true;
+        updateEditorStatus();
+      }
+    }));
 
     selectBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -465,7 +496,13 @@
 
       document.getElementById('saveBtn').addEventListener('click', async () => {
         if (!selectedSpeakerId) return;
-        await mutate(() => updateSpeaker(Number(selectedSpeakerId), { name: nameInput.value, regalia: regaliaInput.value, topic: topicInput.value }), 'Данные спикера сохранены.');
+        await mutate(async () => {
+          await updateSpeaker(Number(selectedSpeakerId), readEditorForm());
+          editorState.dirty = false;
+          editorState.backgroundChanged = false;
+          editorState.savedSpeaker = readEditorForm();
+          updateEditorStatus();
+        }, 'Данные спикера сохранены.');
       });
       document.getElementById('activateBtn').addEventListener('click', async () => {
         if (!selectedSpeakerId) return;
@@ -526,7 +563,15 @@
         }
       }
       buildDropdown(state.speakers);
-      fillFormFromId(selectedSpeakerId);
+      if (editorState.dirty) {
+        const currentSpeaker = state.speakers.find(s => String(s.id) === String(selectedSpeakerId));
+        if (!sameSpeakerData(getSpeakerData(currentSpeaker), editorState.savedSpeaker || getSpeakerData(currentSpeaker))) {
+          editorState.backgroundChanged = true;
+          updateEditorStatus();
+        }
+      } else {
+        fillFormFromId(selectedSpeakerId);
+      }
 
       // Список спикеров
       speakersList.innerHTML = state.speakers.length
@@ -640,9 +685,16 @@
 
     function fillFormFromId(id) {
       const s = state.speakers.find(sp => String(sp.id) === String(id));
-      nameInput.value    = s?.name    || '';
-      regaliaInput.value = s?.regalia || '';
-      topicInput.value   = s?.topic   || '';
+      const data = getSpeakerData(s);
+      editorState.isFilling = true;
+      nameInput.value    = data.name;
+      regaliaInput.value = data.regalia;
+      topicInput.value   = data.topic;
+      editorState.isFilling = false;
+      editorState.dirty = false;
+      editorState.backgroundChanged = false;
+      editorState.savedSpeaker = data;
+      updateEditorStatus();
     }
 
     async function mutate(fn, successMsg) {
