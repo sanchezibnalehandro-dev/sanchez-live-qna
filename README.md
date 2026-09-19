@@ -45,4 +45,4 @@ Realtime Publication: все 4 таблицы добавлены в `supabase_re
 
 Vercel автодеплой из GitHub (`main` ветка). Статический сайт, без серверных функций.
 
-Прод: `https://altera-qna-live.vercel.app/`
+Прод: `https://sanchez-live-qna.vercel.app/`
