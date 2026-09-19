@@ -196,7 +196,7 @@
           <div class="live-main">
             <div class="live-brand"><div class="brand-logo-mark">S</div><div class="live-brand-copy"><strong>SANCHEZ</strong><span>LIVE Q&amp;A · CONTROL DESK</span></div></div>
             <div class="live-context"><div class="live-label">Сейчас в эфире</div><h1>Панель управления</h1><p id="roomLabel">Загрузка…</p></div>
-            <div class="live-statuses"><span class="live-chip"><i class="dot"></i>Realtime подключён</span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button></div>
+            <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button></div>
           </div>
           <div class="live-controls">
             <label class="live-toggle">Приём вопросов <strong id="questionsOpenSub">Загрузка…</strong><span class="toggle-pill"><input type="checkbox" id="questionsOpenToggle"><span class="toggle-track"></span></span></label>
@@ -258,6 +258,7 @@
     const modToggle       = document.getElementById('moderationToggle');
     const qOpenSub        = document.getElementById('questionsOpenSub');
     const modSub          = document.getElementById('moderationSub');
+    const realtimeStatus  = document.getElementById('realtimeStatus');
     const filterTabs      = Array.from(document.querySelectorAll('.filter-tab'));
 
     // Кастомный select
@@ -319,6 +320,9 @@
     let _pendingRefresh = false;
     let _sortingSpeakers = false;
     let draggedSpeakerId = null;
+    const pendingToggles = new Set();
+    const pendingQuestionActions = new Set();
+    let activatingSpeaker = false;
     const QUESTION_PAGE_SIZE = 50;
     let visibleQuestionLimit = QUESTION_PAGE_SIZE;
 
@@ -528,16 +532,20 @@
         render();
       }));
 
-      qOpenToggle.addEventListener('change', async () => {
-        if (_busy) { qOpenToggle.checked = !qOpenToggle.checked; return; }
-        await mutate(() => setRoomQuestionsOpen(state.room.id, qOpenToggle.checked),
-          qOpenToggle.checked ? 'Приём вопросов открыт.' : 'Приём вопросов закрыт.');
-      });
-      modToggle.addEventListener('change', async () => {
-        if (_busy) { modToggle.checked = !modToggle.checked; return; }
-        await mutate(() => setRoomModeration(state.room.id, modToggle.checked),
-          modToggle.checked ? 'Премодерация включена.' : 'Премодерация выключена.');
-      });
+      qOpenToggle.addEventListener('change', () => saveRoomToggle({
+        toggle: qOpenToggle,
+        status: qOpenSub,
+        field: 'is_questions_open',
+        save: setRoomQuestionsOpen,
+        success: value => value ? 'Приём вопросов открыт.' : 'Приём вопросов закрыт.',
+      }));
+      modToggle.addEventListener('change', () => saveRoomToggle({
+        toggle: modToggle,
+        status: modSub,
+        field: 'moderation_enabled',
+        save: setRoomModeration,
+        success: value => value ? 'Премодерация включена.' : 'Премодерация выключена.',
+      }));
 
       document.getElementById('saveBtn').addEventListener('click', async () => {
         if (!selectedSpeakerId) return;
@@ -549,14 +557,11 @@
           updateEditorStatus();
         }, 'Данные спикера сохранены.');
       });
-      document.getElementById('activateBtn').addEventListener('click', async () => {
-        if (!selectedSpeakerId) return;
-        await mutate(() => setActiveSpeaker(state.room.id, Number(selectedSpeakerId)), 'Активный спикер обновлён.');
-      });
+      document.getElementById('activateBtn').addEventListener('click', activateSelectedSpeaker);
 
       await refresh();
       if (unsubscribe) unsubscribe();
-      unsubscribe = subscribeRoom(state.room.id, refresh);
+      unsubscribe = subscribeRoom(state.room.id, refresh, setRealtimeStatus);
 
       // QR toggle
       const qrBtn   = document.getElementById('qrBtn');
@@ -591,13 +596,89 @@
       }
     }
 
+    async function saveRoomToggle({ toggle, status, field, save, success }) {
+      if (pendingToggles.has(field) || !state.room) {
+        render();
+        return;
+      }
+
+      const previousValue = Boolean(state.room[field]);
+      const requestedValue = toggle.checked;
+      if (requestedValue === previousValue) {
+        render();
+        return;
+      }
+
+      pendingToggles.add(field);
+      toggle.disabled = true;
+      status.textContent = 'Сохраняю…';
+      try {
+        const confirmedRoom = await save(state.room.id, requestedValue);
+        state.room[field] = Boolean(confirmedRoom[field]);
+        setStatus(success(state.room[field]), 'success');
+      } catch (error) {
+        state.room[field] = previousValue;
+        setStatus(error.message || 'Не удалось сохранить настройку.', 'error');
+      } finally {
+        pendingToggles.delete(field);
+        render();
+      }
+    }
+
+    async function activateSelectedSpeaker() {
+      const activateBtn = document.getElementById('activateBtn');
+      if (activatingSpeaker || !selectedSpeakerId) return;
+
+      const previousText = activateBtn.textContent;
+      activatingSpeaker = true;
+      activateBtn.disabled = true;
+      activateBtn.textContent = 'Переключаю…';
+      try {
+        const confirmedRoom = await setActiveSpeaker(state.room.id, Number(selectedSpeakerId));
+        state.room.active_speaker_id = confirmedRoom.active_speaker_id;
+        await refresh();
+        setStatus('Активный спикер обновлён.', 'success');
+      } catch (error) {
+        setStatus(error.message || 'Не удалось обновить активного спикера.', 'error');
+      } finally {
+        activatingSpeaker = false;
+        activateBtn.disabled = false;
+        activateBtn.textContent = previousText;
+      }
+    }
+
+    function setRealtimeStatus(status) {
+      if (status === 'SUBSCRIBED') {
+        realtimeStatus.textContent = 'Realtime подключён';
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        realtimeStatus.textContent = 'Нет связи';
+      } else {
+        realtimeStatus.textContent = 'Подключение…';
+      }
+    }
+
+    function questionActionKey(questionId, action) {
+      return `${questionId}:${action}`;
+    }
+
+    function questionActionButton(item, action, label, className) {
+      const pending = pendingQuestionActions.has(questionActionKey(item.id, action));
+      return `<button class="btn ${className}" style="padding:7px 12px;font-size:11px;" data-action="${action}" data-id="${item.id}"${action === 'pin' ? ` data-pinned="${item.is_pinned ? '1' : '0'}"` : ''}${pending ? ' disabled aria-busy="true"' : ''}>${pending ? 'Сохраняю…' : label}</button>`;
+    }
+
     function render() {
       roomLabel.textContent = `Комната: ${state.room?.slug || roomSlug}`;
 
       qOpenToggle.checked = Boolean(state.room?.is_questions_open);
       modToggle.checked   = Boolean(state.room?.moderation_enabled);
-      qOpenSub.textContent = state.room?.is_questions_open ? 'Гости могут задавать вопросы' : 'Приём приостановлен';
-      modSub.textContent   = state.room?.moderation_enabled ? 'Вопросы проходят проверку' : 'Вопросы публикуются сразу';
+      qOpenToggle.disabled = pendingToggles.has('is_questions_open');
+      modToggle.disabled = pendingToggles.has('moderation_enabled');
+      qOpenSub.textContent = pendingToggles.has('is_questions_open')
+        ? 'Сохраняю…'
+        : state.room?.is_questions_open ? 'Гости могут задавать вопросы' : 'Приём приостановлен';
+      modSub.textContent = pendingToggles.has('moderation_enabled')
+        ? 'Сохраняю…'
+        : state.room?.moderation_enabled ? 'Вопросы проходят проверку' : 'Вопросы публикуются сразу';
 
       // Если выбранного спикера ещё нет — берём активного
       if (!selectedSpeakerId) {
@@ -711,11 +792,11 @@
                   ${sp?.name ? escapeHtml(sp.name) + ' · ' : ''}${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)} · +${item.votes_count || 0}
                 </div>
                 <div class="question-actions">
-                  ${isPending ? `<button class="btn primary" style="padding:7px 12px;font-size:11px;" data-action="approve" data-id="${item.id}">✓ Одобрить</button>` : ''}
-                  ${!isPending && !isAsked  ? `<button class="btn primary" style="padding:7px 12px;font-size:11px;" data-action="ask"  data-id="${item.id}">✓ Задал</button>` : ''}
-                  ${!isHidden ? `<button class="btn warn"    style="padding:7px 12px;font-size:11px;" data-action="hide" data-id="${item.id}">Скрыть</button>` : ''}
-                  ${isHidden || isAsked ? `<button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="open" data-id="${item.id}">Вернуть</button>` : ''}
-                  ${!isPending ? `<button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="pin" data-id="${item.id}" data-pinned="${isPinned ? '1' : '0'}">${isPinned ? 'Открепить' : 'Закрепить'}</button>` : ''}
+                  ${isPending ? questionActionButton(item, 'approve', '✓ Одобрить', 'primary') : ''}
+                  ${!isPending && !isAsked ? questionActionButton(item, 'ask', '✓ Задал', 'primary') : ''}
+                  ${!isHidden ? questionActionButton(item, 'hide', 'Скрыть', 'warn') : ''}
+                  ${isHidden || isAsked ? questionActionButton(item, 'open', 'Вернуть', 'ghost') : ''}
+                  ${!isPending ? questionActionButton(item, 'pin', isPinned ? 'Открепить' : 'Закрепить', 'ghost') : ''}
                   <button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="addvote" data-id="${item.id}">+1 ✦</button>
                 </div>
               </div>`;
@@ -730,17 +811,33 @@
       });
 
       questionsList.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', async () => {
+        const action = btn.dataset.action;
+        const id = Number(btn.dataset.id);
+        const isManagedQuestionAction = ['approve', 'ask', 'hide', 'open', 'pin'].includes(action);
+        const actionKey = questionActionKey(id, action);
+        if (isManagedQuestionAction && pendingQuestionActions.has(actionKey)) return;
+
+        if (isManagedQuestionAction) {
+          pendingQuestionActions.add(actionKey);
+          btn.disabled = true;
+          btn.setAttribute('aria-busy', 'true');
+          btn.textContent = 'Сохраняю…';
+        }
         try {
-          const id = Number(btn.dataset.id);
-          if (btn.dataset.action === 'approve') await approveQuestion(id);
-          if (btn.dataset.action === 'ask')     await setQuestionStatus(id, 'asked');
-          if (btn.dataset.action === 'hide')    await setQuestionStatus(id, 'hidden');
-          if (btn.dataset.action === 'open')    await setQuestionStatus(id, 'open');
-          if (btn.dataset.action === 'pin')     await setQuestionPinned(id, btn.dataset.pinned !== '1');
-          if (btn.dataset.action === 'addvote') await addVote(id, getGuestSessionId(roomSlug + '-admin-' + id));
+          if (action === 'approve') await approveQuestion(id);
+          if (action === 'ask')     await setQuestionStatus(id, 'asked');
+          if (action === 'hide')    await setQuestionStatus(id, 'hidden');
+          if (action === 'open')    await setQuestionStatus(id, 'open');
+          if (action === 'pin')     await setQuestionPinned(id, btn.dataset.pinned !== '1');
+          if (action === 'addvote') await addVote(id, getGuestSessionId(roomSlug + '-admin-' + id));
           await refresh();
         } catch (e) {
           setStatus(e.message || 'Ошибка', 'error');
+        } finally {
+          if (isManagedQuestionAction) {
+            pendingQuestionActions.delete(actionKey);
+            render();
+          }
         }
       }));
     }
