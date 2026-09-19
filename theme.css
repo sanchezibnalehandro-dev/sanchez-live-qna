@@ -22,7 +22,7 @@
   --muted:      #7a96c2;
   --muted-2:    #4a6a9a;
 
-  /* Altera blue */
+  /* Brand blue */
   --blue:       #1a4fd8;
   --blue-light: #3b82f6;
   --blue-glow:  #2563eb;
@@ -151,7 +151,7 @@ body::before {
   align-items: start;
 }
 
-/* Лого Altera — текстовый маркер */
+/* Текстовый логотип */
 .brand-logo {
   display: inline-flex;
   align-items: center;
