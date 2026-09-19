@@ -171,23 +171,12 @@ export async function updateSpeaker(speakerId, patch) {
   return data;
 }
 
-export async function updateSpeakerOrder(speakers) {
-  const updatedSpeakerIds = [];
-  for (const { id, sort_order } of speakers) {
-    try {
-      const { error } = await supabase
-        .from('qna_speakers')
-        .update({ sort_order })
-        .eq('id', id);
-      if (error) throw error;
-    } catch (error) {
-      const orderError = new Error(error.message || 'Не удалось сохранить порядок спикеров.');
-      orderError.updatedSpeakerIds = updatedSpeakerIds;
-      throw orderError;
-    }
-    updatedSpeakerIds.push(id);
-  }
-  return updatedSpeakerIds;
+export async function updateSpeakerOrder(roomId, speakers) {
+  const { error } = await supabase.rpc('reorder_qna_speakers', {
+    p_room_id: roomId,
+    p_order: speakers.map(({ id, sort_order }) => ({ id, sort_order }))
+  });
+  if (error) throw error;
 }
 
 export async function createSpeaker(roomId, patch = {}) {
