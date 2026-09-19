@@ -47,13 +47,19 @@ create table if not exists public.qna_question_votes (
   unique(question_id, session_id)
 );
 
-create index if not exists qna_questions_room_speaker_idx on public.qna_questions(room_id, speaker_id, created_at desc);
-create index if not exists qna_questions_status_idx on public.qna_questions(status, is_pinned, created_at desc);
-create index if not exists qna_speakers_room_idx on public.qna_speakers(room_id, sort_order);
+create index if not exists qna_questions_room_speaker_idx
+  on public.qna_questions(room_id, speaker_id, created_at desc);
+
+create index if not exists qna_questions_status_idx
+  on public.qna_questions(status, is_pinned, created_at desc);
+
+create index if not exists qna_speakers_room_idx
+  on public.qna_speakers(room_id, sort_order);
 
 create or replace function public.qna_touch_updated_at()
 returns trigger
 language plpgsql
+set search_path = pg_catalog
 as $$
 begin
   new.updated_at = now();
@@ -79,16 +85,23 @@ for each row execute function public.qna_touch_updated_at();
 create or replace function public.qna_recalc_votes_count()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 begin
   update public.qna_questions
   set votes_count = (
-    select count(*) from public.qna_question_votes v where v.question_id = coalesce(new.question_id, old.question_id)
+    select count(*)
+    from public.qna_question_votes v
+    where v.question_id = coalesce(new.question_id, old.question_id)
   )
   where id = coalesce(new.question_id, old.question_id);
   return null;
 end;
 $$;
+
+revoke execute on function public.qna_recalc_votes_count()
+from public, anon, authenticated;
 
 drop trigger if exists qna_votes_after_insert on public.qna_question_votes;
 create trigger qna_votes_after_insert
@@ -99,3 +112,26 @@ drop trigger if exists qna_votes_after_delete on public.qna_question_votes;
 create trigger qna_votes_after_delete
 after delete on public.qna_question_votes
 for each row execute function public.qna_recalc_votes_count();
+
+create or replace function public.remove_vote(
+  p_question_id bigint,
+  p_session_id text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_session_id is null or length(trim(p_session_id)) < 8 then
+    raise exception 'INVALID_SESSION';
+  end if;
+
+  delete from public.qna_question_votes
+  where question_id = p_question_id
+    and session_id = p_session_id;
+end;
+$$;
+
+revoke execute on function public.remove_vote(bigint, text) from public;
+grant execute on function public.remove_vote(bigint, text) to anon, authenticated;
