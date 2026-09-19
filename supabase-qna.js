@@ -92,13 +92,11 @@ export async function submitQuestion({ roomId, speakerId, text, authorName = '',
 }
 
 export async function addVote(questionId, sessionId) {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('qna_question_votes')
-    .insert({ question_id: questionId, session_id: sessionId })
-    .select('id')
-    .single();
+    .insert({ question_id: questionId, session_id: sessionId });
   if (error && !String(error.message || '').toLowerCase().includes('duplicate')) throw error;
-  return data || null;
+  return null;
 }
 
 export async function removeVote(questionId, sessionId) {
