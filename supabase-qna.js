@@ -205,7 +205,7 @@ export async function setActiveSpeaker(roomId, speakerId) {
   if (error) throw error;
 }
 
-export function subscribeRoom(roomId, onChange) {
+export function subscribeRoom(roomId, onChange, onStatus) {
   // Дебаунс: схлопываем частые события в один вызов
   let timer = null;
   const debounced = () => {
@@ -219,6 +219,7 @@ export function subscribeRoom(roomId, onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions',      filter: `room_id=eq.${roomId}` }, debounced)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_question_votes' }, debounced)
     .subscribe((status) => {
+      onStatus?.(status);
       // Переподключаемся при разрыве
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         setTimeout(() => onChange(), 1000);
