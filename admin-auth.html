@@ -84,177 +84,153 @@
       font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
       text-transform: uppercase; color: rgba(248,113,113,0.5); margin-bottom: 10px;
     }
+
+    /* ADMIN CONSOLE — desktop live-event workspace */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+    .admin-console { font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-variant-numeric: tabular-nums lining-nums; }
+    .admin-console h1, .admin-console h2, .admin-console .section-title, .admin-console .stat-value { font-family: inherit; }
+    .admin-console .shell { max-width: 1480px; min-height: calc(100vh - 60px); gap: 12px; }
+    .admin-live { overflow: hidden; }
+    .admin-live .card-inner { padding: 16px; }
+    .live-main { display: grid; grid-template-columns: auto minmax(260px, 1fr) auto; gap: 18px; align-items: center; }
+    .live-brand { display: flex; align-items: center; gap: 10px; }
+    .live-brand .brand-logo-mark { width: 36px; height: 36px; border-radius: 10px; }
+    .live-brand-copy { display: grid; gap: 2px; }
+    .live-brand-copy strong { font-size: 13px; letter-spacing: .14em; }
+    .live-brand-copy span { color: var(--muted); font-size: 10px; }
+    .live-context { min-width: 0; border-left: 1px solid var(--border); padding-left: 18px; }
+    .live-label { color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .live-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--green); }
+    .live-context h1 { margin-top: 4px; font-size: clamp(22px, 2.1vw, 30px); background: none; color: var(--text); -webkit-text-fill-color: var(--text); }
+    .live-context p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .live-statuses { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .live-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg3); color: #93c5fd; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .live-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    .live-chip.warn .dot { background: var(--yellow); }
+    .live-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-2); }
+    .live-toggle { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .live-toggle strong { color: var(--text); }
+    .live-toggle .toggle-pill { width: 40px; height: 22px; }
+    .live-toggle .toggle-track::after { width: 14px; height: 14px; }
+    .live-toggle .toggle-pill input:checked + .toggle-track::after { transform: translateX(18px); }
+    .live-status-message { margin-left: auto; color: #fde68a; font-size: 11px; }
+    .admin-workspace { display: grid; grid-template-columns: 370px 46px minmax(0, 1fr) 46px 320px; gap: 8px; min-height: 0; flex: 1; }
+    .admin-workspace.left-collapsed { grid-template-columns: 56px 46px minmax(0, 1fr) 46px 320px; }
+    .admin-workspace.right-collapsed { grid-template-columns: 370px 46px minmax(0, 1fr) 46px 56px; }
+    .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 56px 46px minmax(0, 1fr) 46px 56px; }
+    .console-panel { min-width: 0; overflow: hidden; }
+    .console-panel > .panel-body { height: 100%; min-width: 0; }
+    .panel-list { display: grid; gap: 10px; height: 100%; }
+    .speakers-panel .panel-body, .editor-panel .panel-body { display: flex; flex-direction: column; }
+    .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 16px; border-bottom: 1px solid var(--border-2); }
+    .panel-head h2 { margin: 0; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+    .panel-head p { margin: 5px 0 0; color: var(--muted-2); font-size: 11px; }
+    .speaker-scroll { min-height: 0; flex: 1; overflow-x: hidden; overflow-y: auto; padding: 10px; }
+    .admin-console .speaker-row { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px 10px; border-radius: 14px; gap: 9px; cursor: pointer; }
+    .admin-console .speaker-avatar { width: 0; height: 0; display: none; }
+    .speaker-drag-handle { width: 28px; height: 32px; padding: 0; flex: 0 0 28px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: grab; font-size: 17px; line-height: 1; }
+    .speaker-drag-handle:hover { background: rgba(59,130,246,.12); color: #93c5fd; }
+    .speaker-drag-handle:active { cursor: grabbing; }
+    .speaker-drag-handle:focus-visible { outline: 2px solid rgba(59,130,246,.55); outline-offset: 1px; }
+    .speaker-row.dragging { opacity: .45; border-color: rgba(96,165,250,.55); background: rgba(59,130,246,.12); }
+    .speaker-row.drop-before { box-shadow: inset 0 3px 0 #60a5fa; }
+    .speaker-row.drop-after { box-shadow: inset 0 -3px 0 #60a5fa; }
+    .speaker-row.active { box-shadow: inset 3px 0 0 var(--blue-light); }
+    .speaker-row.selected:not(.active) { border-color: rgba(147,197,253,.42); background: rgba(59,130,246,.07); }
+    .speaker-row.selected::after { content: ''; width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: #93c5fd; }
+    .speaker-name { display: flex; align-items: flex-start; gap: 5px; min-width: 0; }
+    .speaker-name-text { flex: 1 1 auto; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+    .speaker-name .badge { flex: 0 0 auto; }
+    .speaker-actions { display: flex; min-width: 0; gap: 4px; align-items: center; flex: 0 0 auto; }
+    .speaker-action { width: 32px; height: 32px; padding: 0; flex: 0 0 32px; border-radius: 10px; }
+    .speaker-footer { padding: 10px; border-top: 1px solid var(--border-2); }
+    .speaker-footer .btn { width: 100%; padding: 10px; font-size: 11px; }
+    .edge-rail { display: flex; align-self: stretch; min-height: 160px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; border: 1px solid rgba(59,130,246,.34); border-radius: 15px; background: var(--bg3); color: #93c5fd; box-shadow: 0 8px 22px rgba(0,0,0,.32), inset 0 1px 0 rgba(59,130,246,.12); cursor: pointer; }
+    .edge-rail:hover { border-color: rgba(59,130,246,.64); background: #0d1e3a; }
+    .edge-rail:focus-visible { outline: 3px solid rgba(59,130,246,.38); outline-offset: 2px; }
+    .edge-rail-label { font-size: 10px; font-weight: 800; letter-spacing: .12em; writing-mode: vertical-rl; text-orientation: mixed; }
+    .admin-workspace.left-collapsed .speakers-panel .panel-body, .admin-workspace.right-collapsed .editor-panel .panel-body { visibility: hidden; pointer-events: none; }
+    .admin-workspace.left-collapsed #speakersRail, .admin-workspace.right-collapsed #editorRail { background: #0b1c35; }
+    .questions-panel { display: flex; flex-direction: column; min-height: 650px; }
+    .questions-toolbar { display: grid; gap: 12px; padding: 16px; border-bottom: 1px solid var(--border-2); }
+    .questions-toolbar-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .questions-title { margin: 0; font-size: 19px; letter-spacing: -.03em; }
+    .questions-summary { margin: 3px 0 0; font-size: 11px; color: var(--muted); }
+    .questions-actions, .question-filter-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .question-search { min-width: 180px; flex: 1; max-width: 300px; }
+    .admin-console .filter-tab { min-height: 32px; padding: 0 11px; border-radius: 999px; font-size: 11px; }
+    .question-feed { min-height: 0; flex: 1; overflow: auto; padding: 0; }
+    .admin-console #questionsList { display: grid; gap: 0; }
+    .admin-console .question-card { border: 0; border-bottom: 1px solid var(--border-2); border-radius: 0; padding: 16px 18px; background: transparent; }
+    .admin-console .question-card:hover { background: rgba(255,255,255,.025); }
+    .admin-console .question-card:last-child { border-bottom: 0; }
+    .questions-manual { border-top: 1px solid var(--border-2); padding: 0 16px; }
+    .questions-manual summary { min-height: 46px; display: flex; align-items: center; cursor: pointer; color: #93c5fd; font-size: 12px; font-weight: 700; }
+    .questions-manual .manual-grid { display: grid; grid-template-columns: minmax(0,1fr) 150px 150px auto; gap: 8px; padding: 0 0 14px; }
+    .editor-panel .panel-body { gap: 10px; }
+    .editor-card { padding: 16px; border-bottom: 1px solid var(--border-2); }
+    .editor-card .section-title { margin-bottom: 9px; }
+    .editor-header-status { display: grid; justify-items: end; gap: 4px; }
+    .editor-dirty-status, .editor-background-status { max-width: 150px; padding: 4px 6px; border-radius: 7px; font-size: 9px; font-weight: 700; line-height: 1.25; text-align: right; }
+    .editor-dirty-status { border: 1px solid rgba(251,191,36,.28); background: rgba(251,191,36,.1); color: #fde68a; }
+    .editor-background-status { border: 1px solid rgba(96,165,250,.28); background: rgba(59,130,246,.1); color: #bfdbfe; }
+    .editor-note { margin-bottom: 12px; padding: 10px; border: 1px solid rgba(251,191,36,.22); border-radius: 12px; background: rgba(251,191,36,.08); color: #fde68a; font-size: 11px; line-height: 1.45; }
+    .editor-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .editor-actions .btn { flex: 1; padding: 10px; font-size: 11px; }
+    .utility-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .utility-grid .btn { min-height: 40px; padding: 8px; font-size: 11px; }
+    .editor-danger { margin-top: auto; padding: 12px; border-top: 1px solid rgba(248,113,113,.14); background: rgba(248,113,113,.035); }
+    .editor-danger .danger-zone-label { margin-bottom: 8px; }
+    .editor-danger .btn { width: 100%; padding: 10px; font-size: 11px; }
+    .editor-danger .btn + .btn { margin-top: 8px; }
+    .admin-console .status { min-height: 0; }
+    @media (max-width: 1180px) { .admin-workspace { grid-template-columns: 330px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.left-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.right-collapsed { grid-template-columns: 330px 42px minmax(0,1fr) 42px 56px; } .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 56px; } }
+    @media (max-width: 920px) { .live-main { grid-template-columns: 1fr; } .live-context { border-left: 0; padding-left: 0; } .live-statuses { justify-content: flex-start; } .admin-workspace, .admin-workspace.left-collapsed, .admin-workspace.right-collapsed, .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 1fr; } .edge-rail { min-height: 46px; flex-direction: row; } .edge-rail-label { writing-mode: initial; } .questions-manual .manual-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <div class="app">
+  <div class="admin-console app">
     <main class="shell">
-
-      <!-- Шапка -->
-      <section class="card">
-        <div class="card-inner hero-grid">
-          <div>
-            <div class="brand-logo">
-              <div class="brand-logo-mark">S</div>
-              <span class="brand-logo-text">SANCHEZ · Live Q&A · Админ</span>
-            </div>
-            <h1 style="font-size:clamp(22px,3.5vw,42px);">Панель управления</h1>
-            <p class="subcopy" id="roomLabel">Загрузка…</p>
+      <section class="card admin-live">
+        <div class="card-inner">
+          <div class="live-main">
+            <div class="live-brand"><div class="brand-logo-mark">S</div><div class="live-brand-copy"><strong>SANCHEZ</strong><span>LIVE Q&amp;A · CONTROL DESK</span></div></div>
+            <div class="live-context"><div class="live-label">Сейчас в эфире</div><h1>Панель управления</h1><p id="roomLabel">Загрузка…</p></div>
+            <div class="live-statuses"><span class="live-chip"><i class="dot"></i>Realtime подключён</span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button></div>
           </div>
-          <div class="links-grid">
-            <button class="btn primary" id="openGuestBtn">↗ Гостевая</button>
-            <button class="btn ghost"   id="openModBtn">↗ Модератор</button>
-            <button class="btn ghost"   id="refreshBtn">↻ Обновить</button>
-            <button class="btn ghost"   id="qrBtn">⬛ QR</button>
-          </div>
-          <div id="qrPanel" style="display:none; margin-top:12px; text-align:center;">
-            <img id="qrImg" src="" width="160" height="160" style="border-radius:8px; background:#fff; padding:6px;">
-            <div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div>
+          <div class="live-controls">
+            <label class="live-toggle">Приём вопросов <strong id="questionsOpenSub">Загрузка…</strong><span class="toggle-pill"><input type="checkbox" id="questionsOpenToggle"><span class="toggle-track"></span></span></label>
+            <label class="live-toggle">Премодерация <strong id="moderationSub">Загрузка…</strong><span class="toggle-pill"><input type="checkbox" id="moderationToggle"><span class="toggle-track"></span></span></label>
+            <div class="live-status-message" id="status"></div>
           </div>
         </div>
       </section>
 
-      <section class="grid-2">
+      <section class="admin-workspace" id="adminWorkspace">
+        <aside class="card console-panel speakers-panel" id="speakersPanel"><div class="panel-body">
+          <div class="panel-head"><div><h2>Спикеры</h2><p>Участники · порядок программы</p></div><button class="btn primary" id="addSpeakerBtn" style="padding:8px 10px;font-size:11px;">+ Добавить</button></div>
+          <div class="speaker-scroll"><div class="list" id="speakersList"></div></div>
+          <div class="speaker-footer"><button class="btn ghost" id="clearSpeakerFilter">Все спикеры</button></div>
+        </div></aside>
+        <button class="edge-rail" id="speakersRail" type="button" aria-label="Свернуть панель спикеров" aria-expanded="true"><span>‹</span><span class="edge-rail-label">Спикеры</span></button>
 
-        <!-- Левая колонка -->
-        <div class="stack">
-
-          <!-- Состояние комнаты -->
-          <section class="card">
-            <div class="card-inner stack" style="gap:12px;">
-              <h2 class="section-title">Состояние комнаты</h2>
-              <div class="toggle-row">
-                <div>
-                  <div class="toggle-label">Приём вопросов</div>
-                  <div class="toggle-sub" id="questionsOpenSub">Загрузка…</div>
-                </div>
-                <label class="toggle-pill">
-                  <input type="checkbox" id="questionsOpenToggle" />
-                  <span class="toggle-track"></span>
-                </label>
-              </div>
-              <div class="toggle-row">
-                <div>
-                  <div class="toggle-label">Премодерация</div>
-                  <div class="toggle-sub" id="moderationSub">Загрузка…</div>
-                </div>
-                <label class="toggle-pill">
-                  <input type="checkbox" id="moderationToggle" />
-                  <span class="toggle-track"></span>
-                </label>
-              </div>
-              <div class="status" id="status"></div>
-            </div>
-          </section>
-
-          <!-- Редактор спикера -->
-          <section class="card">
-            <div class="card-inner stack" style="gap:10px;">
-              <h2 class="section-title">Редактор спикера</h2>
-              <!-- Кастомный select -->
-              <div class="custom-select-wrap" id="speakerSelectWrap">
-                <button class="custom-select-btn" id="speakerSelectBtn" type="button">
-                  <span id="speakerSelectLabel">Выберите спикера</span>
-                  <span class="arrow">▼</span>
-                </button>
-                <div class="custom-select-dropdown" id="speakerDropdown"></div>
-              </div>
-              <input class="input" id="nameInput"    placeholder="Имя спикера" />
-              <input class="input" id="regaliaInput" placeholder="Должность / регалии" />
-              <input class="input" id="topicInput"   placeholder="Тема выступления" />
-              <div class="row" style="gap:8px;">
-                <button class="btn primary" id="saveBtn"     style="flex:1;">Сохранить</button>
-                <button class="btn ghost"   id="activateBtn" style="flex:1;">Сделать активным</button>
-              </div>
-            </div>
-          </section>
-
-          <!-- Список спикеров -->
-          <section class="card">
-            <div class="card-inner stack" style="gap:10px;">
-              <div class="row" style="justify-content:space-between;align-items:center;">
-                <h2 class="section-title" style="margin:0;">Спикеры</h2>
-                <button class="btn primary" id="addSpeakerBtn" style="padding:6px 12px;font-size:12px;">+ Добавить</button>
-              </div>
-              <div class="list" id="speakersList"></div>
-            </div>
-          </section>
-
-        </div>
-
-        <!-- Правая колонка -->
-        <div class="stack">
-
-          <!-- Вопросы с управлением -->
-          <section class="card">
-            <div class="card-inner">
-              <div style="margin-bottom:14px;">
-                <div class="row" style="justify-content:space-between; align-items:center; flex-wrap:nowrap; margin-bottom:8px;">
-                  <h2 class="section-title" style="margin:0;">Вопросы <span id="speakerFilterLabel" style="font-size:11px;color:var(--muted);font-weight:400;"></span></h2>
-                  <div style="display:flex;gap:6px;align-items:center;">
-                    <button class="btn ghost" id="clearSpeakerFilter" style="padding:4px 10px;font-size:11px;display:none;">✕ Все спикеры</button>
-                    <button class="btn ghost" id="exportCsvBtn" style="padding:4px 10px;font-size:11px;">↓ CSV</button>
-                  </div>
-                </div>
-                <div class="row" style="gap:6px; flex-wrap:nowrap;">
-                  <button class="filter-tab active" data-filter="all"    style="padding:5px 10px; font-size:11px;">Все</button>
-                  <button class="filter-tab" data-filter="open"   style="padding:5px 10px; font-size:11px;">Открытые</button>
-                  <button class="filter-tab" data-filter="asked"  style="padding:5px 10px; font-size:11px;">Заданные</button>
-                  <button class="filter-tab" data-filter="hidden" style="padding:5px 10px; font-size:11px;">Скрытые</button>
-                </div>
-              </div>
-              <div class="list" id="questionsList" style="contain: layout style"></div>
-            </div>
-          </section>
-
-          <!-- Статистика -->
-          <section class="card">
-            <div class="card-inner">
-              <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Всего</div>      <div class="stat-value" style="font-size:18px;" id="statTotal">0</div></div>
-                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Открытые</div>    <div class="stat-value" style="font-size:18px;" id="statOpen">0</div></div>
-                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Заданные</div>    <div class="stat-value" style="font-size:18px;" id="statAsked">0</div></div>
-                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Скрытые</div>     <div class="stat-value" style="font-size:18px;" id="statHidden">0</div></div>
-                <div class="stat" style="padding:6px 10px;"><div class="stat-label" style="font-size:10px;">Модерация</div>   <div class="stat-value" style="font-size:18px;color:#fbbf24;" id="statPending">0</div></div>
-              </div>
-            </div>
-          </section>
-
-          <!-- God mode: добавить вопрос вручную -->
-          <section class="card">
-            <div class="card-inner stack" style="gap:10px;">
-              <h2 class="section-title">✦ Добавить вопрос вручную</h2>
-              <textarea class="textarea" id="godQuestionInput" placeholder="Текст вопроса…" maxlength="200" style="min-height:70px;"></textarea>
-              <div class="meta-grid">
-                <input class="input" id="godNameInput"    placeholder="Имя (опционально)"    maxlength="120" />
-                <input class="input" id="godCompanyInput" placeholder="Компания (опционально)" maxlength="120" />
-              </div>
-              <button class="btn primary" id="godSubmitBtn" style="width:100%;">Опубликовать вопрос</button>
-              <div class="status" id="godStatus"></div>
-            </div>
-          </section>
-
-        </div>
-      </section>
-
-      <!-- Зона опасных действий — внизу страницы -->
-      <div class="danger-zone">
-        <div class="danger-zone-label">Опасная зона</div>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-          <div>
-            <button class="btn warn" id="clearQuestionsBtn" style="width:100%;">🗑 Очистить все вопросы</button>
-            <div id="clearConfirmRow" style="display:none; margin-top:8px;">
-              <p style="font-size:12px; color:#fde68a; margin:0 0 8px 0;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p>
-              <div style="display:flex; gap:8px;">
-                <button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button>
-                <button class="btn ghost"  id="clearCancelBtn" style="flex:1;">Отмена</button>
-              </div>
-            </div>
+        <section class="card console-panel questions-panel">
+          <div class="questions-toolbar">
+            <div class="questions-toolbar-top"><div><h2 class="questions-title">Очередь вопросов <span id="speakerFilterLabel" style="font-size:11px;color:var(--muted);font-weight:500;"></span></h2><p class="questions-summary">Все вопросы и новые поступления в реальном времени</p></div><div class="questions-actions"><button class="btn ghost" id="exportCsvBtn" style="padding:8px 10px;font-size:11px;">↓ CSV</button></div></div>
+            <div class="question-filter-row"><button class="filter-tab active" data-filter="all">Все <span id="filterAllCount">0</span></button><button class="filter-tab" data-filter="open">Открытые <span id="filterOpenCount">0</span></button><button class="filter-tab" data-filter="asked">Заданные <span id="filterAskedCount">0</span></button><button class="filter-tab" data-filter="hidden">Скрытые <span id="filterHiddenCount">0</span></button></div>
           </div>
-          <button class="btn danger" id="logoutBtn" style="width:100%;">Выйти из аккаунта</button>
-        </div>
-      </div>
+          <div class="question-feed"><div class="list" id="questionsList" style="contain: layout style"></div></div>
+          <details class="questions-manual"><summary>⊞ Добавить вопрос вручную</summary><div class="manual-grid"><textarea class="textarea" id="godQuestionInput" placeholder="Текст вопроса…" maxlength="200" style="min-height:44px;"></textarea><input class="input" id="godNameInput" placeholder="Имя" maxlength="120"><input class="input" id="godCompanyInput" placeholder="Компания" maxlength="120"><button class="btn primary" id="godSubmitBtn">Опубликовать</button></div><div class="status" id="godStatus"></div></details>
+        </section>
 
+        <button class="edge-rail" id="editorRail" type="button" aria-label="Свернуть редактор спикера" aria-expanded="true"><span>›</span><span class="edge-rail-label">Редактор</span></button>
+        <aside class="card console-panel editor-panel" id="editorPanel"><div class="panel-body">
+          <div class="panel-head"><div><h2>Редактор спикера</h2><p>Выберите спикера</p></div><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div></div>
+          <div class="editor-card"><div class="editor-note">Realtime-обновления не заменят локальный черновик.</div><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><span class="arrow">▼</span></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div>
+          <div class="editor-card"><h2 class="section-title">Утилиты</h2><div class="utility-grid"><button class="btn ghost" id="qrBtn">▣ QR</button><button class="btn ghost" id="openGuestBtn">↗ Гостевая</button><button class="btn ghost" id="openModBtn">↗ Модератор</button><button class="btn ghost" id="exportCsvBtnDuplicate" disabled>↓ CSV</button></div><div id="qrPanel" style="display:none; margin-top:10px; text-align:center;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:#fff; padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div></div>
+          <div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn">🗑 Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:#fde68a; margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button><div id="logoutConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:#fde68a; margin:0 0 8px;">Выйти из аккаунта?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" style="flex:1;">Отмена</button></div></div></div>
+        </div></aside>
+      </section>
     </main>
   </div>
 
@@ -265,7 +241,7 @@
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
       subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
-      createSpeaker, deleteSpeaker
+      createSpeaker, deleteSpeaker, updateSpeakerOrder
     } from './supabase-qna.js';
 
     const roomSlug = getRoomSlug();
@@ -274,6 +250,8 @@
     const nameInput       = document.getElementById('nameInput');
     const regaliaInput    = document.getElementById('regaliaInput');
     const topicInput      = document.getElementById('topicInput');
+    const editorDirtyStatus = document.getElementById('editorDirtyStatus');
+    const editorBackgroundStatus = document.getElementById('editorBackgroundStatus');
     const speakersList    = document.getElementById('speakersList');
     const questionsList   = document.getElementById('questionsList');
     const qOpenToggle     = document.getElementById('questionsOpenToggle');
@@ -287,6 +265,31 @@
     const selectLabel    = document.getElementById('speakerSelectLabel');
     const dropdown       = document.getElementById('speakerDropdown');
     let selectedSpeakerId = null;
+    const editorState = { dirty: false, backgroundChanged: false, savedSpeaker: null, isFilling: false };
+
+    function readEditorForm() {
+      return { name: nameInput.value, regalia: regaliaInput.value, topic: topicInput.value };
+    }
+
+    function getSpeakerData(speaker) {
+      return { name: speaker?.name || '', regalia: speaker?.regalia || '', topic: speaker?.topic || '' };
+    }
+
+    function sameSpeakerData(left, right) {
+      return left.name === right.name && left.regalia === right.regalia && left.topic === right.topic;
+    }
+
+    function updateEditorStatus() {
+      editorDirtyStatus.hidden = !editorState.dirty;
+      editorBackgroundStatus.hidden = !editorState.dirty || !editorState.backgroundChanged;
+    }
+
+    [nameInput, regaliaInput, topicInput].forEach(input => input.addEventListener('input', () => {
+      if (!editorState.isFilling && selectedSpeakerId) {
+        editorState.dirty = true;
+        updateEditorStatus();
+      }
+    }));
 
     selectBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -303,15 +306,8 @@
         </div>`).join('');
       dropdown.querySelectorAll('.custom-select-option').forEach(opt => {
         opt.addEventListener('click', () => {
-          selectedSpeakerId = opt.dataset.id;
-          selectLabel.textContent = opt.dataset.name;
           dropdown.classList.remove('open');
-          dropdown.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
-          opt.classList.add('selected');
-          fillFormFromId(selectedSpeakerId);
-          // Фильтруем вопросы по выбранному спикеру
-          state.speakerFilter = selectedSpeakerId;
-          render();
+          selectSpeakerForEditing(opt.dataset.id);
         });
       });
     }
@@ -321,7 +317,65 @@
     let _busy = false;
     let _refreshing = false;
     let _pendingRefresh = false;
+    let _sortingSpeakers = false;
+    let draggedSpeakerId = null;
 
+    function selectSpeakerForEditing(id) {
+      const nextId = String(id);
+      if (nextId === String(selectedSpeakerId)) return true;
+      if (editorState.dirty) {
+        setStatus('Сохраните изменения текущего спикера перед переключением редактора.', 'error');
+        return false;
+      }
+      const speaker = state.speakers.find(item => String(item.id) === nextId);
+      if (!speaker) return false;
+      selectedSpeakerId = nextId;
+      selectLabel.textContent = speaker.name || speaker.topic || `спикер-${speaker.id}`;
+      fillFormFromId(selectedSpeakerId);
+      render();
+      return true;
+    }
+
+    const workspace = document.getElementById('adminWorkspace');
+    const speakersRail = document.getElementById('speakersRail');
+    const editorRail = document.getElementById('editorRail');
+    const panelStateKey = 'sanchez-live-admin-panels';
+
+    function setPanelCollapsed(side, collapsed) {
+      const rail = side === 'left' ? speakersRail : editorRail;
+      const title = side === 'left' ? 'панель спикеров' : 'редактор спикера';
+      workspace.classList.toggle(side === 'left' ? 'left-collapsed' : 'right-collapsed', collapsed);
+      rail.setAttribute('aria-expanded', String(!collapsed));
+      rail.setAttribute('aria-label', `${collapsed ? 'Развернуть' : 'Свернуть'} ${title}`);
+      rail.firstElementChild.textContent = side === 'left'
+        ? (collapsed ? '›' : '‹')
+        : (collapsed ? '‹' : '›');
+    }
+
+    function persistPanelState() {
+      localStorage.setItem(panelStateKey, JSON.stringify({
+        left: workspace.classList.contains('left-collapsed'),
+        right: workspace.classList.contains('right-collapsed'),
+      }));
+    }
+
+    try {
+      const savedPanelState = JSON.parse(localStorage.getItem(panelStateKey) || '{}');
+      setPanelCollapsed('left', Boolean(savedPanelState.left));
+      setPanelCollapsed('right', Boolean(savedPanelState.right));
+    } catch {
+      setPanelCollapsed('left', false);
+      setPanelCollapsed('right', false);
+    }
+
+    speakersRail.addEventListener('click', () => {
+      setPanelCollapsed('left', !workspace.classList.contains('left-collapsed'));
+      persistPanelState();
+    });
+    editorRail.addEventListener('click', () => {
+      setPanelCollapsed('right', !workspace.classList.contains('right-collapsed'));
+      persistPanelState();
+    });
     boot();
 
     async function boot() {
@@ -334,7 +388,25 @@
       document.getElementById('openGuestBtn').addEventListener('click', () => window.open(`./ask.html?room=${roomSlug}`, '_blank', 'noopener'));
       document.getElementById('openModBtn').addEventListener('click',   () => window.open(`./mod-auth.html?room=${roomSlug}`, '_blank', 'noopener'));
       document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; refresh(); });
-      document.getElementById('logoutBtn').addEventListener('click', logout);
+      const logoutBtn = document.getElementById('logoutBtn');
+      const logoutConfirmRow = document.getElementById('logoutConfirmRow');
+      let logoutTimer = null;
+      const resetLogoutUI = () => {
+        clearTimeout(logoutTimer);
+        logoutTimer = null;
+        logoutConfirmRow.style.display = 'none';
+        logoutBtn.style.display = 'block';
+      };
+      logoutBtn.addEventListener('click', () => {
+        logoutBtn.style.display = 'none';
+        logoutConfirmRow.style.display = 'block';
+        logoutTimer = setTimeout(resetLogoutUI, 6000);
+      });
+      document.getElementById('logoutCancelBtn').addEventListener('click', resetLogoutUI);
+      document.getElementById('logoutConfirmBtn').addEventListener('click', () => {
+        resetLogoutUI();
+        logout();
+      });
 
       // Добавить нового спикера (защита от двойного клика)
       let _addingSpeaker = false;
@@ -465,7 +537,13 @@
 
       document.getElementById('saveBtn').addEventListener('click', async () => {
         if (!selectedSpeakerId) return;
-        await mutate(() => updateSpeaker(Number(selectedSpeakerId), { name: nameInput.value, regalia: regaliaInput.value, topic: topicInput.value }), 'Данные спикера сохранены.');
+        await mutate(async () => {
+          await updateSpeaker(Number(selectedSpeakerId), readEditorForm());
+          editorState.dirty = false;
+          editorState.backgroundChanged = false;
+          editorState.savedSpeaker = readEditorForm();
+          updateEditorStatus();
+        }, 'Данные спикера сохранены.');
       });
       document.getElementById('activateBtn').addEventListener('click', async () => {
         if (!selectedSpeakerId) return;
@@ -495,7 +573,7 @@
     }
 
     async function refresh() {
-      if (_refreshing) { _pendingRefresh = true; return; }
+      if (_refreshing || _sortingSpeakers) { _pendingRefresh = true; return; }
       _refreshing = true;
       _pendingRefresh = false;
       try {
@@ -526,7 +604,15 @@
         }
       }
       buildDropdown(state.speakers);
-      fillFormFromId(selectedSpeakerId);
+      if (editorState.dirty) {
+        const currentSpeaker = state.speakers.find(s => String(s.id) === String(selectedSpeakerId));
+        if (!sameSpeakerData(getSpeakerData(currentSpeaker), editorState.savedSpeaker || getSpeakerData(currentSpeaker))) {
+          editorState.backgroundChanged = true;
+          updateEditorStatus();
+        }
+      } else {
+        fillFormFromId(selectedSpeakerId);
+      }
 
       // Список спикеров
       speakersList.innerHTML = state.speakers.length
@@ -534,13 +620,14 @@
             const initials = (s.name || '?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
             const qCount = state.questions.filter(q => String(q.speaker_id) === String(s.id)).length;
             return `
-              <div class="speaker-row ${s.is_active ? 'active' : ''}" style="cursor:default;flex-wrap:nowrap;gap:8px;">
+              <div class="speaker-row ${s.is_active ? 'active' : ''} ${String(s.id) === String(selectedSpeakerId) ? 'selected' : ''}" data-speaker-id="${s.id}" style="flex-wrap:nowrap;gap:8px;">
+                <button class="speaker-drag-handle" type="button" draggable="true" aria-label="Переместить ${escapeHtml(s.name || 'спикера')}" title="Перетащите, чтобы изменить порядок">⠿</button>
                 <div class="speaker-avatar" style="flex-shrink:0;">${initials}</div>
                 <div class="speaker-info" style="flex:1;min-width:0;overflow:hidden;">
-                  <div class="speaker-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.name || 'Без имени')} ${s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
+                  <div class="speaker-name"><span class="speaker-name-text">${escapeHtml(s.name || 'Без имени')}</span>${s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
                   <div class="speaker-meta">${escapeHtml([s.regalia, s.topic].filter(Boolean).join(' · ') || '—')} · ${qCount} вопр.</div>
                 </div>
-                <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+                <div class="speaker-actions">
                   <button class="btn ghost" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-sp-filter="${s.id}" data-sp-name="${escapeHtml(s.name||'Спикер')}">Вопросы</button>
                   ${!s.is_active ? `<button class="btn ghost" style="padding:4px 8px;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.3);" data-sp-delete="${s.id}" title="Удалить спикера">✕</button>` : ''}
                 </div>
@@ -550,7 +637,8 @@
 
       // Фильтр по спикеру из списка
       speakersList.querySelectorAll('[data-sp-filter]').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', event => {
+          event.stopPropagation();
           const id = btn.dataset.spFilter;
           const name = btn.dataset.spName;
           state.speakerFilter = id;
@@ -561,7 +649,8 @@
       });
       // Удалить спикера
       speakersList.querySelectorAll('[data-sp-delete]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', async event => {
+          event.stopPropagation();
           if (!confirm('Удалить этого спикера? Его вопросы останутся в БД.')) return;
           try {
             await deleteSpeaker(Number(btn.dataset.spDelete));
@@ -573,13 +662,16 @@
           } catch (e) { setStatus(e.message || 'Ошибка удаления', 'error'); }
         });
       });
+      speakersList.querySelectorAll('.speaker-row').forEach(row => {
+        row.addEventListener('click', () => selectSpeakerForEditing(row.dataset.speakerId));
+      });
+      initSpeakerDragAndDrop();
 
-      // Статистика
-      document.getElementById('statTotal').textContent   = state.questions.length;
-      document.getElementById('statOpen').textContent    = state.questions.filter(q => q.status === 'open').length;
-      document.getElementById('statAsked').textContent   = state.questions.filter(q => q.status === 'asked').length;
-      document.getElementById('statHidden').textContent  = state.questions.filter(q => q.status === 'hidden').length;
-      document.getElementById('statPending').textContent = state.questions.filter(q => q.status === 'pending').length;
+      // Счётчики текущих вкладок
+      document.getElementById('filterAllCount').textContent    = state.questions.length;
+      document.getElementById('filterOpenCount').textContent   = state.questions.filter(q => q.status === 'open').length;
+      document.getElementById('filterAskedCount').textContent  = state.questions.filter(q => q.status === 'asked').length;
+      document.getElementById('filterHiddenCount').textContent = state.questions.filter(q => q.status === 'hidden').length;
 
       // Вопросы с управлением
       const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
@@ -589,7 +681,7 @@
       if (state.filter !== 'all') rows = rows.filter(q => q.status === state.filter);
 
       questionsList.innerHTML = rows.length
-        ? rows.slice(0, 30).map(item => {
+        ? rows.map(item => {
             const sp     = speakerMap.get(String(item.speaker_id));
             const author = [item.author_name, item.author_company].filter(Boolean).join(' · ');
             const st        = item.status;
@@ -639,11 +731,100 @@
       }));
     }
 
+    function clearSpeakerDropIndicators() {
+      speakersList.querySelectorAll('.drop-before, .drop-after').forEach(row => {
+        row.classList.remove('drop-before', 'drop-after');
+      });
+    }
+
+    function initSpeakerDragAndDrop() {
+      speakersList.querySelectorAll('.speaker-row').forEach(row => {
+        const handle = row.querySelector('.speaker-drag-handle');
+        handle.addEventListener('click', event => event.stopPropagation());
+        handle.addEventListener('dragstart', event => {
+          if (_sortingSpeakers) { event.preventDefault(); return; }
+          draggedSpeakerId = row.dataset.speakerId;
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', draggedSpeakerId);
+          requestAnimationFrame(() => row.classList.add('dragging'));
+        });
+        handle.addEventListener('dragend', () => {
+          draggedSpeakerId = null;
+          row.classList.remove('dragging');
+          clearSpeakerDropIndicators();
+        });
+        row.addEventListener('dragover', event => {
+          if (!draggedSpeakerId || draggedSpeakerId === row.dataset.speakerId) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          const insertBefore = event.clientY < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+          clearSpeakerDropIndicators();
+          row.classList.add(insertBefore ? 'drop-before' : 'drop-after');
+        });
+        row.addEventListener('drop', async event => {
+          event.preventDefault();
+          const sourceId = draggedSpeakerId || event.dataTransfer.getData('text/plain');
+          if (!sourceId || sourceId === row.dataset.speakerId) return;
+          const insertBefore = row.classList.contains('drop-before');
+          clearSpeakerDropIndicators();
+          await moveSpeaker(sourceId, row.dataset.speakerId, insertBefore);
+        });
+      });
+    }
+
+    async function moveSpeaker(sourceId, targetId, insertBefore) {
+      if (_sortingSpeakers) return;
+      const previousOrder = state.speakers.map(speaker => ({ ...speaker }));
+      const nextOrder = state.speakers.slice();
+      const sourceIndex = nextOrder.findIndex(speaker => String(speaker.id) === String(sourceId));
+      if (sourceIndex < 0) return;
+      const [movedSpeaker] = nextOrder.splice(sourceIndex, 1);
+      const targetIndex = nextOrder.findIndex(speaker => String(speaker.id) === String(targetId));
+      if (targetIndex < 0) return;
+      nextOrder.splice(targetIndex + (insertBefore ? 0 : 1), 0, movedSpeaker);
+      if (nextOrder.every((speaker, index) => String(speaker.id) === String(previousOrder[index].id))) return;
+
+      const orderedSpeakers = nextOrder.map((speaker, index) => ({ ...speaker, sort_order: index + 1 }));
+      _sortingSpeakers = true;
+      state.speakers = orderedSpeakers;
+      render();
+      try {
+        await updateSpeakerOrder(orderedSpeakers.map(({ id, sort_order }) => ({ id, sort_order })));
+        setStatus('Порядок спикеров сохранён.', 'success');
+      } catch (error) {
+        const updatedSpeakerIds = error.updatedSpeakerIds || [];
+        const rollbackOrder = previousOrder
+          .filter(speaker => updatedSpeakerIds.includes(speaker.id))
+          .map(({ id, sort_order }) => ({ id, sort_order }));
+        if (rollbackOrder.length) {
+          try {
+            await updateSpeakerOrder(rollbackOrder);
+          } catch {}
+        }
+        state.speakers = previousOrder;
+        render();
+        setStatus(error.message || 'Не удалось сохранить порядок спикеров.', 'error');
+      } finally {
+        _sortingSpeakers = false;
+        if (_pendingRefresh) {
+          _pendingRefresh = false;
+          refresh();
+        }
+      }
+    }
+
     function fillFormFromId(id) {
       const s = state.speakers.find(sp => String(sp.id) === String(id));
-      nameInput.value    = s?.name    || '';
-      regaliaInput.value = s?.regalia || '';
-      topicInput.value   = s?.topic   || '';
+      const data = getSpeakerData(s);
+      editorState.isFilling = true;
+      nameInput.value    = data.name;
+      regaliaInput.value = data.regalia;
+      topicInput.value   = data.topic;
+      editorState.isFilling = false;
+      editorState.dirty = false;
+      editorState.backgroundChanged = false;
+      editorState.savedSpeaker = data;
+      updateEditorStatus();
     }
 
     async function mutate(fn, successMsg) {
