@@ -114,9 +114,9 @@
     .live-toggle .toggle-track::after { width: 14px; height: 14px; }
     .live-toggle .toggle-pill input:checked + .toggle-track::after { transform: translateX(18px); }
     .live-status-message { margin-left: auto; color: #fde68a; font-size: 11px; }
-    .admin-workspace { display: grid; grid-template-columns: 280px 46px minmax(0, 1fr) 46px 320px; gap: 8px; min-height: 0; flex: 1; }
+    .admin-workspace { display: grid; grid-template-columns: 370px 46px minmax(0, 1fr) 46px 320px; gap: 8px; min-height: 0; flex: 1; }
     .admin-workspace.left-collapsed { grid-template-columns: 56px 46px minmax(0, 1fr) 46px 320px; }
-    .admin-workspace.right-collapsed { grid-template-columns: 280px 46px minmax(0, 1fr) 46px 56px; }
+    .admin-workspace.right-collapsed { grid-template-columns: 370px 46px minmax(0, 1fr) 46px 56px; }
     .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 56px 46px minmax(0, 1fr) 46px 56px; }
     .console-panel { min-width: 0; overflow: hidden; }
     .console-panel > .panel-body { height: 100%; min-width: 0; }
@@ -125,8 +125,8 @@
     .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 16px; border-bottom: 1px solid var(--border-2); }
     .panel-head h2 { margin: 0; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
     .panel-head p { margin: 5px 0 0; color: var(--muted-2); font-size: 11px; }
-    .speaker-scroll { min-height: 0; flex: 1; overflow: auto; padding: 10px; }
-    .admin-console .speaker-row { padding: 11px 10px; border-radius: 14px; gap: 9px; }
+    .speaker-scroll { min-height: 0; flex: 1; overflow-x: hidden; overflow-y: auto; padding: 10px; }
+    .admin-console .speaker-row { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px 10px; border-radius: 14px; gap: 9px; cursor: pointer; }
     .admin-console .speaker-avatar { width: 0; height: 0; display: none; }
     .speaker-drag-handle { width: 28px; height: 32px; padding: 0; flex: 0 0 28px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: grab; font-size: 17px; line-height: 1; }
     .speaker-drag-handle:hover { background: rgba(59,130,246,.12); color: #93c5fd; }
@@ -136,6 +136,12 @@
     .speaker-row.drop-before { box-shadow: inset 0 3px 0 #60a5fa; }
     .speaker-row.drop-after { box-shadow: inset 0 -3px 0 #60a5fa; }
     .speaker-row.active { box-shadow: inset 3px 0 0 var(--blue-light); }
+    .speaker-row.selected:not(.active) { border-color: rgba(147,197,253,.42); background: rgba(59,130,246,.07); }
+    .speaker-row.selected::after { content: ''; width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: #93c5fd; }
+    .speaker-name { display: flex; align-items: flex-start; gap: 5px; min-width: 0; }
+    .speaker-name-text { flex: 1 1 auto; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+    .speaker-name .badge { flex: 0 0 auto; }
+    .speaker-actions { display: flex; min-width: 0; gap: 4px; align-items: center; flex: 0 0 auto; }
     .speaker-action { width: 32px; height: 32px; padding: 0; flex: 0 0 32px; border-radius: 10px; }
     .speaker-footer { padding: 10px; border-top: 1px solid var(--border-2); }
     .speaker-footer .btn { width: 100%; padding: 10px; font-size: 11px; }
@@ -178,7 +184,7 @@
     .editor-danger .btn { width: 100%; padding: 10px; font-size: 11px; }
     .editor-danger .btn + .btn { margin-top: 8px; }
     .admin-console .status { min-height: 0; }
-    @media (max-width: 1180px) { .admin-workspace { grid-template-columns: 250px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.left-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.right-collapsed { grid-template-columns: 250px 42px minmax(0,1fr) 42px 56px; } .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 56px; } }
+    @media (max-width: 1180px) { .admin-workspace { grid-template-columns: 330px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.left-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.right-collapsed { grid-template-columns: 330px 42px minmax(0,1fr) 42px 56px; } .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 56px; } }
     @media (max-width: 920px) { .live-main { grid-template-columns: 1fr; } .live-context { border-left: 0; padding-left: 0; } .live-statuses { justify-content: flex-start; } .admin-workspace, .admin-workspace.left-collapsed, .admin-workspace.right-collapsed, .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 1fr; } .edge-rail { min-height: 46px; flex-direction: row; } .edge-rail-label { writing-mode: initial; } .questions-manual .manual-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -300,15 +306,8 @@
         </div>`).join('');
       dropdown.querySelectorAll('.custom-select-option').forEach(opt => {
         opt.addEventListener('click', () => {
-          selectedSpeakerId = opt.dataset.id;
-          selectLabel.textContent = opt.dataset.name;
           dropdown.classList.remove('open');
-          dropdown.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
-          opt.classList.add('selected');
-          fillFormFromId(selectedSpeakerId);
-          // Фильтруем вопросы по выбранному спикеру
-          state.speakerFilter = selectedSpeakerId;
-          render();
+          selectSpeakerForEditing(opt.dataset.id);
         });
       });
     }
@@ -320,6 +319,22 @@
     let _pendingRefresh = false;
     let _sortingSpeakers = false;
     let draggedSpeakerId = null;
+
+    function selectSpeakerForEditing(id) {
+      const nextId = String(id);
+      if (nextId === String(selectedSpeakerId)) return true;
+      if (editorState.dirty) {
+        setStatus('Сохраните изменения текущего спикера перед переключением редактора.', 'error');
+        return false;
+      }
+      const speaker = state.speakers.find(item => String(item.id) === nextId);
+      if (!speaker) return false;
+      selectedSpeakerId = nextId;
+      selectLabel.textContent = speaker.name || speaker.topic || `спикер-${speaker.id}`;
+      fillFormFromId(selectedSpeakerId);
+      render();
+      return true;
+    }
 
     const workspace = document.getElementById('adminWorkspace');
     const speakersRail = document.getElementById('speakersRail');
@@ -373,7 +388,24 @@
       document.getElementById('openGuestBtn').addEventListener('click', () => window.open(`./ask.html?room=${roomSlug}`, '_blank', 'noopener'));
       document.getElementById('openModBtn').addEventListener('click',   () => window.open(`./mod-auth.html?room=${roomSlug}`, '_blank', 'noopener'));
       document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; refresh(); });
-      document.getElementById('logoutBtn').addEventListener('click', logout);
+      const logoutBtn = document.getElementById('logoutBtn');
+      let logoutTimer = null;
+      const resetLogoutUI = () => {
+        clearTimeout(logoutTimer);
+        logoutTimer = null;
+        logoutBtn.dataset.confirming = 'false';
+        logoutBtn.textContent = 'Выйти из аккаунта';
+      };
+      logoutBtn.addEventListener('click', () => {
+        if (logoutBtn.dataset.confirming === 'true') {
+          resetLogoutUI();
+          logout();
+          return;
+        }
+        logoutBtn.dataset.confirming = 'true';
+        logoutBtn.textContent = 'Подтвердить выход';
+        logoutTimer = setTimeout(resetLogoutUI, 5000);
+      });
 
       // Добавить нового спикера (защита от двойного клика)
       let _addingSpeaker = false;
@@ -587,14 +619,14 @@
             const initials = (s.name || '?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
             const qCount = state.questions.filter(q => String(q.speaker_id) === String(s.id)).length;
             return `
-              <div class="speaker-row ${s.is_active ? 'active' : ''}" data-speaker-id="${s.id}" style="cursor:default;flex-wrap:nowrap;gap:8px;">
+              <div class="speaker-row ${s.is_active ? 'active' : ''} ${String(s.id) === String(selectedSpeakerId) ? 'selected' : ''}" data-speaker-id="${s.id}" style="flex-wrap:nowrap;gap:8px;">
                 <button class="speaker-drag-handle" type="button" draggable="true" aria-label="Переместить ${escapeHtml(s.name || 'спикера')}" title="Перетащите, чтобы изменить порядок">⠿</button>
                 <div class="speaker-avatar" style="flex-shrink:0;">${initials}</div>
                 <div class="speaker-info" style="flex:1;min-width:0;overflow:hidden;">
-                  <div class="speaker-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.name || 'Без имени')} ${s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
+                  <div class="speaker-name"><span class="speaker-name-text">${escapeHtml(s.name || 'Без имени')}</span>${s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
                   <div class="speaker-meta">${escapeHtml([s.regalia, s.topic].filter(Boolean).join(' · ') || '—')} · ${qCount} вопр.</div>
                 </div>
-                <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+                <div class="speaker-actions">
                   <button class="btn ghost" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-sp-filter="${s.id}" data-sp-name="${escapeHtml(s.name||'Спикер')}">Вопросы</button>
                   ${!s.is_active ? `<button class="btn ghost" style="padding:4px 8px;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.3);" data-sp-delete="${s.id}" title="Удалить спикера">✕</button>` : ''}
                 </div>
@@ -604,7 +636,8 @@
 
       // Фильтр по спикеру из списка
       speakersList.querySelectorAll('[data-sp-filter]').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', event => {
+          event.stopPropagation();
           const id = btn.dataset.spFilter;
           const name = btn.dataset.spName;
           state.speakerFilter = id;
@@ -615,7 +648,8 @@
       });
       // Удалить спикера
       speakersList.querySelectorAll('[data-sp-delete]').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', async event => {
+          event.stopPropagation();
           if (!confirm('Удалить этого спикера? Его вопросы останутся в БД.')) return;
           try {
             await deleteSpeaker(Number(btn.dataset.spDelete));
@@ -626,6 +660,9 @@
             await refresh();
           } catch (e) { setStatus(e.message || 'Ошибка удаления', 'error'); }
         });
+      });
+      speakersList.querySelectorAll('.speaker-row').forEach(row => {
+        row.addEventListener('click', () => selectSpeakerForEditing(row.dataset.speakerId));
       });
       initSpeakerDragAndDrop();
 
