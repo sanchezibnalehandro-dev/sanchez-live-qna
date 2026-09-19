@@ -185,7 +185,7 @@
     .editor-danger .btn + .btn { margin-top: 8px; }
     .admin-console .status { min-height: 0; }
     @media (max-width: 1180px) { .admin-workspace { grid-template-columns: 330px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.left-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.right-collapsed { grid-template-columns: 330px 42px minmax(0,1fr) 42px 56px; } .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 56px; } }
-    @media (max-width: 920px) { .live-main { grid-template-columns: 1fr; } .live-context { border-left: 0; padding-left: 0; } .live-statuses { justify-content: flex-start; } .admin-workspace, .admin-workspace.left-collapsed, .admin-workspace.right-collapsed, .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 1fr; } .edge-rail { min-height: 46px; flex-direction: row; } .edge-rail-label { writing-mode: initial; } .questions-manual .manual-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 920px) { .live-main { grid-template-columns: 1fr; } .live-context { border-left: 0; padding-left: 0; } .live-statuses { justify-content: flex-start; } .admin-workspace, .admin-workspace.left-collapsed, .admin-workspace.right-collapsed, .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 1fr; } .admin-workspace.left-collapsed .speakers-panel, .admin-workspace.right-collapsed .editor-panel { display: none; } .edge-rail { min-height: 46px; flex-direction: row; } .edge-rail-label { writing-mode: initial; } .questions-manual .manual-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -319,6 +319,8 @@
     let _pendingRefresh = false;
     let _sortingSpeakers = false;
     let draggedSpeakerId = null;
+    const QUESTION_PAGE_SIZE = 50;
+    let visibleQuestionLimit = QUESTION_PAGE_SIZE;
 
     function selectSpeakerForEditing(id) {
       const nextId = String(id);
@@ -427,6 +429,7 @@
       // Сбросить фильтр по спикеру
       document.getElementById('clearSpeakerFilter').addEventListener('click', () => {
         state.speakerFilter = null;
+        visibleQuestionLimit = QUESTION_PAGE_SIZE;
         document.getElementById('speakerFilterLabel').textContent = '';
         document.getElementById('clearSpeakerFilter').style.display = 'none';
         render();
@@ -519,6 +522,7 @@
 
       filterTabs.forEach(tab => tab.addEventListener('click', () => {
         state.filter = tab.dataset.filter;
+        visibleQuestionLimit = QUESTION_PAGE_SIZE;
         filterTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         render();
@@ -642,6 +646,7 @@
           const id = btn.dataset.spFilter;
           const name = btn.dataset.spName;
           state.speakerFilter = id;
+          visibleQuestionLimit = QUESTION_PAGE_SIZE;
           document.getElementById('speakerFilterLabel').textContent = `— ${name}`;
           document.getElementById('clearSpeakerFilter').style.display = 'inline-flex';
           render();
@@ -679,9 +684,11 @@
         ? state.questions.filter(q => String(q.speaker_id) === String(state.speakerFilter))
         : state.questions;
       if (state.filter !== 'all') rows = rows.filter(q => q.status === state.filter);
+      const visibleRows = rows.slice(0, visibleQuestionLimit);
+      const remainingQuestions = Math.max(0, rows.length - visibleRows.length);
 
       questionsList.innerHTML = rows.length
-        ? rows.map(item => {
+        ? visibleRows.map(item => {
             const sp     = speakerMap.get(String(item.speaker_id));
             const author = [item.author_name, item.author_company].filter(Boolean).join(' · ');
             const st        = item.status;
@@ -712,8 +719,15 @@
                   <button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="addvote" data-id="${item.id}">+1 ✦</button>
                 </div>
               </div>`;
-          }).join('')
+          }).join('') + (remainingQuestions > 0
+            ? `<div style="padding:14px 18px;text-align:center;border-top:1px solid var(--border-2);"><button class="btn ghost" id="loadMoreQuestions" style="min-height:40px;">Показать ещё ${Math.min(QUESTION_PAGE_SIZE, remainingQuestions)} · осталось ${remainingQuestions}</button></div>`
+            : '')
         : '<div class="empty">Вопросов нет.</div>';
+
+      document.getElementById('loadMoreQuestions')?.addEventListener('click', () => {
+        visibleQuestionLimit += QUESTION_PAGE_SIZE;
+        render();
+      });
 
       questionsList.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', async () => {
         try {
@@ -789,18 +803,9 @@
       state.speakers = orderedSpeakers;
       render();
       try {
-        await updateSpeakerOrder(orderedSpeakers.map(({ id, sort_order }) => ({ id, sort_order })));
+        await updateSpeakerOrder(state.room.id, orderedSpeakers.map(({ id, sort_order }) => ({ id, sort_order })));
         setStatus('Порядок спикеров сохранён.', 'success');
       } catch (error) {
-        const updatedSpeakerIds = error.updatedSpeakerIds || [];
-        const rollbackOrder = previousOrder
-          .filter(speaker => updatedSpeakerIds.includes(speaker.id))
-          .map(({ id, sort_order }) => ({ id, sort_order }));
-        if (rollbackOrder.length) {
-          try {
-            await updateSpeakerOrder(rollbackOrder);
-          } catch {}
-        }
         state.speakers = previousOrder;
         render();
         setStatus(error.message || 'Не удалось сохранить порядок спикеров.', 'error');
