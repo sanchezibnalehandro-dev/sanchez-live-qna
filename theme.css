@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 /* =============================================
-   ALTERA Q&A — DESIGN TOKENS
-   Палитра: первый слайд форума Altera
+   SANCHEZ LIVE Q&A — DESIGN TOKENS
+   Палитра: тёмный event UI
    Фон: глубокий чёрный / тёмно-синий
    Акцент: электрик-синий
    ============================================= */
@@ -152,13 +152,13 @@ body::before {
 }
 
 /* Лого Altera — текстовый маркер */
-.altera-logo {
+.brand-logo {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
 }
-.altera-logo-mark {
+.brand-logo-mark {
   width: 28px;
   height: 28px;
   border-radius: 8px;
@@ -172,7 +172,7 @@ body::before {
   letter-spacing: -0.04em;
   box-shadow: 0 2px 12px rgba(26,79,216,0.5);
 }
-.altera-logo-text {
+.brand-logo-text {
   font-family: 'Syne', sans-serif;
   font-size: 13px;
   font-weight: 700;
