@@ -31,13 +31,13 @@ Live Q&A-инструмент для мероприятий Altera: гости �
 - Модератор: фильтры по статусу (все/открытые/на модерации/заданные/скрытые), одобрение, pin, статистика
 - Админка: состояние комнаты (toggle приём/премодерация), редактор спикеров, добавление/удаление спикеров, фильтр вопросов по спикеру, god-mode (добавить вопрос вручную, +1 к любому), очистка вопросов с подтверждением, экспорт CSV
 - Realtime: подписка на изменения через Supabase Realtime с дебаунсом и reconnect
-- RLS: Row Level Security — гости SELECT + INSERT, authenticated UPDATE/DELETE
+- RLS: гости читают публичные room/speaker/question-поля и отправляют вопросы/голоса; authenticated управляет комнатой, спикерами и вопросами; снятие гостевого голоса идёт через scoped RPC
 
 ## Backend
 
 Supabase. Таблицы: `qna_rooms`, `qna_speakers`, `qna_questions`, `qna_question_votes`.
 
-SQL-файлы в репозитории: `schema.sql` (схема + триггеры), `RLS-auth-next.sql` (шаблон политик).
+SQL-файлы в репозитории: `schema.sql` (актуальная Q&A-схема, триггеры и RPC), `RLS-auth-next.sql` (актуальные RLS-политики и grants).
 
 Realtime Publication: все 4 таблицы добавлены в `supabase_realtime`.
 
