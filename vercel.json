@@ -3,7 +3,7 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "/login-auth.html?room=altera-forum",
+      "destination": "/login-auth.html?room=sanchez-live",
       "permanent": false
     }
   ]
