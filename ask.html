@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Задать вопрос — SANCHEZ</title>
+  <title></title>
   <link rel="stylesheet" href="./theme.css" />
   <link rel="stylesheet" href="./brands/sanchez.css" />
   <style>
@@ -185,8 +185,8 @@
         <div class="card-inner" style="padding:24px;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div class="brand-logo">
-              <div class="brand-logo-mark">S</div>
-              <span class="brand-logo-text">SANCHEZ · Live Q&A</span>
+              <div class="brand-logo-mark" data-brand-mark></div>
+              <span class="brand-logo-text"><span data-brand-name></span> · <span data-brand-product></span></span>
             </div>
             <span id="receptionIndicator" class="reception-indicator open">
               <span class="dot"></span>
@@ -240,11 +240,14 @@
 
   <div id="toast"></div>
   <script type="module">
+    import { applyBrandIdentity } from './brand.js';
     import {
       getRoomSlug, getGuestSessionId, getRoomBySlug, getActiveSpeaker,
       listQuestions, submitQuestion, addVote, removeVote, subscribeRoom,
       escapeHtml, formatClock, normalizeQuestion
     } from './supabase-qna.js';
+
+    applyBrandIdentity('guest');
 
     const roomSlug = getRoomSlug();
     const sessionId = getGuestSessionId(roomSlug);

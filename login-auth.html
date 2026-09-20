@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>SANCHEZ · Live Q&A — Вход</title>
+  <title></title>
   <link rel="stylesheet" href="./theme.css" />
   <link rel="stylesheet" href="./brands/sanchez.css" />
 </head>
@@ -14,8 +14,8 @@
         <div class="card-inner stack" style="gap:18px; padding: 28px;">
 
           <div class="brand-logo">
-            <div class="brand-logo-mark">S</div>
-            <span class="brand-logo-text">SANCHEZ · Live Q&A</span>
+            <div class="brand-logo-mark" data-brand-mark></div>
+            <span class="brand-logo-text"><span data-brand-name></span> · <span data-brand-product></span></span>
           </div>
 
           <div>
@@ -47,7 +47,10 @@
   </div>
 
   <script type="module">
+    import { applyBrandIdentity } from './brand.js';
     import { supabase, getRoomSlug } from './supabase-qna.js';
+
+    applyBrandIdentity('login');
 
     const room = getRoomSlug();
     const emailInput = document.getElementById('emailInput');

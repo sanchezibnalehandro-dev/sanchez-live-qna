@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Админка — SANCHEZ · Live Q&A</title>
+  <title></title>
   <link rel="stylesheet" href="./theme.css" />
   <link rel="stylesheet" href="./brands/sanchez.css" />
   <style>
@@ -210,7 +210,7 @@
       <section class="card admin-live">
         <div class="card-inner">
           <div class="live-main">
-            <div class="live-brand"><div class="brand-logo-mark">S</div><div class="live-brand-copy"><strong>SANCHEZ</strong><span>LIVE Q&amp;A · CONTROL DESK</span></div></div>
+            <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
             <div class="live-context"><div class="live-label">Сейчас в эфире</div><h1>Панель управления</h1><p id="roomLabel">Загрузка…</p></div>
             <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button></div>
           </div>
@@ -252,6 +252,7 @@
   </div>
 
   <script type="module">
+    import { BRAND, applyBrandIdentity } from './brand.js';
     import {
       supabase, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker,
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
@@ -260,6 +261,8 @@
       subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
       createSpeaker, deleteSpeaker, updateSpeakerOrder
     } from './supabase-qna.js';
+
+    applyBrandIdentity('admin');
 
     const roomSlug = getRoomSlug();
     const roomLabel       = document.getElementById('roomLabel');
@@ -487,7 +490,7 @@
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
-        a.href = url; a.download = `sanchez-qna-${roomSlug}-${new Date().toISOString().slice(0,10)}.csv`;
+        a.href = url; a.download = `${BRAND.csvPrefix}-${roomSlug}-${new Date().toISOString().slice(0,10)}.csv`;
         a.click(); URL.revokeObjectURL(url);
       });
 
