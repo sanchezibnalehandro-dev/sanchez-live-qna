@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Задать вопрос — SANCHEZ</title>
   <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" href="./brands/sanchez.css" />
   <style>
     /* Страница гостя — центрированная, максимум 680px */
     .guest-shell { max-width: 680px; }
@@ -134,10 +135,10 @@
       gap: 8px;
       padding: 10px 20px;
       border-radius: 999px;
-      background: rgba(7,17,31,0.85);
+      background: var(--color-surface);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid color-mix(in srgb, var(--color-text-on-accent) 10%, transparent);
       font-size: 13px;
       font-weight: 600;
       color: var(--text);

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Админка — SANCHEZ · Live Q&A</title>
   <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" href="./brands/sanchez.css" />
   <style>
     .toggle-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -42,7 +43,7 @@
     .custom-select-btn .arrow { flex-shrink: 0; color: var(--muted); font-size: 10px; }
     .custom-select-dropdown {
       position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 100;
-      background: #0d1f3c; border: 1px solid color-mix(in srgb, var(--color-accent-hover) 25%, transparent);
+      background: var(--color-surface-dropdown); border: 1px solid color-mix(in srgb, var(--color-accent-hover) 25%, transparent);
       border-radius: var(--radius-md); overflow: hidden;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       display: none;
@@ -160,11 +161,11 @@
     .speaker-footer { padding: 10px; border-top: 1px solid var(--border-2); }
     .speaker-footer .btn { width: 100%; padding: 10px; font-size: 11px; }
     .edge-rail { display: flex; align-self: stretch; min-height: 160px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; border: 1px solid color-mix(in srgb, var(--color-accent-hover) 34%, transparent); border-radius: 15px; background: var(--bg3); color: var(--color-accent-text); box-shadow: 0 8px 22px rgba(0,0,0,.32), inset 0 1px 0 color-mix(in srgb, var(--color-accent-hover) 12%, transparent); cursor: pointer; }
-    .edge-rail:hover { border-color: color-mix(in srgb, var(--color-accent-hover) 64%, transparent); background: #0d1e3a; }
+    .edge-rail:hover { border-color: color-mix(in srgb, var(--color-accent-hover) 64%, transparent); background: var(--color-surface-raised-hover); }
     .edge-rail:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
     .edge-rail-label { font-size: 10px; font-weight: 800; letter-spacing: .12em; writing-mode: vertical-rl; text-orientation: mixed; }
     .admin-workspace.left-collapsed .speakers-panel .panel-body, .admin-workspace.right-collapsed .editor-panel .panel-body { visibility: hidden; pointer-events: none; }
-    .admin-workspace.left-collapsed #speakersRail, .admin-workspace.right-collapsed #editorRail { background: #0b1c35; }
+    .admin-workspace.left-collapsed #speakersRail, .admin-workspace.right-collapsed #editorRail { background: var(--color-surface-raised-active); }
     .questions-panel { display: flex; flex-direction: column; min-height: 650px; }
     .questions-toolbar { display: grid; gap: 12px; padding: 16px; border-bottom: 1px solid var(--border-2); }
     .questions-toolbar-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
@@ -188,7 +189,7 @@
     .editor-header-status { display: grid; justify-items: end; gap: 4px; }
     .editor-dirty-status, .editor-background-status { max-width: 150px; padding: 4px 6px; border-radius: 7px; font-size: 9px; font-weight: 700; line-height: 1.25; text-align: right; }
     .editor-dirty-status { border: 1px solid color-mix(in srgb, var(--color-warning) 28%, transparent); background: var(--color-warning-soft); color: var(--color-warning-text); }
-    .editor-background-status { border: 1px solid color-mix(in srgb, var(--color-accent-hover) 28%, transparent); background: color-mix(in srgb, var(--color-accent-hover) 10%, transparent); color: #bfdbfe; }
+    .editor-background-status { border: 1px solid color-mix(in srgb, var(--color-accent-hover) 28%, transparent); background: color-mix(in srgb, var(--color-accent-hover) 10%, transparent); color: var(--color-info-strong); }
     .editor-note { margin-bottom: 12px; padding: 10px; border: 1px solid color-mix(in srgb, var(--color-warning) 22%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--color-warning) 8%, transparent); color: var(--color-warning-text); font-size: 11px; line-height: 1.45; }
     .editor-actions { display: flex; gap: 8px; margin-top: 10px; }
     .editor-actions .btn { flex: 1; padding: 10px; font-size: 11px; }
@@ -243,7 +244,7 @@
         <aside class="card console-panel editor-panel" id="editorPanel"><div class="panel-body">
           <div class="panel-head"><div><h2>Редактор спикера</h2><p>Выберите спикера</p></div><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div></div>
           <div class="editor-card"><div class="editor-note">Realtime-обновления не заменят локальный черновик.</div><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><span class="arrow">▼</span></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div>
-          <div class="editor-card"><h2 class="section-title">Утилиты</h2><div class="utility-grid"><button class="btn ghost" id="qrBtn">▣ QR</button><button class="btn ghost" id="openGuestBtn">↗ Гостевая</button><button class="btn ghost" id="openModBtn">↗ Модератор</button><button class="btn ghost" id="exportCsvBtnDuplicate" disabled>↓ CSV</button></div><div id="qrPanel" style="display:none; margin-top:10px; text-align:center;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:#fff; padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div></div>
+          <div class="editor-card"><h2 class="section-title">Утилиты</h2><div class="utility-grid"><button class="btn ghost" id="qrBtn">▣ QR</button><button class="btn ghost" id="openGuestBtn">↗ Гостевая</button><button class="btn ghost" id="openModBtn">↗ Модератор</button><button class="btn ghost" id="exportCsvBtnDuplicate" disabled>↓ CSV</button></div><div id="qrPanel" style="display:none; margin-top:10px; text-align:center;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:var(--color-surface-qr); padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div></div>
           <div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn">🗑 Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button><div id="logoutConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Выйти из аккаунта?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" style="flex:1;">Отмена</button></div></div></div>
         </div></aside>
       </section>

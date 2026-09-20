@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+/* SANCHEZ brand theme tokens. */
+:root {
+  --bg:         #020810;
+  --bg2:        #07111f;
+  --bg3:        #0a1830;
+
+  --surface:    rgba(7, 17, 31, 0.85);
+  --surface-2:  rgba(255, 255, 255, 0.04);
+  --surface-3:  rgba(255, 255, 255, 0.03);
+
+  --border:     rgba(59, 130, 246, 0.18);
+  --border-2:   rgba(255, 255, 255, 0.07);
+
+  --text:       #f0f6ff;
+  --muted:      #7a96c2;
+  --muted-2:    #4a6a9a;
+
+  /* Brand blue */
+  --blue:       #1a4fd8;
+  --blue-light: #3b82f6;
+  --blue-glow:  #2563eb;
+
+  --white:      #ffffff;
+  --green:      #22d3aa;
+  --yellow:     #fbbf24;
+  --danger:     #f87171;
+
+  --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(59,130,246,0.08) inset;
+  --shadow-btn:  0 4px 20px rgba(26, 79, 216, 0.35);
+
+  --radius-xl:  24px;
+  --radius-lg:  18px;
+  --radius-md:  14px;
+  --radius-sm:  10px;
+  --radius-pill: 999px;
+
+  /* Semantic theme contract — components consume purpose, not palette names. */
+  --color-bg:              var(--bg);
+  --color-bg-elevated:     var(--bg2);
+  --color-bg-glow-secondary: rgba(7, 17, 47, 0.6);
+  --color-surface:         var(--surface);
+  --color-surface-raised:  rgba(7, 17, 31, 0.93);
+  --color-surface-dropdown: #0d1f3c;
+  --color-surface-raised-hover: #0d1e3a;
+  --color-surface-raised-active: #0b1c35;
+  --color-surface-qr:      #ffffff;
+  --color-surface-subtle:  var(--surface-3);
+  --color-surface-hover:   rgba(255, 255, 255, 0.04);
+
+  --color-text:            var(--text);
+  --color-text-secondary:  var(--muted);
+  --color-text-muted:      var(--muted-2);
+  --color-text-on-accent:  var(--white);
+  --color-heading-gradient-start: #ffffff;
+  --color-heading-gradient-mid: #c8dfff;
+  --color-heading-gradient-end: #7eb5ff;
+  --color-speaker-name:    #e8f4ff;
+
+  --color-accent:          var(--blue);
+  --color-accent-hover:    var(--blue-light);
+  --color-accent-soft:     color-mix(in srgb, var(--color-accent-hover) 12%, transparent);
+  --color-accent-border:   var(--border);
+  --color-accent-text:     #93c5fd;
+  --color-accent-active-text: #dbeafe;
+  --color-focus-ring:      color-mix(in srgb, var(--color-accent-hover) 38%, transparent);
+
+  --color-border:          var(--border);
+  --color-border-subtle:   var(--border-2);
+  --color-border-strong:   color-mix(in srgb, var(--color-accent-hover) 50%, transparent);
+
+  --color-success:         var(--green);
+  --color-success-accent:  #34d399;
+  --color-success-text:    #6ee7d4;
+  --color-success-soft:    color-mix(in srgb, var(--color-success) 10%, transparent);
+  --color-warning:         var(--yellow);
+  --color-warning-text:    #fde68a;
+  --color-warning-soft:    color-mix(in srgb, var(--color-warning) 10%, transparent);
+  --color-danger:          var(--danger);
+  --color-danger-text:     #fca5a5;
+  --color-danger-soft:     color-mix(in srgb, var(--color-danger) 8%, transparent);
+  --color-info-text:       #a9c8f7;
+  --color-info-strong:     #bfdbfe;
+  --color-neutral-text:    #94a3b8;
+  --color-neutral-soft:    rgba(255,255,255,0.06);
+  --color-neutral-border:  rgba(255,255,255,0.08);
+  --color-pinned-text:     #a5b4fc;
+
+  --font-body:    'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Syne', sans-serif;
+  --font-console: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
