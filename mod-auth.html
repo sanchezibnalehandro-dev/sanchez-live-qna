@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Модератор — SANCHEZ · Live Q&A</title>
   <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" href="./brands/sanchez.css" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
 
@@ -21,7 +22,7 @@
     .moderator-live h1 { margin: 4px 0 0; color: var(--text); background: none; -webkit-text-fill-color: var(--text); font-size: clamp(21px, 3vw, 31px); font-weight: 800; letter-spacing: -.035em; line-height: 1.12; }
     .moderator-live .subcopy { margin: 4px 0 0; font-size: 12px; line-height: 1.45; }
     .live-statuses { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 7px; }
-    .room-chip, .live-chip { display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--border-2); background: var(--surface-2); color: #a9c8f7; font-size: 10px; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
+    .room-chip, .live-chip { display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--border-2); background: var(--surface-2); color: var(--color-info-text); font-size: 10px; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
     .room-chip.open { background: var(--color-success-soft); border-color: color-mix(in srgb, var(--color-success) 22%, transparent); color: var(--color-success); }
     .room-chip.closed { background: var(--color-warning-soft); border-color: color-mix(in srgb, var(--color-warning) 22%, transparent); color: var(--color-warning-text); }
     .live-chip.warn { color: var(--color-warning-text); border-color: color-mix(in srgb, var(--color-warning) 20%, transparent); }
@@ -37,9 +38,9 @@
     .filter-tab { display: grid; justify-items: start; align-content: center; min-height: 76px; padding: 10px 12px; border: 1px solid var(--border-2); border-radius: 13px; background: var(--surface-2); color: var(--muted); font-family: inherit; cursor: pointer; text-align: left; transition: border-color .15s, background .15s, transform .15s; }
     .filter-tab:hover { border-color: var(--color-focus-ring); background: color-mix(in srgb, var(--color-accent-hover) 9%, transparent); }
     .filter-tab:focus-visible, .focus-mode-btn:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
-    .filter-tab.active { border-color: color-mix(in srgb, var(--color-accent-hover) 58%, transparent); background: color-mix(in srgb, var(--color-accent) 22%, transparent); box-shadow: inset 3px 0 0 var(--color-accent-hover); color: #dbeafe; }
+    .filter-tab.active { border-color: color-mix(in srgb, var(--color-accent-hover) 58%, transparent); background: color-mix(in srgb, var(--color-accent) 22%, transparent); box-shadow: inset 3px 0 0 var(--color-accent-hover); color: var(--color-accent-active-text); }
     .filter-count { color: var(--text); font-size: 27px; font-weight: 900; letter-spacing: -.065em; line-height: .95; }
-    .filter-tab.active .filter-count { color: #fff; }
+    .filter-tab.active .filter-count { color: var(--color-text-on-accent); }
     .filter-label { margin-top: 7px; font-size: 10px; font-weight: 800; letter-spacing: .07em; line-height: 1.2; text-transform: uppercase; }
     .filter-tab.pending .filter-count { color: var(--color-warning-text); }
     .moderator-status { margin: 10px 1px 0; min-height: 0; }
