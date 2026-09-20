@@ -1,12 +1,6 @@
-export const BRAND = {
-  key: 'sanchez',
-  name: 'SANCHEZ',
-  mark: 'S',
-  productName: 'Live Q&A',
-  csvPrefix: 'sanchez-qna',
-  logoUrl: null,
-  faviconUrl: null
-};
+import { TASIGO_ESG_BRAND } from './brand-presets/tasigo-esg.js';
+
+export const BRAND = TASIGO_ESG_BRAND;
 
 const PAGE_TITLES = {
   admin: 'Админка — {name} · {productName}',
