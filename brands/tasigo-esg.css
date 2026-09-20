@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+
+/* TASIGO × РБК Татарстан — «Маршрут устойчивого развития».
+   This file only supplies the existing theme contract; production continues
+   to load brands/sanchez.css until a future brand selector is introduced. */
+:root {
+  --bg:         #f5f3eb;
+  --bg2:        #eeeee4;
+  --bg3:        #e7ece0;
+
+  --surface:    rgba(255, 255, 252, 0.88);
+  --surface-2:  #f0f2ea;
+  --surface-3:  #f7f8f2;
+
+  --border:     #d6ddd0;
+  --border-2:   #e4e8df;
+
+  --text:       #20271f;
+  --muted:      #667164;
+  --muted-2:    #879083;
+
+  --blue:       #38761d;
+  --blue-light: #4b8a2f;
+  --blue-glow:  #72a75d;
+
+  --white:      #ffffff;
+  --green:      #2f7a42;
+  --yellow:     #9a6a17;
+  --danger:     #b13a35;
+
+  --shadow-card: 0 10px 28px rgba(39, 53, 32, 0.07), 0 1px 2px rgba(39, 53, 32, 0.05);
+  --shadow-btn:  0 5px 14px rgba(56, 118, 29, 0.18);
+
+  --radius-xl:  18px;
+  --radius-lg:  14px;
+  --radius-md:  10px;
+  --radius-sm:  8px;
+  --radius-pill: 999px;
+
+  --color-bg:              var(--bg);
+  --color-bg-elevated:     var(--bg2);
+  --color-bg-glow-secondary: #eff2e8;
+  --color-surface:         var(--surface);
+  --color-surface-raised:  #fffefa;
+  --color-surface-dropdown: #fffefa;
+  --color-surface-raised-hover: #f9fbf5;
+  --color-surface-raised-active: #eef3e9;
+  --color-surface-qr:      #ffffff;
+  --color-surface-subtle:  var(--surface-3);
+  --color-surface-hover:   #f3f7ed;
+
+  --color-text:            var(--text);
+  --color-text-secondary:  var(--muted);
+  --color-text-muted:      var(--muted-2);
+  --color-text-on-accent:  #ffffff;
+  --color-heading-gradient-start: #1f2c1e;
+  --color-heading-gradient-mid: #315c2b;
+  --color-heading-gradient-end: #4b7d3b;
+  --color-speaker-name:    #263523;
+
+  --color-accent:          var(--blue);
+  --color-accent-hover:    var(--blue-light);
+  --color-accent-soft:     #dff1d8;
+  --color-accent-border:   #bad0ae;
+  --color-accent-text:     #315f26;
+  --color-accent-active-text: #214d19;
+  --color-focus-ring:      rgba(56, 118, 29, 0.28);
+
+  --color-border:          var(--border);
+  --color-border-subtle:   var(--border-2);
+  --color-border-strong:   #93b786;
+
+  --color-success:         var(--green);
+  --color-success-accent:  #438958;
+  --color-success-text:    #28643a;
+  --color-success-soft:    #e4f2e4;
+  --color-warning:         var(--yellow);
+  --color-warning-text:    #76500b;
+  --color-warning-soft:    #f8efd9;
+  --color-danger:          var(--danger);
+  --color-danger-text:     #98332f;
+  --color-danger-soft:     #f9e5e3;
+  --color-info-text:       #49634a;
+  --color-info-strong:     #2e5e2b;
+  --color-neutral-text:    #697166;
+  --color-neutral-soft:    #f0f1ec;
+  --color-neutral-border:  #dfe3d9;
+  --color-pinned-text:     #486339;
+
+  --font-body:    'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-console: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Theme-local neutralization of the inherited dark-control-room treatments. */
+body { background-image: radial-gradient(ellipse 75% 48% at 16% -8%, rgba(179, 247, 155, 0.22) 0%, transparent 58%), radial-gradient(ellipse 52% 44% at 88% 100%, rgba(56, 118, 29, 0.08) 0%, transparent 62%); }
+body::before { background-image: none; }
+.input, .textarea, .select { background: #fffefa; }
+.input:focus, .textarea:focus, .select:focus { background: #ffffff; }
+.btn.ghost { background: #f8faf5; border-color: var(--color-border); color: var(--color-text); }
+.btn.ghost:hover { background: #eff5e9; border-color: #b8cfad; }
+.empty { background: #fafbf7; border-color: #d7ded2; }
+.filter-tab:hover { background: #edf4e7; }
