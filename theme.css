@@ -40,6 +40,44 @@
   --radius-md:  14px;
   --radius-sm:  10px;
   --radius-pill: 999px;
+
+  /* Semantic theme contract — components consume purpose, not palette names. */
+  --color-bg:              var(--bg);
+  --color-bg-elevated:     var(--bg2);
+  --color-surface:         var(--surface);
+  --color-surface-subtle:  var(--surface-3);
+  --color-surface-hover:   rgba(255, 255, 255, 0.04);
+
+  --color-text:            var(--text);
+  --color-text-secondary:  var(--muted);
+  --color-text-muted:      var(--muted-2);
+  --color-text-on-accent:  var(--white);
+
+  --color-accent:          var(--blue);
+  --color-accent-hover:    var(--blue-light);
+  --color-accent-soft:     color-mix(in srgb, var(--color-accent-hover) 12%, transparent);
+  --color-accent-border:   var(--border);
+  --color-accent-text:     #93c5fd;
+  --color-focus-ring:      color-mix(in srgb, var(--color-accent-hover) 38%, transparent);
+
+  --color-border:          var(--border);
+  --color-border-subtle:   var(--border-2);
+  --color-border-strong:   color-mix(in srgb, var(--color-accent-hover) 50%, transparent);
+
+  --color-success:         var(--green);
+  --color-success-accent:  #34d399;
+  --color-success-text:    #6ee7d4;
+  --color-success-soft:    color-mix(in srgb, var(--color-success) 10%, transparent);
+  --color-warning:         var(--yellow);
+  --color-warning-text:    #fde68a;
+  --color-warning-soft:    color-mix(in srgb, var(--color-warning) 10%, transparent);
+  --color-danger:          var(--danger);
+  --color-danger-text:     #fca5a5;
+  --color-danger-soft:     color-mix(in srgb, var(--color-danger) 8%, transparent);
+
+  --font-body:    'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Syne', sans-serif;
+  --font-console: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* =============================================
@@ -49,13 +87,13 @@
 html, body { margin: 0; min-height: 100%; }
 
 body {
-  background-color: var(--bg);
+  background-color: var(--color-bg);
   background-image:
-    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(26, 79, 216, 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 85% 95%,  rgba(26, 79, 216, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 60% at 20% -10%, color-mix(in srgb, var(--color-accent) 28%, transparent) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 85% 95%, color-mix(in srgb, var(--color-accent) 18%, transparent) 0%, transparent 50%),
     radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(7, 17, 47, 0.6)  0%, transparent 80%);
-  color: var(--text);
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--color-text);
+  font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -69,8 +107,8 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--color-accent-hover) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-accent-hover) 5%, transparent) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.5) 10%, rgba(0,0,0,0.8) 60%, transparent);
   will-change: transform;
@@ -110,7 +148,7 @@ body::before {
   overflow: hidden;
   border-radius: var(--radius-xl);
   background: rgba(7, 17, 31, 0.93);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   box-shadow: var(--shadow-card);
 }
 
@@ -120,7 +158,7 @@ body::before {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.5) 40%, rgba(59,130,246,0.5) 60%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--color-accent-hover) 50%, transparent) 40%, color-mix(in srgb, var(--color-accent-hover) 50%, transparent) 60%, transparent 100%);
   pointer-events: none;
 }
 
@@ -131,8 +169,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 60% 40% at 90% 0%, rgba(26,79,216,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 10% 100%, rgba(26,79,216,0.07) 0%, transparent 60%);
+    radial-gradient(ellipse 60% 40% at 90% 0%, color-mix(in srgb, var(--color-accent) 12%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 10% 100%, color-mix(in srgb, var(--color-accent) 7%, transparent) 0%, transparent 60%);
 }
 
 .card-inner {
@@ -162,18 +200,18 @@ body::before {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%);
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   font-weight: 900;
-  color: #fff;
+  color: var(--color-text-on-accent);
   letter-spacing: -0.04em;
-  box-shadow: 0 2px 12px rgba(26,79,216,0.5);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--color-accent) 50%, transparent);
 }
 .brand-logo-text {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.15em;
@@ -197,20 +235,20 @@ body::before {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 0 0 rgba(34, 211, 170, 0.5);
+  background: var(--color-success);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 50%, transparent);
   animation: pulse-dot 2s infinite;
   flex-shrink: 0;
 }
 
 @keyframes pulse-dot {
-  0%   { box-shadow: 0 0 0 0 rgba(34,211,170,0.5); }
-  70%  { box-shadow: 0 0 0 10px rgba(34,211,170,0); }
-  100% { box-shadow: 0 0 0 0 rgba(34,211,170,0); }
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 50%, transparent); }
+  70%  { box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-success) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 0%, transparent); }
 }
 
 h1, h2 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
 }
 
 h1 {
@@ -219,7 +257,7 @@ h1 {
   font-weight: 900;
   letter-spacing: -0.04em;
   line-height: 1.0;
-  color: #f0f6ff;
+  color: var(--color-text);
 }
 
 @supports (-webkit-background-clip: text) or (background-clip: text) {
@@ -248,7 +286,7 @@ h1 {
 }
 
 .section-title {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   margin: 0 0 14px;
   font-size: 11px;
   font-weight: 700;
@@ -264,9 +302,9 @@ h1 {
   display: block;
   width: 100%;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-2);
+  border: 1px solid var(--color-border-subtle);
   background: rgba(255, 255, 255, 0.05);
-  color: var(--text);
+  color: var(--color-text);
   font-family: inherit;
   font-size: 14px;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -277,12 +315,12 @@ h1 {
 
 .input:focus, .textarea:focus, .select:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  border-color: var(--color-border-strong);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
   background: rgba(255, 255, 255, 0.07);
 }
 
-.input::placeholder, .textarea::placeholder { color: var(--muted-2); }
+.input::placeholder, .textarea::placeholder { color: var(--color-text-muted); }
 
 /* =============================================
    КНОПКИ
@@ -311,12 +349,12 @@ h1 {
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 .btn.primary {
-  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  border-color: color-mix(in srgb, var(--color-accent-hover) 30%, transparent);
+  color: var(--color-text-on-accent);
   box-shadow: var(--shadow-btn);
 }
-.btn.primary:hover { box-shadow: 0 6px 28px rgba(26,79,216,0.5); }
+.btn.primary:hover { box-shadow: 0 6px 28px color-mix(in srgb, var(--color-accent) 50%, transparent); }
 
 .btn.ghost {
   background: rgba(255, 255, 255, 0.04);
@@ -326,18 +364,18 @@ h1 {
 .btn.ghost:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255,255,255,0.14); }
 
 .btn.warn {
-  background: rgba(251, 191, 36, 0.08);
-  border-color: rgba(251, 191, 36, 0.2);
-  color: #fde68a;
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-warning) 20%, transparent);
+  color: var(--color-warning-text);
 }
-.btn.warn:hover { background: rgba(251, 191, 36, 0.14); }
+.btn.warn:hover { background: color-mix(in srgb, var(--color-warning) 14%, transparent); }
 
 .btn.danger {
-  background: rgba(248, 113, 113, 0.08);
-  border-color: rgba(248, 113, 113, 0.2);
-  color: #fca5a5;
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 20%, transparent);
+  color: var(--color-danger-text);
 }
-.btn.danger:hover { background: rgba(248, 113, 113, 0.14); }
+.btn.danger:hover { background: color-mix(in srgb, var(--color-danger) 14%, transparent); }
 
 /* =============================================
    ROW / GRID
@@ -355,7 +393,7 @@ h1 {
   padding: 14px;
   transition: border-color 0.2s, background 0.2s;
 }
-.question-card:hover { border-color: rgba(59,130,246,0.22); background: rgba(255,255,255,0.04); will-change: border-color, background; }
+.question-card:hover { border-color: color-mix(in srgb, var(--color-accent-hover) 22%, transparent); background: var(--color-surface-hover); will-change: border-color, background; }
 
 .question-text {
   font-size: 15px;
@@ -394,11 +432,11 @@ h1 {
   white-space: nowrap;
 }
 
-.badge.open    { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
-.badge.asked   { background: rgba(34,211,170,0.10); color: #6ee7d4; border: 1px solid rgba(34,211,170,0.2); }
+.badge.open    { background: var(--color-accent-soft); color: var(--color-accent-text); border: 1px solid color-mix(in srgb, var(--color-accent-hover) 20%, transparent); }
+.badge.asked   { background: var(--color-success-soft); color: var(--color-success-text); border: 1px solid color-mix(in srgb, var(--color-success) 20%, transparent); }
 .badge.hidden  { background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.08); }
-.badge.pinned  { background: rgba(26,79,216,0.15); color: #a5b4fc; border: 1px solid rgba(59,130,246,0.22); }
-.badge.pending { background: rgba(251,191,36,0.10); color: #fde68a; border: 1px solid rgba(251,191,36,0.2); }
+.badge.pinned  { background: color-mix(in srgb, var(--color-accent) 15%, transparent); color: #a5b4fc; border: 1px solid color-mix(in srgb, var(--color-accent-hover) 22%, transparent); }
+.badge.pending { background: var(--color-warning-soft); color: var(--color-warning-text); border: 1px solid color-mix(in srgb, var(--color-warning) 20%, transparent); }
 
 /* =============================================
    СТАТИСТИКА
@@ -418,7 +456,7 @@ h1 {
   color: var(--muted);
 }
 .stat-value {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(24px, 2.5vw, 36px);
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -431,8 +469,8 @@ h1 {
    ============================================= */
 .panel {
   border-radius: var(--radius-lg);
-  background: rgba(26, 79, 216, 0.07);
-  border: 1px solid rgba(59, 130, 246, 0.15);
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent-hover) 15%, transparent);
   padding: 14px;
 }
 
@@ -456,8 +494,8 @@ h1 {
   color: var(--muted);
   line-height: 1.4;
 }
-.status.success { color: var(--green); }
-.status.error   { color: var(--danger); }
+.status.success { color: var(--color-success); }
+.status.error   { color: var(--color-danger); }
 
 /* =============================================
    СПИСОК
@@ -481,7 +519,7 @@ h1 {
 }
 .empty-icon { opacity: 0.45; }
 .empty-title {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 800;
   color: var(--text);
@@ -503,19 +541,19 @@ h1 {
 .vote-btn {
   font-size: 13px;
   font-weight: 700;
-  color: #93c5fd !important;
-  border-color: rgba(59,130,246,0.22) !important;
-  background: rgba(59,130,246,0.08) !important;
+  color: var(--color-accent-text) !important;
+  border-color: color-mix(in srgb, var(--color-accent-hover) 22%, transparent) !important;
+  background: color-mix(in srgb, var(--color-accent-hover) 8%, transparent) !important;
 }
-.vote-btn:hover { background: rgba(59,130,246,0.16) !important; }
+.vote-btn:hover { background: color-mix(in srgb, var(--color-accent-hover) 16%, transparent) !important; }
 
 /* =============================================
    ФИЛЬТР-КНОПКИ (активное состояние)
    ============================================= */
 .filter-btn.active {
-  background: rgba(26,79,216,0.2) !important;
-  border-color: rgba(59,130,246,0.4) !important;
-  color: #93c5fd !important;
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent) !important;
+  border-color: color-mix(in srgb, var(--color-accent-hover) 40%, transparent) !important;
+  color: var(--color-accent-text) !important;
 }
 
 /* =============================================
@@ -537,9 +575,9 @@ h1 {
 }
 .filter-tab:hover { background: rgba(255,255,255,0.06); color: var(--text); }
 .filter-tab.active {
-  background: rgba(26,79,216,0.2);
-  border-color: rgba(59,130,246,0.4);
-  color: #93c5fd;
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-hover) 40%, transparent);
+  color: var(--color-accent-text);
 }
 
 /* =============================================

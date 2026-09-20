@@ -25,7 +25,7 @@
       width: 16px; height: 16px; border-radius: 50%;
       background: #fff; transition: transform 0.2s;
     }
-    .toggle-pill input:checked + .toggle-track { background: var(--blue); border-color: var(--blue-light); }
+    .toggle-pill input:checked + .toggle-track { background: var(--color-accent); border-color: var(--color-accent-hover); }
     .toggle-pill input:checked + .toggle-track::after { transform: translateX(20px); }
 
     /* Кастомный select */
@@ -38,11 +38,11 @@
       cursor: pointer; transition: border-color 0.2s;
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
-    .custom-select-btn:hover { border-color: rgba(59,130,246,0.4); }
+    .custom-select-btn:hover { border-color: color-mix(in srgb, var(--color-accent-hover) 40%, transparent); }
     .custom-select-btn .arrow { flex-shrink: 0; color: var(--muted); font-size: 10px; }
     .custom-select-dropdown {
       position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 100;
-      background: #0d1f3c; border: 1px solid rgba(59,130,246,0.25);
+      background: #0d1f3c; border: 1px solid color-mix(in srgb, var(--color-accent-hover) 25%, transparent);
       border-radius: var(--radius-md); overflow: hidden;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       display: none;
@@ -52,8 +52,8 @@
       padding: 10px 14px; font-size: 13px; color: var(--text);
       cursor: pointer; transition: background 0.12s;
     }
-    .custom-select-option:hover   { background: rgba(59,130,246,0.15); }
-    .custom-select-option.selected { background: rgba(59,130,246,0.2); color: #93c5fd; }
+    .custom-select-option:hover   { background: color-mix(in srgb, var(--color-accent-hover) 15%, transparent); }
+    .custom-select-option.selected { background: color-mix(in srgb, var(--color-accent-hover) 20%, transparent); color: var(--color-accent-text); }
 
     /* Спикер-карточка */
     .speaker-row {
@@ -62,11 +62,11 @@
       border: 1px solid var(--border-2); cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
     }
-    .speaker-row:hover  { border-color: rgba(59,130,246,0.3); background: rgba(255,255,255,0.05); }
-    .speaker-row.active { border-color: rgba(59,130,246,0.5); background: rgba(26,79,216,0.12); }
+    .speaker-row:hover  { border-color: color-mix(in srgb, var(--color-accent-hover) 30%, transparent); background: rgba(255,255,255,0.05); }
+    .speaker-row.active { border-color: var(--color-border-strong); background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
     .speaker-avatar {
       width: 36px; height: 36px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--blue), var(--blue-light));
+      background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
       display: flex; align-items: center; justify-content: center;
       font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0;
     }
@@ -77,17 +77,17 @@
     /* Зона выхода внизу */
     .danger-zone {
       margin-top: 8px; padding: 16px 20px;
-      border-radius: var(--radius-xl); border: 1px solid rgba(248,113,113,0.12);
-      background: rgba(248,113,113,0.04);
+      border-radius: var(--radius-xl); border: 1px solid color-mix(in srgb, var(--color-danger) 12%, transparent);
+      background: color-mix(in srgb, var(--color-danger) 4%, transparent);
     }
     .danger-zone-label {
       font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
-      text-transform: uppercase; color: rgba(248,113,113,0.5); margin-bottom: 10px;
+      text-transform: uppercase; color: color-mix(in srgb, var(--color-danger) 50%, transparent); margin-bottom: 10px;
     }
 
     /* ADMIN CONSOLE — desktop live-event workspace */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
-    .admin-console { font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-variant-numeric: tabular-nums lining-nums; }
+    .admin-console { font-family: var(--font-console); font-variant-numeric: tabular-nums lining-nums; }
     .admin-console h1, .admin-console h2, .admin-console .section-title, .admin-console .stat-value { font-family: inherit; }
     .admin-console .shell { max-width: 1480px; min-height: calc(100vh - 60px); gap: 12px; }
     .admin-live { overflow: hidden; }
@@ -104,7 +104,7 @@
     .live-context h1 { margin-top: 4px; font-size: clamp(22px, 2.1vw, 30px); background: none; color: var(--text); -webkit-text-fill-color: var(--text); }
     .live-context p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .live-statuses { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-    .live-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg3); color: #93c5fd; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .live-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--bg3); color: var(--color-accent-text); font-size: 11px; font-weight: 700; white-space: nowrap; }
     .live-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
     .live-chip.warn .dot { background: var(--yellow); }
     .live-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-2); }
@@ -113,7 +113,7 @@
     .live-toggle .toggle-pill { width: 40px; height: 22px; }
     .live-toggle .toggle-track::after { width: 14px; height: 14px; }
     .live-toggle .toggle-pill input:checked + .toggle-track::after { transform: translateX(18px); }
-    .live-status-message { margin-left: auto; color: #fde68a; font-size: 11px; }
+    .live-status-message { margin-left: auto; color: var(--color-warning-text); font-size: 11px; }
     .admin-workspace { display: grid; grid-template-columns: 370px 46px minmax(0, 1fr) 46px 320px; gap: 8px; min-height: 0; flex: 1; }
     .admin-workspace.left-collapsed { grid-template-columns: 56px 46px minmax(0, 1fr) 46px 320px; }
     .admin-workspace.right-collapsed { grid-template-columns: 370px 46px minmax(0, 1fr) 46px 56px; }
@@ -129,14 +129,14 @@
     .admin-console .speaker-row { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px 10px; border-radius: 14px; gap: 9px; cursor: pointer; }
     .admin-console .speaker-avatar { width: 0; height: 0; display: none; }
     .speaker-drag-handle { width: 28px; height: 32px; padding: 0; flex: 0 0 28px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: grab; font-size: 17px; line-height: 1; }
-    .speaker-drag-handle:hover { background: rgba(59,130,246,.12); color: #93c5fd; }
+    .speaker-drag-handle:hover { background: color-mix(in srgb, var(--color-accent-hover) 12%, transparent); color: var(--color-accent-text); }
     .speaker-drag-handle:active { cursor: grabbing; }
-    .speaker-drag-handle:focus-visible { outline: 2px solid rgba(59,130,246,.55); outline-offset: 1px; }
-    .speaker-row.dragging { opacity: .45; border-color: rgba(96,165,250,.55); background: rgba(59,130,246,.12); }
-    .speaker-row.drop-before { box-shadow: inset 0 3px 0 #60a5fa; }
-    .speaker-row.drop-after { box-shadow: inset 0 -3px 0 #60a5fa; }
-    .speaker-row.active { box-shadow: inset 3px 0 0 var(--blue-light); }
-    .speaker-row.selected { flex-wrap: wrap !important; border-color: rgba(147,197,253,.42); background: rgba(59,130,246,.07); }
+    .speaker-drag-handle:focus-visible { outline: 2px solid color-mix(in srgb, var(--color-accent-hover) 55%, transparent); outline-offset: 1px; }
+    .speaker-row.dragging { opacity: .45; border-color: color-mix(in srgb, var(--color-accent-hover) 55%, transparent); background: color-mix(in srgb, var(--color-accent-hover) 12%, transparent); }
+    .speaker-row.drop-before { box-shadow: inset 0 3px 0 var(--color-accent-hover); }
+    .speaker-row.drop-after { box-shadow: inset 0 -3px 0 var(--color-accent-hover); }
+    .speaker-row.active { box-shadow: inset 3px 0 0 var(--color-accent-hover); }
+    .speaker-row.selected { flex-wrap: wrap !important; border-color: color-mix(in srgb, var(--color-accent-text) 42%, transparent); background: color-mix(in srgb, var(--color-accent-hover) 7%, transparent); }
     .speaker-name { display: flex; align-items: flex-start; gap: 5px; min-width: 0; }
     .speaker-name-text { flex: 1 1 auto; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
     .speaker-name .badge { flex: 0 0 auto; }
@@ -144,14 +144,14 @@
     .speaker-action { width: 32px; height: 32px; padding: 0; flex: 0 0 32px; border-radius: 10px; }
     .speaker-expanded-actions {
       display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;
-      padding: 8px 0 0 36px; border-top: 1px solid rgba(147,197,253,.12);
+      padding: 8px 0 0 36px; border-top: 1px solid color-mix(in srgb, var(--color-accent-text) 12%, transparent);
       animation: speakerActionsIn .16s ease-out;
     }
     .speaker-expanded-actions .btn { min-height: 34px; padding: 7px 10px; font-size: 10px; }
     .speaker-active-state {
       display: inline-flex; align-items: center; justify-content: center; min-height: 34px;
-      border: 1px solid rgba(96,165,250,.22); border-radius: 10px;
-      background: rgba(59,130,246,.08); color: #93c5fd; font-size: 10px; font-weight: 800;
+      border: 1px solid color-mix(in srgb, var(--color-accent-hover) 22%, transparent); border-radius: 10px;
+      background: color-mix(in srgb, var(--color-accent-hover) 8%, transparent); color: var(--color-accent-text); font-size: 10px; font-weight: 800;
     }
     @keyframes speakerActionsIn {
       from { opacity: 0; transform: translateY(-4px); }
@@ -159,9 +159,9 @@
     }
     .speaker-footer { padding: 10px; border-top: 1px solid var(--border-2); }
     .speaker-footer .btn { width: 100%; padding: 10px; font-size: 11px; }
-    .edge-rail { display: flex; align-self: stretch; min-height: 160px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; border: 1px solid rgba(59,130,246,.34); border-radius: 15px; background: var(--bg3); color: #93c5fd; box-shadow: 0 8px 22px rgba(0,0,0,.32), inset 0 1px 0 rgba(59,130,246,.12); cursor: pointer; }
-    .edge-rail:hover { border-color: rgba(59,130,246,.64); background: #0d1e3a; }
-    .edge-rail:focus-visible { outline: 3px solid rgba(59,130,246,.38); outline-offset: 2px; }
+    .edge-rail { display: flex; align-self: stretch; min-height: 160px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; border: 1px solid color-mix(in srgb, var(--color-accent-hover) 34%, transparent); border-radius: 15px; background: var(--bg3); color: var(--color-accent-text); box-shadow: 0 8px 22px rgba(0,0,0,.32), inset 0 1px 0 color-mix(in srgb, var(--color-accent-hover) 12%, transparent); cursor: pointer; }
+    .edge-rail:hover { border-color: color-mix(in srgb, var(--color-accent-hover) 64%, transparent); background: #0d1e3a; }
+    .edge-rail:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
     .edge-rail-label { font-size: 10px; font-weight: 800; letter-spacing: .12em; writing-mode: vertical-rl; text-orientation: mixed; }
     .admin-workspace.left-collapsed .speakers-panel .panel-body, .admin-workspace.right-collapsed .editor-panel .panel-body { visibility: hidden; pointer-events: none; }
     .admin-workspace.left-collapsed #speakersRail, .admin-workspace.right-collapsed #editorRail { background: #0b1c35; }
@@ -180,21 +180,21 @@
     .admin-console .question-card:hover { background: rgba(255,255,255,.025); }
     .admin-console .question-card:last-child { border-bottom: 0; }
     .questions-manual { border-top: 1px solid var(--border-2); padding: 0 16px; }
-    .questions-manual summary { min-height: 46px; display: flex; align-items: center; cursor: pointer; color: #93c5fd; font-size: 12px; font-weight: 700; }
+    .questions-manual summary { min-height: 46px; display: flex; align-items: center; cursor: pointer; color: var(--color-accent-text); font-size: 12px; font-weight: 700; }
     .questions-manual .manual-grid { display: grid; grid-template-columns: minmax(0,1fr) 150px 150px auto; gap: 8px; padding: 0 0 14px; }
     .editor-panel .panel-body { gap: 10px; }
     .editor-card { padding: 16px; border-bottom: 1px solid var(--border-2); }
     .editor-card .section-title { margin-bottom: 9px; }
     .editor-header-status { display: grid; justify-items: end; gap: 4px; }
     .editor-dirty-status, .editor-background-status { max-width: 150px; padding: 4px 6px; border-radius: 7px; font-size: 9px; font-weight: 700; line-height: 1.25; text-align: right; }
-    .editor-dirty-status { border: 1px solid rgba(251,191,36,.28); background: rgba(251,191,36,.1); color: #fde68a; }
-    .editor-background-status { border: 1px solid rgba(96,165,250,.28); background: rgba(59,130,246,.1); color: #bfdbfe; }
-    .editor-note { margin-bottom: 12px; padding: 10px; border: 1px solid rgba(251,191,36,.22); border-radius: 12px; background: rgba(251,191,36,.08); color: #fde68a; font-size: 11px; line-height: 1.45; }
+    .editor-dirty-status { border: 1px solid color-mix(in srgb, var(--color-warning) 28%, transparent); background: var(--color-warning-soft); color: var(--color-warning-text); }
+    .editor-background-status { border: 1px solid color-mix(in srgb, var(--color-accent-hover) 28%, transparent); background: color-mix(in srgb, var(--color-accent-hover) 10%, transparent); color: #bfdbfe; }
+    .editor-note { margin-bottom: 12px; padding: 10px; border: 1px solid color-mix(in srgb, var(--color-warning) 22%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--color-warning) 8%, transparent); color: var(--color-warning-text); font-size: 11px; line-height: 1.45; }
     .editor-actions { display: flex; gap: 8px; margin-top: 10px; }
     .editor-actions .btn { flex: 1; padding: 10px; font-size: 11px; }
     .utility-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
     .utility-grid .btn { min-height: 40px; padding: 8px; font-size: 11px; }
-    .editor-danger { margin-top: auto; padding: 12px; border-top: 1px solid rgba(248,113,113,.14); background: rgba(248,113,113,.035); }
+    .editor-danger { margin-top: auto; padding: 12px; border-top: 1px solid color-mix(in srgb, var(--color-danger) 14%, transparent); background: color-mix(in srgb, var(--color-danger) 3.5%, transparent); }
     .editor-danger .danger-zone-label { margin-bottom: 8px; }
     .editor-danger .btn { width: 100%; padding: 10px; font-size: 11px; }
     .editor-danger .btn + .btn { margin-top: 8px; }
@@ -244,7 +244,7 @@
           <div class="panel-head"><div><h2>Редактор спикера</h2><p>Выберите спикера</p></div><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div></div>
           <div class="editor-card"><div class="editor-note">Realtime-обновления не заменят локальный черновик.</div><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><span class="arrow">▼</span></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div>
           <div class="editor-card"><h2 class="section-title">Утилиты</h2><div class="utility-grid"><button class="btn ghost" id="qrBtn">▣ QR</button><button class="btn ghost" id="openGuestBtn">↗ Гостевая</button><button class="btn ghost" id="openModBtn">↗ Модератор</button><button class="btn ghost" id="exportCsvBtnDuplicate" disabled>↓ CSV</button></div><div id="qrPanel" style="display:none; margin-top:10px; text-align:center;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:#fff; padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div></div>
-          <div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn">🗑 Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:#fde68a; margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button><div id="logoutConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:#fde68a; margin:0 0 8px;">Выйти из аккаунта?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" style="flex:1;">Отмена</button></div></div></div>
+          <div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn">🗑 Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button><div id="logoutConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Выйти из аккаунта?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" style="flex:1;">Отмена</button></div></div></div>
         </div></aside>
       </section>
     </main>
@@ -777,7 +777,7 @@
                 <div class="speaker-actions">
                   ${!s.is_active ? String(pendingSpeakerDeletionId) === String(s.id)
                     ? `<span style="display:flex;gap:4px;"><button class="btn danger" style="padding:4px 7px;font-size:10px;" data-sp-delete-confirm="${s.id}">Да, удалить</button><button class="btn ghost" style="padding:4px 7px;font-size:10px;" data-sp-delete-cancel="${s.id}">Отмена</button></span>`
-                    : `<button class="btn ghost" style="padding:4px 8px;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.3);" data-sp-delete="${s.id}" title="Удалить спикера">✕</button>` : ''}
+                    : `<button class="btn ghost" style="padding:4px 8px;font-size:13px;color:var(--color-danger);border-color:color-mix(in srgb, var(--color-danger) 30%, transparent);" data-sp-delete="${s.id}" title="Удалить спикера">✕</button>` : ''}
                 </div>
                 ${String(s.id) === String(selectedSpeakerId) ? `
                   <div class="speaker-expanded-actions">
@@ -891,7 +891,7 @@
             const badgeClass = isPending ? 'pending' : isAsked ? 'asked' : isHidden ? 'hidden' : 'open';
             const badgeText  = isPending ? 'модерация' : isAsked ? 'задан' : isHidden ? 'скрыт' : 'открыт';
             return `
-              <div class="question-card" style="${isAsked ? 'opacity:0.65;' : ''}${isPending ? 'border-color:rgba(251,191,36,0.3);' : ''}">
+              <div class="question-card" style="${isAsked ? 'opacity:0.65;' : ''}${isPending ? 'border-color:color-mix(in srgb, var(--color-warning) 30%, transparent);' : ''}">
                 <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
                   <div class="question-text" style="font-size:14px;">${escapeHtml(item.text)}</div>
                   <div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
