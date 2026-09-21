@@ -198,7 +198,8 @@ begin
   select room.is_questions_open, room.moderation_enabled
   into v_questions_open, v_moderation_enabled
   from public.qna_rooms room
-  where room.id = p_room_id;
+  where room.id = p_room_id
+  for update;
 
   if not found then
     raise exception 'ROOM_NOT_FOUND' using errcode = '22023';
@@ -335,6 +336,15 @@ begin
     raise exception 'Authentication required' using errcode = '42501';
   end if;
 
+  perform 1
+  from public.qna_rooms
+  where id = p_room_id
+  for update;
+
+  if not found then
+    raise exception 'Room not found' using errcode = '22023';
+  end if;
+
   if not exists (
     select 1
     from public.qna_speakers
@@ -351,10 +361,6 @@ begin
   update public.qna_rooms
   set active_speaker_id = p_speaker_id
   where id = p_room_id;
-
-  if not found then
-    raise exception 'Room not found' using errcode = '22023';
-  end if;
 end;
 $$;
 
