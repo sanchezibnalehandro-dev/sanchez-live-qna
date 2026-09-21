@@ -208,36 +208,47 @@ create trigger qna_questions_touch_updated_at
 before update on public.qna_questions
 for each row execute function public.qna_touch_updated_at();
 
-create or replace function public.qna_recalc_votes_count()
+drop trigger if exists qna_votes_after_insert on public.qna_question_votes;
+drop trigger if exists qna_votes_after_delete on public.qna_question_votes;
+drop function if exists public.qna_recalc_votes_count();
+
+create or replace function public.qna_adjust_votes_count()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $
 begin
-  update public.qna_questions
-  set votes_count = (
-    select count(*)
-    from public.qna_question_votes v
-    where v.question_id = coalesce(new.question_id, old.question_id)
-  )
-  where id = coalesce(new.question_id, old.question_id);
+  if tg_op = 'INSERT' then
+    update public.qna_questions
+    set votes_count = votes_count + 1
+    where id = new.question_id;
+  elsif tg_op = 'DELETE' then
+    update public.qna_questions
+    set votes_count = greatest(votes_count - 1, 0)
+    where id = old.question_id;
+  end if;
   return null;
 end;
-$$;
+$;
 
-revoke execute on function public.qna_recalc_votes_count()
+revoke execute on function public.qna_adjust_votes_count()
 from public, anon, authenticated;
 
-drop trigger if exists qna_votes_after_insert on public.qna_question_votes;
+update public.qna_questions question
+set votes_count = (
+  select count(*)
+  from public.qna_question_votes vote
+  where vote.question_id = question.id
+);
+
 create trigger qna_votes_after_insert
 after insert on public.qna_question_votes
-for each row execute function public.qna_recalc_votes_count();
+for each row execute function public.qna_adjust_votes_count();
 
-drop trigger if exists qna_votes_after_delete on public.qna_question_votes;
 create trigger qna_votes_after_delete
 after delete on public.qna_question_votes
-for each row execute function public.qna_recalc_votes_count();
+for each row execute function public.qna_adjust_votes_count();
 
 create or replace function public.remove_vote(
   p_question_id bigint,
@@ -261,6 +272,58 @@ $$;
 
 revoke execute on function public.remove_vote(bigint, text) from public;
 grant execute on function public.remove_vote(bigint, text) to anon, authenticated;
+
+
+create or replace function public.add_vote(
+  p_question_id bigint,
+  p_session_id text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  v_question_session_id text;
+  v_question_status text;
+  v_event_key text;
+  v_is_current_session boolean;
+begin
+  if p_session_id is null or length(trim(p_session_id)) < 8 or length(trim(p_session_id)) > 128 then
+    raise exception 'INVALID_SESSION' using errcode = '22023';
+  end if;
+
+  select question.session_id, question.status, room.event_key, room.is_current_session
+  into v_question_session_id, v_question_status, v_event_key, v_is_current_session
+  from public.qna_questions question
+  join public.qna_rooms room on room.id = question.room_id
+  where question.id = p_question_id
+  for share of question, room;
+
+  if not found then
+    raise exception 'QUESTION_NOT_FOUND' using errcode = '22023';
+  end if;
+
+  if v_question_status <> 'open' then
+    raise exception 'VOTE_NOT_ALLOWED' using errcode = '42501';
+  end if;
+
+  if v_event_key is not null and not v_is_current_session then
+    raise exception 'SESSION_NOT_CURRENT' using errcode = '42501';
+  end if;
+
+  if v_question_session_id is not null and v_question_session_id = trim(p_session_id) then
+    raise exception 'CANNOT_VOTE_OWN_QUESTION' using errcode = '42501';
+  end if;
+
+  insert into public.qna_question_votes (question_id, session_id)
+  values (p_question_id, trim(p_session_id))
+  on conflict (question_id, session_id) do nothing;
+end;
+$;
+
+revoke execute on function public.add_vote(bigint, text) from public;
+grant execute on function public.add_vote(bigint, text) to anon, authenticated;
 
 create or replace function public.submit_guest_question(
   p_room_id bigint,
@@ -547,5 +610,113 @@ $current$;
 revoke execute on function public.set_current_event_session(bigint)
 from public, anon;
 grant execute on function public.set_current_event_session(bigint)
+to authenticated;
+
+
+create or replace function public.moderate_qna_question_status(
+  p_room_id bigint,
+  p_question_id bigint,
+  p_status text
+)
+returns table(id bigint, status text, asked_at timestamptz)
+language plpgsql
+set search_path = public
+as $
+declare
+  v_event_key text;
+  v_is_current_session boolean;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  if p_status not in ('open', 'asked', 'hidden') then
+    raise exception 'INVALID_STATUS' using errcode = '22023';
+  end if;
+
+  select room.event_key, room.is_current_session
+  into v_event_key, v_is_current_session
+  from public.qna_rooms room
+  where room.id = p_room_id
+  for share;
+
+  if not found then
+    raise exception 'ROOM_NOT_FOUND' using errcode = '22023';
+  end if;
+
+  if v_event_key is not null and not v_is_current_session then
+    raise exception 'SESSION_NOT_CURRENT' using errcode = '42501';
+  end if;
+
+  return query
+  update public.qna_questions question
+  set status = p_status,
+      asked_at = case
+        when p_status = 'asked' then now()
+        when p_status = 'open' then null
+        else question.asked_at
+      end
+  where question.id = p_question_id
+    and question.room_id = p_room_id
+  returning question.id, question.status, question.asked_at;
+
+  if not found then
+    raise exception 'QUESTION_NOT_FOUND' using errcode = '22023';
+  end if;
+end;
+$;
+
+revoke execute on function public.moderate_qna_question_status(bigint, bigint, text)
+from public, anon;
+grant execute on function public.moderate_qna_question_status(bigint, bigint, text)
+to authenticated;
+
+create or replace function public.moderate_qna_question_pin(
+  p_room_id bigint,
+  p_question_id bigint,
+  p_is_pinned boolean
+)
+returns table(id bigint, is_pinned boolean)
+language plpgsql
+set search_path = public
+as $
+declare
+  v_event_key text;
+  v_is_current_session boolean;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  select room.event_key, room.is_current_session
+  into v_event_key, v_is_current_session
+  from public.qna_rooms room
+  where room.id = p_room_id
+  for share;
+
+  if not found then
+    raise exception 'ROOM_NOT_FOUND' using errcode = '22023';
+  end if;
+
+  if v_event_key is not null and not v_is_current_session then
+    raise exception 'SESSION_NOT_CURRENT' using errcode = '42501';
+  end if;
+
+  return query
+  update public.qna_questions question
+  set is_pinned = p_is_pinned
+  where question.id = p_question_id
+    and question.room_id = p_room_id
+  returning question.id, question.is_pinned;
+
+  if not found then
+    raise exception 'QUESTION_NOT_FOUND' using errcode = '22023';
+  end if;
+end;
+$;
+
+revoke execute on function public.moderate_qna_question_pin(bigint, bigint, boolean)
+from public, anon;
+grant execute on function public.moderate_qna_question_pin(bigint, bigint, boolean)
 to authenticated;
 
