@@ -558,7 +558,10 @@
         try {
           const { error } = await supabase.auth.signOut({ scope: 'local' });
           if (error) throw error;
-          location.href = `./login-auth.html?room=${encodeURIComponent(roomSlug)}`;
+          const route = state.room?.event_key
+            ? `event=${encodeURIComponent(state.room.event_key)}`
+            : `room=${encodeURIComponent(roomSlug)}`;
+          location.href = `./login-auth.html?${route}&next=admin`;
         } catch (error) {
           setStatus(error?.message || 'Не удалось выйти из аккаунта.', 'error');
         } finally {
