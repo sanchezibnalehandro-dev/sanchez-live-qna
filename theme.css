@@ -60,9 +60,9 @@ body::before {
   color: var(--color-text);
 }
 .bootstrap-card { display: grid; justify-items: center; gap: 18px; text-align: center; }
-.bootstrap-brand { display: flex; align-items: center; gap: 12px; }
-.bootstrap-brand-copy { display: grid; justify-items: start; line-height: 1.15; }
-.bootstrap-brand-copy strong { font-family: var(--font-display); font-size: 18px; letter-spacing: .08em; }
+.bootstrap-brand { display: flex; align-items: center; gap: 12px; max-width: 100%; }
+.bootstrap-brand-copy { display: grid; min-width: 0; justify-items: start; line-height: 1.15; }
+.bootstrap-brand-copy strong { max-width: 100%; font-family: var(--font-display); font-size: clamp(13px, 4.5vw, 18px); letter-spacing: .04em; white-space: nowrap; }
 .bootstrap-brand-copy span { color: var(--color-text-secondary); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .bootstrap-message { margin: 0; color: var(--color-text-secondary); font-size: 13px; }
 .bootstrap-screen.is-error .bootstrap-message { max-width: 420px; color: var(--color-danger-text); line-height: 1.55; }
@@ -171,6 +171,8 @@ body.is-ready .bootstrap-screen { visibility: hidden; opacity: 0; pointer-events
 .brand-logo {
   display: inline-flex;
   align-items: center;
+  max-width: 100%;
+  min-width: 0;
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -199,12 +201,18 @@ body.is-ready .bootstrap-screen { visibility: hidden; opacity: 0; pointer-events
   object-fit: contain;
 }
 .brand-logo-text {
+  min-width: 0;
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .brand-logo-text { font-size: 10px; letter-spacing: .035em; }
 }
 
 .eyebrow {

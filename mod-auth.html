@@ -25,7 +25,7 @@
     .moderator-live-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
     .moderator-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
     .moderator-brand .brand-logo-mark { width: 30px; height: 30px; border-radius: 9px; font-size: 14px; }
-    .moderator-brand-label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .moderator-brand-label { min-width: 0; color: var(--muted); font-size: clamp(8px, 1.4vw, 10px); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
     .live-speaker-label { display: flex; align-items: center; gap: 7px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
     .live-speaker-label::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
     .moderator-live h1 { margin: 4px 0 0; color: var(--text); background: none; -webkit-text-fill-color: var(--text); font-size: clamp(21px, 3vw, 31px); font-weight: 800; letter-spacing: -.035em; line-height: 1.12; }

@@ -103,10 +103,10 @@
     .admin-live { overflow: hidden; }
     .admin-live .card-inner { padding: 16px; }
     .live-main { display: grid; grid-template-columns: auto minmax(260px, 1fr) auto; gap: 18px; align-items: center; }
-    .live-brand { display: flex; align-items: center; gap: 10px; }
+    .live-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .live-brand .brand-logo-mark { width: 36px; height: 36px; border-radius: 10px; }
-    .live-brand-copy { display: grid; gap: 2px; }
-    .live-brand-copy strong { font-size: 13px; letter-spacing: .14em; }
+    .live-brand-copy { display: grid; min-width: 0; gap: 2px; }
+    .live-brand-copy strong { font-size: clamp(10px, 1.25vw, 13px); letter-spacing: .07em; white-space: nowrap; }
     .live-brand-copy span { color: var(--muted); font-size: 10px; }
     .live-context { min-width: 0; border-left: 1px solid var(--border); padding-left: 18px; }
     .live-label { color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
@@ -140,13 +140,26 @@
     .live-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--bg3); color: var(--color-accent-text); font-size: 11px; font-weight: 700; white-space: nowrap; }
     .live-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
     .live-chip.warn .dot { background: var(--yellow); }
-    .live-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-2); }
-    .live-toggle { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
-    .live-toggle strong { color: var(--text); }
+    .live-controls { display: grid; gap: 8px; margin-top: 12px; padding: 11px; border: 1px solid var(--border-2); border-radius: 14px; background: color-mix(in srgb, var(--color-surface-subtle) 70%, transparent); }
+    .live-controls-label { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .live-control-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .live-toggle { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 11px; border: 1px solid var(--color-neutral-border); border-radius: 11px; background: var(--color-surface-raised); cursor: pointer; }
+    .live-toggle-copy { display: grid; min-width: 0; gap: 3px; }
+    .live-toggle-title { color: var(--text); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .live-toggle-sub { color: var(--muted); font-size: 11px; line-height: 1.3; }
+    .live-toggle-action { display: flex; flex: 0 0 auto; align-items: center; gap: 9px; }
+    .live-control-state { display: inline-flex; align-items: center; gap: 5px; color: var(--color-neutral-text); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .live-control-state::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .live-toggle[data-state="success"] .live-control-state { color: var(--color-success-text); }
+    .live-toggle[data-state="warning"] .live-control-state { color: var(--color-warning-text); }
+    .live-toggle[data-state="success"] .toggle-track { background: var(--color-success); border-color: var(--color-success-accent); }
+    .live-toggle[data-state="warning"] .toggle-track { background: var(--color-warning-soft); border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); }
+    .live-toggle[data-state="warning"] .toggle-track::after { background: var(--color-warning-text); }
     .live-toggle .toggle-pill { width: 40px; height: 22px; }
     .live-toggle .toggle-track::after { width: 14px; height: 14px; }
     .live-toggle .toggle-pill input:checked + .toggle-track::after { transform: translateX(18px); }
-    .live-status-message { margin-left: auto; color: var(--color-warning-text); font-size: 11px; }
+    .live-status-message:empty { display: none; }
+    .live-status-message { color: var(--color-warning-text); font-size: 11px; }
     .admin-workspace { display: grid; grid-template-columns: 370px 46px minmax(0, 1fr) 46px 320px; gap: 8px; min-height: 0; flex: 1; }
     .admin-workspace.left-collapsed { grid-template-columns: 56px 46px minmax(0, 1fr) 46px 320px; }
     .admin-workspace.right-collapsed { grid-template-columns: 370px 46px minmax(0, 1fr) 46px 56px; }
@@ -238,22 +251,40 @@
     .responsive-panel-body, .responsive-question-body { display: flex; min-height: 0; flex: 1; flex-direction: column; }
     @media (max-width: 1180px) { .admin-workspace { grid-template-columns: 330px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.left-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.right-collapsed { grid-template-columns: 330px 42px minmax(0,1fr) 42px 56px; } .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 56px; } }
     @media (max-width: 1024px) {
-      .responsive-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border-2); }
+      .admin-console .shell { min-height: 0; align-content: start; }
+      .responsive-section-head { display: flex; min-height: 38px; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border-2); }
       .responsive-summary { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
-      .responsive-section-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-subtle); color: var(--color-accent-text); font: 700 10px/1 var(--font-console); cursor: pointer; }
+      .responsive-section-toggle { display: inline-flex; width: 34px; height: 34px; flex: 0 0 34px; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-subtle); color: var(--color-accent-text); font: 800 20px/1 var(--font-console); cursor: pointer; transition: border-color .16s ease, background .16s ease; }
+      .responsive-section-toggle:hover { border-color: var(--color-border-strong); background: var(--color-surface-hover); }
       .responsive-section-toggle:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
       [data-responsive-section][data-accordion-collapsed="true"] .responsive-section-body { display: none; }
-      .questions-panel[data-accordion-collapsed="true"] { min-height: 0; }
-      .live-main { grid-template-columns: 1fr; }
+      [data-responsive-section][data-accordion-collapsed="true"] { min-height: 0; height: auto; align-self: start; }
+      [data-responsive-section][data-accordion-collapsed="true"] .panel-body { height: auto; }
+      .admin-live[data-accordion-collapsed="true"] .card-inner { padding-bottom: 6px; }
+      .live-main { grid-template-columns: auto minmax(0, 1fr); gap: 12px; }
       .live-context { border-left: 0; padding-left: 0; }
-      .live-statuses { justify-content: flex-start; }
-      .admin-workspace, .admin-workspace.left-collapsed, .admin-workspace.right-collapsed, .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 1fr; }
+      .live-statuses { grid-column: 1 / -1; justify-content: flex-start; }
+      .admin-workspace, .admin-workspace.left-collapsed, .admin-workspace.right-collapsed, .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 1fr; flex: none; align-items: start; }
       .admin-workspace.left-collapsed .speakers-panel, .admin-workspace.right-collapsed .editor-panel { display: block; }
       .admin-workspace.left-collapsed .speakers-panel .panel-body, .admin-workspace.right-collapsed .editor-panel .panel-body { visibility: visible; pointer-events: auto; }
       .edge-rail { display: none; }
-      .questions-toolbar { border-bottom: 0; }
+      .panel-head { align-items: center; padding: 12px 14px; }
+      .panel-head > div:first-child > h2, .panel-head > div:first-child > p, .questions-toolbar-top > div:first-child > .questions-title, .questions-toolbar-top > div:first-child > .questions-summary { display: none; }
+      .panel-head-actions { align-items: center; }
+      .questions-panel { min-height: 0; }
+      .questions-toolbar { gap: 0; padding: 12px 14px; border-bottom: 0; }
+      .questions-toolbar-top { gap: 10px; }
+      .questions-actions { justify-content: flex-end; flex-wrap: nowrap; }
       .responsive-question-body > .question-filter-row { padding: 0 16px 16px; }
       .questions-manual .manual-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .live-main { grid-template-columns: 1fr; }
+      .live-statuses { grid-column: auto; }
+      .live-control-list { grid-template-columns: 1fr; }
+      .questions-toolbar-top { align-items: flex-start; }
+      .questions-actions { max-width: 72%; flex-wrap: wrap; }
+      .live-brand-copy strong { font-size: 10px; letter-spacing: .035em; }
     }
   </style>
 </head>
@@ -268,7 +299,7 @@
     <main class="shell">
       <section class="card admin-live" data-responsive-section="live" data-accordion-collapsed="false">
         <div class="card-inner">
-          <div class="responsive-section-head"><span class="responsive-summary" id="liveAccordionSummary">Приём вопросов · загрузка</span><button class="responsive-section-toggle" type="button" data-accordion-toggle="live" aria-expanded="true" aria-controls="liveAccordionBody" aria-label="Свернуть состояние и live controls">Свернуть</button></div>
+          <div class="responsive-section-head"><span class="responsive-summary" id="liveAccordionSummary">Приём вопросов · загрузка</span><button class="responsive-section-toggle" type="button" data-accordion-toggle="live" aria-expanded="true" aria-controls="liveAccordionBody" aria-label="Свернуть состояние и live controls"><span class="responsive-chevron" aria-hidden="true">⌄</span></button></div>
           <div class="responsive-section-body" id="liveAccordionBody">
             <div class="live-main">
               <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
@@ -283,8 +314,11 @@
             </div>
             <div id="qrPanel" style="display:none; margin-top:10px; text-align:right;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:var(--color-surface-qr); padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div>
             <div class="live-controls">
-              <label class="live-toggle">Приём вопросов <strong id="questionsOpenSub">Загрузка…</strong><span class="toggle-pill"><input type="checkbox" id="questionsOpenToggle"><span class="toggle-track"></span></span></label>
-              <label class="live-toggle">Премодерация <strong id="moderationSub">Загрузка…</strong><span class="toggle-pill"><input type="checkbox" id="moderationToggle"><span class="toggle-track"></span></span></label>
+              <div class="live-controls-label">Управление эфиром</div>
+              <div class="live-control-list">
+                <label class="live-toggle" id="questionsOpenControl" data-state="neutral"><span class="live-toggle-copy"><span class="live-toggle-title">Приём вопросов</span><span class="live-toggle-sub" id="questionsOpenSub">Загрузка…</span></span><span class="live-toggle-action"><span class="live-control-state" id="questionsOpenState">—</span><span class="toggle-pill"><input type="checkbox" id="questionsOpenToggle"><span class="toggle-track"></span></span></span></label>
+                <label class="live-toggle" id="moderationControl" data-state="neutral"><span class="live-toggle-copy"><span class="live-toggle-title">Премодерация</span><span class="live-toggle-sub" id="moderationSub">Загрузка…</span></span><span class="live-toggle-action"><span class="live-control-state" id="moderationState">—</span><span class="toggle-pill"><input type="checkbox" id="moderationToggle"><span class="toggle-track"></span></span></span></label>
+              </div>
               <div class="live-status-message" id="status"></div>
             </div>
           </div>
@@ -293,21 +327,21 @@
 
       <section class="admin-workspace" id="adminWorkspace">
         <aside class="card console-panel speakers-panel" id="speakersPanel" data-responsive-section="speakers" data-accordion-collapsed="true"><div class="panel-body">
-          <div class="panel-head"><div><h2 id="speakersPanelTitle">Спикеры</h2><p id="speakersPanelSubtitle">Участники · порядок программы</p><span class="responsive-summary" id="speakersAccordionSummary">Спикеры · 0</span></div><div class="panel-head-actions"><button class="btn primary" id="addSpeakerBtn" style="padding:8px 10px;font-size:11px;">+ Добавить</button><button class="responsive-section-toggle" type="button" data-accordion-toggle="speakers" aria-expanded="false" aria-controls="speakersAccordionBody" aria-label="Развернуть участников и спикеров">Развернуть</button></div></div>
+          <div class="panel-head"><div><h2 id="speakersPanelTitle">Спикеры</h2><p id="speakersPanelSubtitle">Участники · порядок программы</p><span class="responsive-summary" id="speakersAccordionSummary">Спикеры · 0</span></div><div class="panel-head-actions"><button class="btn primary" id="addSpeakerBtn" style="padding:8px 10px;font-size:11px;">+ Добавить</button><button class="responsive-section-toggle" type="button" data-accordion-toggle="speakers" aria-expanded="false" aria-controls="speakersAccordionBody" aria-label="Развернуть участников и спикеров"><span class="responsive-chevron" aria-hidden="true">›</span></button></div></div>
           <div class="responsive-section-body responsive-panel-body" id="speakersAccordionBody"><div class="speaker-scroll"><div class="list" id="speakersList"></div></div><div class="speaker-footer" id="speakerFilterFooter"><button class="btn ghost" id="clearSpeakerFilter">Все спикеры</button></div></div>
         </div></aside>
         <button class="edge-rail" id="speakersRail" type="button" aria-label="Свернуть панель спикеров" aria-expanded="true"><span>‹</span><span class="edge-rail-label">Спикеры</span></button>
 
         <section class="card console-panel questions-panel" data-responsive-section="questions" data-accordion-collapsed="false">
           <div class="questions-toolbar">
-            <div class="questions-toolbar-top"><div><h2 class="questions-title">Очередь вопросов <span id="speakerFilterLabel" style="font-size:11px;color:var(--muted);font-weight:500;"></span></h2><p class="questions-summary">Все вопросы и новые поступления в реальном времени</p><span class="responsive-summary" id="questionsAccordionSummary">Вопросы · 0</span></div><div class="questions-actions"><div class="question-sort" role="group" aria-label="Сортировка вопросов"><button class="question-sort-btn active" type="button" data-sort="votes" aria-pressed="true">По голосам</button><button class="question-sort-btn" type="button" data-sort="newest" aria-pressed="false">Новые</button></div><button class="btn ghost" id="exportCsvBtn" style="padding:8px 10px;font-size:11px;">↓ CSV</button><button class="responsive-section-toggle" type="button" data-accordion-toggle="questions" aria-expanded="true" aria-controls="questionsAccordionBody" aria-label="Свернуть вопросы">Свернуть</button></div></div>
+            <div class="questions-toolbar-top"><div><h2 class="questions-title">Очередь вопросов <span id="speakerFilterLabel" style="font-size:11px;color:var(--muted);font-weight:500;"></span></h2><p class="questions-summary">Все вопросы и новые поступления в реальном времени</p><span class="responsive-summary" id="questionsAccordionSummary">Вопросы · 0</span></div><div class="questions-actions"><div class="question-sort" role="group" aria-label="Сортировка вопросов"><button class="question-sort-btn active" type="button" data-sort="votes" aria-pressed="true">По голосам</button><button class="question-sort-btn" type="button" data-sort="newest" aria-pressed="false">Новые</button></div><button class="btn ghost" id="exportCsvBtn" style="padding:8px 10px;font-size:11px;">↓ CSV</button><button class="responsive-section-toggle" type="button" data-accordion-toggle="questions" aria-expanded="true" aria-controls="questionsAccordionBody" aria-label="Свернуть вопросы"><span class="responsive-chevron" aria-hidden="true">⌄</span></button></div></div>
           </div>
           <div class="responsive-section-body responsive-question-body" id="questionsAccordionBody"><div class="question-filter-row"><button class="filter-tab active" data-filter="all">Все <span id="filterAllCount">0</span></button><button class="filter-tab" data-filter="pending">На модерации <span id="filterPendingCount">0</span></button><button class="filter-tab" data-filter="open">Открытые <span id="filterOpenCount">0</span></button><button class="filter-tab" data-filter="asked">Заданные <span id="filterAskedCount">0</span></button><button class="filter-tab" data-filter="hidden">Скрытые <span id="filterHiddenCount">0</span></button></div><button class="btn ghost new-questions-banner" id="newQuestionsBanner" type="button" hidden>↑ <span id="newQuestionsCount">0</span> новых вопросов</button><div class="question-feed"><div class="list" id="questionsList" style="contain: layout style"></div></div><details class="questions-manual"><summary>⊞ Добавить вопрос вручную</summary><div class="manual-grid"><textarea class="textarea" id="godQuestionInput" placeholder="Текст вопроса…" maxlength="200" style="min-height:44px;"></textarea><input class="input" id="godNameInput" placeholder="Имя" maxlength="120"><input class="input" id="godCompanyInput" placeholder="Компания" maxlength="120"><button class="btn primary" id="godSubmitBtn">Опубликовать</button></div><div class="status" id="godStatus"></div></details></div>
         </section>
 
         <button class="edge-rail" id="editorRail" type="button" aria-label="Свернуть редактор спикера" aria-expanded="true"><span>›</span><span class="edge-rail-label">Редактор</span></button>
         <aside class="card console-panel editor-panel" id="editorPanel" data-responsive-section="editor" data-accordion-collapsed="true"><div class="panel-body">
-          <div class="panel-head"><div><h2 id="editorTitle">Редактор спикера</h2><p id="editorSubtitle">Выберите спикера</p><span class="responsive-summary" id="editorAccordionSummary">Редактор · не выбран</span></div><div class="panel-head-actions"><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div><button class="responsive-section-toggle" type="button" data-accordion-toggle="editor" aria-expanded="false" aria-controls="editorAccordionBody" aria-label="Развернуть редактор участника">Развернуть</button></div></div>
+          <div class="panel-head"><div><h2 id="editorTitle">Редактор спикера</h2><p id="editorSubtitle">Выберите спикера</p><span class="responsive-summary" id="editorAccordionSummary">Редактор · не выбран</span></div><div class="panel-head-actions"><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div><button class="responsive-section-toggle" type="button" data-accordion-toggle="editor" aria-expanded="false" aria-controls="editorAccordionBody" aria-label="Развернуть редактор участника"><span class="responsive-chevron" aria-hidden="true">›</span></button></div></div>
           <div class="responsive-section-body responsive-panel-body" id="editorAccordionBody"><div class="editor-card"><div class="editor-note">Realtime-обновления не заменят локальный черновик.</div><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><span class="arrow">▼</span></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div><div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn">🗑 Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button><div id="logoutConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Выйти из аккаунта?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" style="flex:1;">Отмена</button></div></div></div></div>
         </div></aside>
       </section>
@@ -596,7 +630,8 @@
       section.root.dataset.accordionCollapsed = String(collapsed);
       section.button.setAttribute('aria-expanded', String(!collapsed));
       section.button.setAttribute('aria-label', `${collapsed ? 'Развернуть' : 'Свернуть'} ${accordionLabels[name]}`);
-      section.button.textContent = collapsed ? 'Развернуть' : 'Свернуть';
+      const chevron = section.button.querySelector('.responsive-chevron');
+      if (chevron) chevron.textContent = collapsed ? '›' : '⌄';
     }
 
     function persistAccordionState() {
@@ -1182,17 +1217,27 @@
       qOpenToggle.checked = Boolean(state.room?.is_questions_open);
       modToggle.checked   = Boolean(state.room?.moderation_enabled);
       const eventRoomInactive = Boolean(state.room?.event_key && !state.room?.is_current_session);
+      const questionsOpenPending = pendingToggles.has('is_questions_open');
+      const moderationPending = pendingToggles.has('moderation_enabled');
       qOpenToggle.disabled = pendingToggles.has('is_questions_open') || eventRoomInactive;
       modToggle.disabled = pendingToggles.has('moderation_enabled');
-      qOpenSub.textContent = pendingToggles.has('is_questions_open')
+      qOpenSub.textContent = questionsOpenPending
         ? 'Сохраняю…'
         : eventRoomInactive
           ? 'Сначала сделайте сессию текущей'
-          : state.room?.is_questions_open ? 'Гости могут задавать вопросы' : 'Приём приостановлен';
+          : state.room?.is_questions_open ? 'Гости могут отправлять вопросы' : 'Закрыт для гостей';
+      const questionsOpenControl = document.getElementById('questionsOpenControl');
+      const questionsOpenState = document.getElementById('questionsOpenState');
+      questionsOpenControl.dataset.state = questionsOpenPending ? 'neutral' : eventRoomInactive ? 'warning' : state.room?.is_questions_open ? 'success' : 'warning';
+      questionsOpenState.textContent = questionsOpenPending ? 'Сохранение' : eventRoomInactive ? 'Не в эфире' : state.room?.is_questions_open ? 'Открыт' : 'Закрыт';
       document.getElementById('liveAccordionSummary').textContent = `Приём вопросов · ${eventRoomInactive ? 'не в эфире' : state.room?.is_questions_open ? 'открыт' : 'закрыт'}`;
-      modSub.textContent = pendingToggles.has('moderation_enabled')
+      modSub.textContent = moderationPending
         ? 'Сохраняю…'
         : state.room?.moderation_enabled ? 'Вопросы проходят проверку' : 'Вопросы публикуются сразу';
+      const moderationControl = document.getElementById('moderationControl');
+      const moderationState = document.getElementById('moderationState');
+      moderationControl.dataset.state = moderationPending ? 'neutral' : state.room?.moderation_enabled ? 'warning' : 'neutral';
+      moderationState.textContent = moderationPending ? 'Сохранение' : state.room?.moderation_enabled ? 'Проверка' : 'Сразу';
       if (!eventSessionControl.hidden) renderEventSessionState();
 
       // Если выбранного спикера ещё нет — берём активного
