@@ -10,6 +10,7 @@ create table if not exists public.qna_rooms (
   moderator_regalia text null,
   event_key text null,
   session_order integer not null default 100,
+  is_current_session boolean not null default false,
   active_speaker_id bigint null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -32,15 +33,46 @@ alter table public.qna_rooms
 
 alter table public.qna_rooms
   add column if not exists event_key text,
-  add column if not exists session_order integer;
+  add column if not exists session_order integer,
+  add column if not exists is_current_session boolean;
 
 update public.qna_rooms
 set session_order = 100
 where session_order is null;
 
+update public.qna_rooms
+set is_current_session = false
+where is_current_session is null;
+
 alter table public.qna_rooms
   alter column session_order set default 100,
-  alter column session_order set not null;
+  alter column session_order set not null,
+  alter column is_current_session set default false,
+  alter column is_current_session set not null;
+
+do $
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'qna_rooms_current_session_event_check'
+      and conrelid = 'public.qna_rooms'::regclass
+  ) then
+    alter table public.qna_rooms
+      add constraint qna_rooms_current_session_event_check
+      check (not is_current_session or event_key is not null);
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'qna_rooms_event_intake_check'
+      and conrelid = 'public.qna_rooms'::regclass
+  ) then
+    alter table public.qna_rooms
+      add constraint qna_rooms_event_intake_check
+      check (event_key is null or is_current_session or not is_questions_open);
+  end if;
+end;
+$;
 
 do $$
 begin
@@ -147,6 +179,10 @@ create unique index if not exists qna_speakers_one_active_per_room_idx
   on public.qna_speakers(room_id)
   where is_active = true;
 
+create unique index if not exists qna_rooms_one_current_session_per_event_idx
+  on public.qna_rooms(event_key)
+  where is_current_session = true and event_key is not null;
+
 create or replace function public.qna_touch_updated_at()
 returns trigger
 language plpgsql
@@ -244,6 +280,8 @@ declare
   v_questions_open boolean;
   v_moderation_enabled boolean;
   v_mode text;
+  v_event_key text;
+  v_is_current_session boolean;
   v_status text;
   v_id bigint;
   v_session_id text := btrim(p_session_id);
@@ -264,14 +302,20 @@ begin
     raise exception 'INVALID_AUTHOR_COMPANY' using errcode = '22023';
   end if;
 
-  select room.is_questions_open, room.moderation_enabled, room.mode
-  into v_questions_open, v_moderation_enabled, v_mode
+  select room.is_questions_open, room.moderation_enabled, room.mode,
+         room.event_key, room.is_current_session
+  into v_questions_open, v_moderation_enabled, v_mode,
+       v_event_key, v_is_current_session
   from public.qna_rooms room
   where room.id = p_room_id
   for update;
 
   if not found then
     raise exception 'ROOM_NOT_FOUND' using errcode = '22023';
+  end if;
+
+  if v_event_key is not null and not v_is_current_session then
+    raise exception 'SESSION_NOT_CURRENT' using errcode = '42501';
   end if;
 
   if not v_questions_open then
@@ -453,5 +497,57 @@ $$;
 revoke execute on function public.set_active_qna_speaker(bigint, bigint)
 from public, anon;
 grant execute on function public.set_active_qna_speaker(bigint, bigint)
+to authenticated;
+
+create or replace function public.set_current_event_session(
+  p_room_id bigint
+)
+returns void
+language plpgsql
+set search_path = public
+as $
+declare
+  v_event_key text;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  select event_key
+  into v_event_key
+  from public.qna_rooms
+  where id = p_room_id
+  for update;
+
+  if not found then
+    raise exception 'Room not found' using errcode = '22023';
+  end if;
+
+  if v_event_key is null then
+    raise exception 'Room does not belong to an event' using errcode = '22023';
+  end if;
+
+  perform id
+  from public.qna_rooms
+  where event_key = v_event_key
+  order by id
+  for update;
+
+  update public.qna_rooms
+  set is_current_session = false,
+      is_questions_open = false
+  where event_key = v_event_key
+    and id <> p_room_id
+    and (is_current_session = true or is_questions_open = true);
+
+  update public.qna_rooms
+  set is_current_session = true
+  where id = p_room_id;
+end;
+$;
+
+revoke execute on function public.set_current_event_session(bigint)
+from public, anon;
+grant execute on function public.set_current_event_session(bigint)
 to authenticated;
 
