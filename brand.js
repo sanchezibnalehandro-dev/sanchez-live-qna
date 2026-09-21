@@ -19,9 +19,15 @@ const TASIGO_ESG_ROOM_BRAND = {
   stylesheetHref: './brands/tasigo-esg.css'
 };
 
-export function getBrandForRoomSlug(roomSlug) {
-  if (roomSlug?.startsWith(TASIGO_ESG_ROOM_PREFIX)) return TASIGO_ESG_ROOM_BRAND;
+export function getBrandForRoute(roomSlug, eventKey = null) {
+  if (roomSlug?.startsWith(TASIGO_ESG_ROOM_PREFIX) || eventKey?.startsWith(TASIGO_ESG_ROOM_PREFIX)) {
+    return TASIGO_ESG_ROOM_BRAND;
+  }
   return SANCHEZ_BRAND;
+}
+
+export function getBrandForRoomSlug(roomSlug) {
+  return getBrandForRoute(roomSlug, null);
 }
 
 const PAGE_TITLES = {

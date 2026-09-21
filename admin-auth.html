@@ -5,7 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title></title>
   <link rel="stylesheet" href="./theme.css" />
-  <link rel="stylesheet" href="./brands/sanchez.css" data-brand-stylesheet />
+  <link rel="stylesheet" data-brand-stylesheet />
+  <script>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const room = (params.get('room') || '').trim();
+      const event = (params.get('event') || '').trim();
+      const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
+      document.querySelector('[data-brand-stylesheet]').href = isTasigo ? './brands/tasigo-esg.css' : './brands/sanchez.css';
+    })();
+  </script>
   <style>
     .toggle-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -104,9 +113,12 @@
     .live-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--green); }
     .live-context h1 { margin-top: 4px; font-size: clamp(22px, 2.1vw, 30px); background: none; color: var(--text); -webkit-text-fill-color: var(--text); }
     .live-context p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .event-session-control { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 11px; font-weight: 700; }
+    .event-session-control { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 11px; font-weight: 700; }
     .event-session-select { max-width: 240px; min-height: 30px; padding: 4px 28px 4px 9px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-raised); color: var(--text); font: inherit; }
     .event-session-select:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
+    .event-session-state { white-space: nowrap; font-size: 10px; font-weight: 800; color: var(--color-success-text); }
+    .event-session-state.inactive { color: var(--color-warning-text); }
+    .event-session-activate { min-height: 30px; padding: 4px 9px; font-size: 10px; }
     .live-statuses { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
     .live-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--bg3); color: var(--color-accent-text); font-size: 11px; font-weight: 700; white-space: nowrap; }
     .live-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
@@ -214,7 +226,7 @@
         <div class="card-inner">
           <div class="live-main">
             <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
-            <div class="live-context"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p><label class="event-session-control" id="eventSessionControl" hidden>Сессия<select class="event-session-select" id="eventSessionSelect" aria-label="Сессия"></select></label></div>
+            <div class="live-context"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p><div class="event-session-control" id="eventSessionControl" hidden><label for="eventSessionSelect">Сессия</label><select class="event-session-select" id="eventSessionSelect" aria-label="Сессия"></select><span class="event-session-state" id="eventSessionState"></span><button class="btn ghost event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button></div></div>
             <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button><button class="btn ghost" id="qrBtn" style="padding:8px 10px;">▣ QR</button><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;">↗ Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;">↗ Модератор</button></div>
           </div>
           <div id="qrPanel" style="display:none; margin-top:10px; text-align:right;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:var(--color-surface-qr); padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div>
@@ -261,7 +273,7 @@
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
-      subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
+      setCurrentEventSession, subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
       createSpeaker, deleteSpeaker, updateSpeakerOrder
     } from './supabase-qna.js';
 
@@ -288,6 +300,8 @@
     const realtimeStatus  = document.getElementById('realtimeStatus');
     const eventSessionControl = document.getElementById('eventSessionControl');
     const eventSessionSelect = document.getElementById('eventSessionSelect');
+    const eventSessionState = document.getElementById('eventSessionState');
+    const eventSessionActivateBtn = document.getElementById('eventSessionActivateBtn');
     const filterTabs      = Array.from(document.querySelectorAll('.filter-tab'));
 
     // Кастомный select
@@ -342,7 +356,7 @@
       });
     }
 
-    const state = { room: null, speakers: [], questions: [], filter: 'all', speakerFilter: null };
+    const state = { room: null, speakers: [], questions: [], eventRooms: [], filter: 'all', speakerFilter: null };
     let unsubscribe = null;
     let _refreshing = false;
     let _pendingRefresh = false;
@@ -352,6 +366,7 @@
     const pendingToggles = new Set();
     const pendingQuestionActions = new Set();
     let activatingSpeaker = false;
+    let switchingEventSession = false;
     let pendingSpeakerDeletionId = null;
     let deletingSpeakerId = null;
     let speakerDeleteTimer = null;
@@ -360,10 +375,13 @@
     let visibleQuestionLimit = QUESTION_PAGE_SIZE;
 
     function renderEventSessionSelector(eventRooms) {
-      const showSelector = state.room?.event_key != null && eventRooms.length >= 2;
+      state.eventRooms = eventRooms;
+      const showSelector = state.room?.event_key != null && eventRooms.length >= 1;
       eventSessionControl.hidden = !showSelector;
       if (!showSelector) {
         eventSessionSelect.replaceChildren();
+        eventSessionState.textContent = '';
+        eventSessionActivateBtn.hidden = true;
         return;
       }
 
@@ -374,6 +392,11 @@
         option.selected = room.slug === state.room.slug;
         return option;
       }));
+      eventSessionSelect.disabled = switchingEventSession;
+      eventSessionState.textContent = state.room?.is_current_session ? '● Текущая' : '○ Не в эфире';
+      eventSessionState.classList.toggle('inactive', !state.room?.is_current_session);
+      eventSessionActivateBtn.hidden = Boolean(state.room?.is_current_session);
+      eventSessionActivateBtn.disabled = switchingEventSession;
     }
 
     async function loadEventSessionSelector() {
@@ -381,10 +404,47 @@
       renderEventSessionSelector(eventRooms);
     }
 
-    eventSessionSelect.addEventListener('change', () => {
-      const nextSlug = eventSessionSelect.value;
-      if (nextSlug && nextSlug !== roomSlug) {
-        location.href = `./admin-auth.html?room=${encodeURIComponent(nextSlug)}`;
+    async function activateEventSession(room) {
+      if (!room || switchingEventSession) return false;
+      if (editorState.dirty) {
+        setStatus('Сохраните изменения участника перед переключением сессии.', 'error');
+        eventSessionSelect.value = state.room.slug;
+        return false;
+      }
+
+      switchingEventSession = true;
+      eventSessionSelect.disabled = true;
+      eventSessionActivateBtn.disabled = true;
+      const previousSlug = state.room.slug;
+      setStatus('Переключаю текущую сессию…');
+      try {
+        await setCurrentEventSession(room.id);
+        return true;
+      } catch (error) {
+        eventSessionSelect.value = previousSlug;
+        setStatus(error.message || 'Не удалось переключить текущую сессию.', 'error');
+        return false;
+      } finally {
+        switchingEventSession = false;
+        if (eventSessionSelect.isConnected) eventSessionSelect.disabled = false;
+        if (eventSessionActivateBtn.isConnected) eventSessionActivateBtn.disabled = false;
+      }
+    }
+
+    eventSessionSelect.addEventListener('change', async () => {
+      const nextRoom = state.eventRooms.find(room => room.slug === eventSessionSelect.value);
+      if (!nextRoom || nextRoom.slug === state.room?.slug) return;
+      const activated = await activateEventSession(nextRoom);
+      if (activated) {
+        location.href = `./admin-auth.html?room=${encodeURIComponent(nextRoom.slug)}`;
+      }
+    });
+
+    eventSessionActivateBtn.addEventListener('click', async () => {
+      const currentRoom = state.eventRooms.find(room => room.slug === state.room?.slug);
+      const activated = await activateEventSession(currentRoom);
+      if (activated) {
+        location.reload();
       }
     });
 
@@ -451,12 +511,19 @@
     async function boot() {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
-        location.href = `./login-auth.html?room=${encodeURIComponent(roomSlug)}`;
+        location.href = `./login-auth.html?room=${encodeURIComponent(roomSlug)}&next=admin`;
         return;
       }
 
-      document.getElementById('openGuestBtn').addEventListener('click', () => window.open(`./ask.html?room=${encodeURIComponent(roomSlug)}`, '_blank', 'noopener'));
-      document.getElementById('openModBtn').addEventListener('click',   () => window.open(`./mod-auth.html?room=${encodeURIComponent(roomSlug)}`, '_blank', 'noopener'));
+      const liveContextUrl = (page) => {
+        const route = state.room?.event_key
+          ? `event=${encodeURIComponent(state.room.event_key)}`
+          : `room=${encodeURIComponent(roomSlug)}`;
+        return `./${page}?${route}`;
+      };
+
+      document.getElementById('openGuestBtn').addEventListener('click', () => window.open(liveContextUrl('ask.html'), '_blank', 'noopener'));
+      document.getElementById('openModBtn').addEventListener('click',   () => window.open(liveContextUrl('mod-auth.html'), '_blank', 'noopener'));
       document.getElementById('refreshBtn').addEventListener('click', () => refresh());
       const logoutBtn = document.getElementById('logoutBtn');
       const logoutConfirmRow = document.getElementById('logoutConfirmRow');
@@ -749,7 +816,9 @@
       qrBtn.addEventListener('click', () => {
         const open = qrPanel.style.display !== 'none';
         if (!open && !qrReady) {
-          const url = location.origin + '/ask.html?room=' + encodeURIComponent(roomSlug);
+          const url = location.origin + (state.room?.event_key
+            ? '/ask.html?event=' + encodeURIComponent(state.room.event_key)
+            : '/ask.html?room=' + encodeURIComponent(roomSlug));
           qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(url);
           qrUrlEl.textContent = url;
           qrReady = true;
@@ -906,14 +975,18 @@
       const isPanel = state.room?.mode === 'panel';
       roomLabel.textContent = `Комната: ${state.room?.slug || roomSlug}`;
       const activeSpeaker = state.speakers.find(speaker => speaker.is_active);
-      document.getElementById('liveContextLabel').textContent = isPanel ? 'Пленарная сессия' : 'Сейчас в эфире';
+      document.getElementById('liveContextLabel').textContent = isPanel
+        ? (state.room?.event_key ? (state.room?.is_current_session ? 'Текущая сессия' : 'Сессия не в эфире') : 'Сессия')
+        : 'Сейчас в эфире';
       activeSpeakerName.textContent = isPanel
-        ? (state.room?.title || state.room?.fallback_label || 'Пленарная сессия')
+        ? (state.room?.title || state.room?.fallback_label || 'Сессия')
         : (activeSpeaker?.name || activeSpeaker?.fallback_label || 'Активный спикер не выбран');
-      document.getElementById('speakersPanelTitle').textContent = isPanel ? 'Участники пленарной' : 'Спикеры';
+      document.getElementById('speakersPanelTitle').textContent = isPanel ? 'Участники сессии' : 'Спикеры';
       document.getElementById('speakersPanelSubtitle').textContent = isPanel ? 'Состав панели · порядок программы' : 'Участники · порядок программы';
       document.getElementById('editorTitle').textContent = isPanel ? 'Редактор участника' : 'Редактор спикера';
       document.getElementById('editorSubtitle').textContent = isPanel ? 'Выберите участника панели' : 'Выберите спикера';
+      nameInput.placeholder = isPanel ? 'Имя участника' : 'Имя спикера';
+      if (!selectedSpeakerId) selectLabel.textContent = isPanel ? 'Выбрать участника' : 'Выбрать спикера';
       document.getElementById('activateBtn').style.display = isPanel ? 'none' : '';
       document.getElementById('speakerFilterFooter').style.display = isPanel ? 'none' : '';
       if (isPanel && state.speakerFilter) {
@@ -924,14 +997,22 @@
 
       qOpenToggle.checked = Boolean(state.room?.is_questions_open);
       modToggle.checked   = Boolean(state.room?.moderation_enabled);
-      qOpenToggle.disabled = pendingToggles.has('is_questions_open');
+      const eventRoomInactive = Boolean(state.room?.event_key && !state.room?.is_current_session);
+      qOpenToggle.disabled = pendingToggles.has('is_questions_open') || eventRoomInactive;
       modToggle.disabled = pendingToggles.has('moderation_enabled');
       qOpenSub.textContent = pendingToggles.has('is_questions_open')
         ? 'Сохраняю…'
-        : state.room?.is_questions_open ? 'Гости могут задавать вопросы' : 'Приём приостановлен';
+        : eventRoomInactive
+          ? 'Сначала сделайте сессию текущей'
+          : state.room?.is_questions_open ? 'Гости могут задавать вопросы' : 'Приём приостановлен';
       modSub.textContent = pendingToggles.has('moderation_enabled')
         ? 'Сохраняю…'
         : state.room?.moderation_enabled ? 'Вопросы проходят проверку' : 'Вопросы публикуются сразу';
+      if (!eventSessionControl.hidden) {
+        eventSessionState.textContent = state.room?.is_current_session ? '● Текущая' : '○ Не в эфире';
+        eventSessionState.classList.toggle('inactive', !state.room?.is_current_session);
+        eventSessionActivateBtn.hidden = Boolean(state.room?.is_current_session);
+      }
 
       // Если выбранного спикера ещё нет — берём активного
       if (!selectedSpeakerId) {
@@ -979,7 +1060,7 @@
                   </div>` : ''}
               </div>`;
           }).join('')
-        : '<div class="empty">Список спикеров пуст.</div>';
+        : `<div class="empty">${isPanel ? 'Список участников пуст.' : 'Список спикеров пуст.'}</div>`;
 
       // Фильтр по спикеру из списка
       speakersList.querySelectorAll('[data-sp-filter]').forEach(btn => {

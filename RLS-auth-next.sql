@@ -113,8 +113,10 @@ with check (
   exists (
     select 1
     from public.qna_questions question
+    join public.qna_rooms room on room.id = question.room_id
     where question.id = qna_question_votes.question_id
       and question.status = 'open'
+      and (room.event_key is null or room.is_current_session = true)
   )
 );
 
@@ -139,7 +141,8 @@ revoke all privileges on table public.qna_question_votes from anon;
 
 grant select (
   id, slug, title, fallback_label, is_questions_open, moderation_enabled,
-  mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order
+  mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order,
+  is_current_session
 ) on public.qna_rooms to anon;
 
 grant select (

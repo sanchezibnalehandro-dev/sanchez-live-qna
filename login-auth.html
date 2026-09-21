@@ -5,7 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title></title>
   <link rel="stylesheet" href="./theme.css" />
-  <link rel="stylesheet" href="./brands/sanchez.css" data-brand-stylesheet />
+  <link rel="stylesheet" data-brand-stylesheet />
+  <script>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const room = (params.get('room') || '').trim();
+      const event = (params.get('event') || '').trim();
+      const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
+      document.querySelector('[data-brand-stylesheet]').href = isTasigo ? './brands/tasigo-esg.css' : './brands/sanchez.css';
+    })();
+  </script>
 </head>
 <body>
   <div class="app">
@@ -47,11 +56,32 @@
   </div>
 
   <script type="module">
-    import { applyBrandIdentity, getBrandForRoomSlug } from './brand.js';
-    import { supabase, getRoomSlug } from './supabase-qna.js';
+    import { applyBrandIdentity, getBrandForRoute } from './brand.js';
+    import { supabase, getRoomSlug, getEventKey, getCurrentEventRoom } from './supabase-qna.js';
 
     const room = getRoomSlug();
-    applyBrandIdentity('login', getBrandForRoomSlug(room));
+    const eventKey = getEventKey();
+    const params = new URLSearchParams(location.search);
+    const next = params.get('next') === 'moderator' ? 'moderator' : 'admin';
+    applyBrandIdentity('login', getBrandForRoute(room, eventKey));
+
+    async function destinationUrl() {
+      if (next === 'moderator') {
+        const route = eventKey
+          ? `event=${encodeURIComponent(eventKey)}`
+          : `room=${encodeURIComponent(room)}`;
+        return `./mod-auth.html?${route}`;
+      }
+
+      if (eventKey) {
+        const currentRoom = await getCurrentEventRoom(eventKey);
+        if (currentRoom?.slug) {
+          return `./admin-auth.html?room=${encodeURIComponent(currentRoom.slug)}`;
+        }
+      }
+
+      return `./admin-auth.html?room=${encodeURIComponent(room)}`;
+    }
     const emailInput = document.getElementById('emailInput');
     const passwordInput = document.getElementById('passwordInput');
     const statusEl = document.getElementById('status');
@@ -66,7 +96,7 @@
     async function boot() {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        location.href = `./admin-auth.html?room=${encodeURIComponent(room)}`;
+        location.href = await destinationUrl();
       }
     }
 
@@ -88,7 +118,7 @@
           setStatus(error.message || 'Не удалось войти.', 'error');
           return;
         }
-        location.href = `./admin-auth.html?room=${encodeURIComponent(room)}`;
+        location.href = await destinationUrl();
       } catch (error) {
         setStatus(error.message || 'Не удалось войти.', 'error');
       } finally {
