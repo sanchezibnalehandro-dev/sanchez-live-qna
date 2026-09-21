@@ -217,7 +217,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $votes$
 begin
   if tg_op = 'INSERT' then
     update public.qna_questions
@@ -230,7 +230,7 @@ begin
   end if;
   return null;
 end;
-$;
+$votes$;
 
 revoke execute on function public.qna_adjust_votes_count()
 from public, anon, authenticated;
@@ -282,7 +282,7 @@ returns void
 language plpgsql
 security definer
 set search_path = public
-as $
+as $addvote$
 declare
   v_question_session_id text;
   v_question_status text;
@@ -321,7 +321,7 @@ begin
   values (p_question_id, trim(p_session_id))
   on conflict (question_id, session_id) do nothing;
 end;
-$;
+$addvote$;
 
 revoke execute on function public.add_vote(bigint, text) from public;
 grant execute on function public.add_vote(bigint, text) to anon, authenticated;
@@ -622,7 +622,7 @@ create or replace function public.moderate_qna_question_status(
 returns table(id bigint, status text, asked_at timestamptz)
 language plpgsql
 set search_path = public
-as $
+as $modstatus$
 declare
   v_event_key text;
   v_is_current_session boolean;
@@ -665,7 +665,7 @@ begin
     raise exception 'QUESTION_NOT_FOUND' using errcode = '22023';
   end if;
 end;
-$;
+$modstatus$;
 
 revoke execute on function public.moderate_qna_question_status(bigint, bigint, text)
 from public, anon;
@@ -680,7 +680,7 @@ create or replace function public.moderate_qna_question_pin(
 returns table(id bigint, is_pinned boolean)
 language plpgsql
 set search_path = public
-as $
+as $modpin$
 declare
   v_event_key text;
   v_is_current_session boolean;
@@ -714,7 +714,7 @@ begin
     raise exception 'QUESTION_NOT_FOUND' using errcode = '22023';
   end if;
 end;
-$;
+$modpin$;
 
 revoke execute on function public.moderate_qna_question_pin(bigint, bigint, boolean)
 from public, anon;
