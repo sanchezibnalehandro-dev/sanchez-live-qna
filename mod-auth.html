@@ -185,7 +185,16 @@
         return;
       }
       if (unsubscribe) unsubscribe();
-      unsubscribe = subscribeRoom(state.room.id, refresh, setRealtimeStatus);
+      unsubscribe = subscribeRoom(state.room.id, queueRefresh, setRealtimeStatus);
+    }
+
+    function reportRefreshError(error) {
+      console.error('Moderator data refresh failed', error);
+      setStatus('Не удалось обновить данные. Проверьте соединение.', 'error');
+    }
+
+    function queueRefresh() {
+      void refresh().catch(reportRefreshError);
     }
 
     async function refresh() {
@@ -200,7 +209,10 @@
         render();
       } finally {
         _refreshing = false;
-        if (_pendingRefresh) refresh();
+        if (_pendingRefresh) {
+          _pendingRefresh = false;
+          queueRefresh();
+        }
       }
     }
 

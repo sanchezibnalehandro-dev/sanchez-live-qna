@@ -318,7 +318,7 @@
         state.speaker = await getActiveSpeaker(state.room.id);
         await refresh();
         if (unsubscribe) unsubscribe();
-        unsubscribe = subscribeRoom(state.room.id, refresh, setRealtimeStatus);
+        unsubscribe = subscribeRoom(state.room.id, queueRefresh, setRealtimeStatus);
       } catch (e) {
         const isNotFound = e?.code === 'PGRST116' || String(e?.message || '').includes('JSON object requested');
         speakerNameEl.textContent = isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
@@ -327,6 +327,15 @@
           : (e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.');
         document.getElementById('formCard').style.display = 'none';
       }
+    }
+
+    function reportRefreshError(error) {
+      console.error('Guest data refresh failed', error);
+      showToast('Не удалось обновить данные. Проверьте соединение.', 'error');
+    }
+
+    function queueRefresh() {
+      void refresh().catch(reportRefreshError);
     }
 
     async function refresh() {
@@ -340,7 +349,10 @@
         render();
       } finally {
         _refreshing = false;
-        if (_pendingRefresh) refresh();
+        if (_pendingRefresh) {
+          _pendingRefresh = false;
+          queueRefresh();
+        }
       }
     }
 
