@@ -27,6 +27,8 @@
     .room-chip.closed { background: var(--color-warning-soft); border-color: color-mix(in srgb, var(--color-warning) 22%, transparent); color: var(--color-warning-text); }
     .live-chip.warn { color: var(--color-warning-text); border-color: color-mix(in srgb, var(--color-warning) 20%, transparent); }
     .live-chip .live-dot { width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--green); }
+    .live-chip.connecting .live-dot { background: var(--yellow); }
+    .live-chip.offline .live-dot { background: var(--danger); }
 
     .moderator-queue .card-inner { padding: 16px; }
     .queue-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
@@ -87,7 +89,7 @@
           <div class="live-statuses">
             <span id="roomChip" class="room-chip closed">Загрузка…</span>
             <span id="moderationChip" class="live-chip warn">Премодерация</span>
-            <span class="live-chip"><i class="live-dot"></i>Realtime</span>
+            <span class="live-chip connecting" id="realtimeChip"><i class="live-dot"></i><span id="realtimeStatus">Подключение…</span></span>
           </div>
         </div>
       </section>
@@ -138,6 +140,7 @@
     let maxVotes = 1;
     let _refreshing = false;
     let _pendingRefresh = false;
+    const pendingQuestionActions = new Set();
 
     function setFocusMode(enabled) {
       document.body.classList.toggle('focus-questions', enabled);
@@ -182,7 +185,7 @@
         return;
       }
       if (unsubscribe) unsubscribe();
-      unsubscribe = subscribeRoom(state.room.id, refresh);
+      unsubscribe = subscribeRoom(state.room.id, refresh, setRealtimeStatus);
     }
 
     async function refresh() {
@@ -205,7 +208,10 @@
       // Спикер
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
       speakerName.textContent = state.speaker?.name || state.speaker?.fallback_label || fallback;
-      speakerMeta.textContent = [state.speaker?.regalia, state.speaker?.topic].filter(Boolean).join(' · ') || 'Активный спикер не задан';
+      speakerMeta.innerHTML = [state.speaker?.regalia, state.speaker?.topic]
+        .filter(Boolean)
+        .map(value => `<span>${escapeHtml(value)}</span>`)
+        .join('<br>') || 'Активный спикер не задан';
 
       // Статус комнаты
       const isOpen = state.room?.is_questions_open;
@@ -278,19 +284,25 @@
               </div>
             </div>
             <div class="question-actions">
-              ${isPending ? `<button class="btn primary" data-action="approve" data-id="${item.id}">✓ Одобрить</button>` : ''}
-              ${!isAsked && !isPending ? `<button class="btn primary" data-action="ask"  data-id="${item.id}">✓ Задал</button>` : ''}
-              ${!isHidden ? `<button class="btn warn" data-action="hide" data-id="${item.id}">Скрыть</button>` : ''}
-              ${isHidden || isAsked ? `<button class="btn primary" data-action="open" data-id="${item.id}">Вернуть</button>` : ''}
-              ${!isPending ? `<button class="btn ghost" data-action="pin" data-id="${item.id}" data-pinned="${isPinned ? '1' : '0'}">${isPinned ? 'Открепить' : 'Закрепить'}</button>` : ''}
+              ${isPending ? questionActionButton(item, 'approve', '✓ Одобрить', 'primary') : ''}
+              ${!isAsked && !isPending ? questionActionButton(item, 'ask', '✓ Задал', 'primary') : ''}
+              ${!isHidden ? questionActionButton(item, 'hide', 'Скрыть', 'warn') : ''}
+              ${isHidden || isAsked ? questionActionButton(item, 'open', 'Вернуть', 'primary') : ''}
+              ${!isPending ? questionActionButton(item, 'pin', isPinned ? 'Открепить' : 'Закрепить', 'ghost') : ''}
             </div>
           </div>`;
       }).join('');
 
       questionsList.querySelectorAll('[data-action]').forEach((btn) => btn.addEventListener('click', async () => {
+        const id = Number(btn.dataset.id);
+        const action = btn.dataset.action;
+        const actionKey = `${id}:${action}`;
+        if (pendingQuestionActions.has(actionKey)) return;
+        pendingQuestionActions.add(actionKey);
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.textContent = 'Сохраняю…';
         try {
-          const id = Number(btn.dataset.id);
-          const action = btn.dataset.action;
           if (action === 'approve') await approveQuestion(id);
           if (action === 'ask')  await setQuestionStatus(id, 'asked');
           if (action === 'hide') await setQuestionStatus(id, 'hidden');
@@ -299,8 +311,27 @@
           await refresh();
         } catch (e) {
           setStatus(e.message || 'Не удалось выполнить действие', 'error');
+        } finally {
+          pendingQuestionActions.delete(actionKey);
+          render();
         }
       }));
+    }
+
+    function questionActionButton(item, action, label, className) {
+      const pending = pendingQuestionActions.has(`${item.id}:${action}`);
+      return `<button class="btn ${className}" data-action="${action}" data-id="${item.id}"${action === 'pin' ? ` data-pinned="${item.is_pinned ? '1' : '0'}"` : ''}${pending ? ' disabled aria-busy="true"' : ''}>${pending ? 'Сохраняю…' : label}</button>`;
+    }
+
+    function setRealtimeStatus(channelStatus) {
+      const realtimeChip = document.getElementById('realtimeChip');
+      const realtimeStatus = document.getElementById('realtimeStatus');
+      const offline = ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(channelStatus);
+      realtimeChip.classList.toggle('offline', offline);
+      realtimeChip.classList.toggle('connecting', !offline && channelStatus !== 'SUBSCRIBED');
+      realtimeStatus.textContent = channelStatus === 'SUBSCRIBED'
+        ? 'Realtime подключён'
+        : offline ? 'Нет связи' : 'Подключение…';
     }
 
     function setStatus(message, type = '') {

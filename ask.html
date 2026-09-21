@@ -276,6 +276,8 @@
     let unsubscribe = null;
     let _refreshing = false;
     let _pendingRefresh = false;
+    let submittingQuestion = false;
+    const pendingVoteIds = new Set();
 
     // Счётчик символов
     const charCount = document.getElementById('charCount');
@@ -330,12 +332,19 @@
       const topic    = state.speaker?.topic   || '';
 
       speakerNameEl.textContent = name;
-      speakerMetaEl.textContent = [regalia, topic].filter(Boolean).join(' · ') || 'Готовимся к сессии…';
+      speakerMetaEl.innerHTML = [regalia, topic]
+        .filter(Boolean)
+        .map(value => `<span>${escapeHtml(value)}</span>`)
+        .join('<br>') || 'Готовимся к сессии…';
 
       const isOpen = state.room?.is_questions_open;
       closedBanner.style.display = isOpen ? 'none' : 'flex';
-      submitBtn.disabled = !isOpen;
+      questionInput.disabled = !isOpen;
+      nameInput.disabled = !isOpen;
+      companyInput.disabled = !isOpen;
+      submitBtn.disabled = !isOpen || submittingQuestion;
       formCard.style.opacity = isOpen ? '1' : '0.65';
+      formCard.setAttribute('aria-disabled', String(!isOpen));
 
       // Индикатор приёма
       const indicator = document.getElementById('receptionIndicator');
@@ -357,8 +366,8 @@
             <line x1="28" y1="6" x2="30" y2="4" stroke="var(--color-text-secondary)" stroke-width="1.5" stroke-linecap="round"/>
             <line x1="20" y1="6" x2="18" y2="4" stroke="var(--color-text-secondary)" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          <div class="empty-title">Будьте первым</div>
-          <div class="empty-sub">Задайте вопрос спикеру</div>
+          <div class="empty-title">${isOpen ? 'Будьте первым' : 'Вопросов пока нет'}</div>
+          ${isOpen ? '<div class="empty-sub">Задайте вопрос спикеру</div>' : ''}
         </div>`;
         return;
       }
@@ -368,7 +377,8 @@
         const voted    = myVotes.has(item.id);
         const isOwn    = myQuestions.has(item.id);
         const isAsked  = item.status === 'asked';
-        const blocked  = isAsked || isOwn;
+        const votePending = pendingVoteIds.has(item.id);
+        const blocked  = isAsked || isOwn || votePending;
         return `
           <div class="question-card" style="${isAsked ? 'opacity:0.6;' : ''}">
             <div class="q-row">
@@ -384,7 +394,7 @@
                 <button
                   class="vote-btn-circle ${voted ? 'voted' : ''}"
                   data-id="${item.id}"
-                  ${blocked ? 'disabled style="opacity:0.35;cursor:default;transform:none;"' : ''}
+                  ${blocked ? `disabled${votePending ? ' aria-busy="true"' : ''} style="opacity:0.35;cursor:default;transform:none;"` : ''}
                   title="${isOwn ? 'Нельзя голосовать за свой вопрос' : isAsked ? 'Вопрос уже задан' : voted ? 'Нажмите чтобы снять голос' : 'Поддержать вопрос'}"
                 >${isOwn ? '—' : voted ? '✓' : '▲'}</button>
                 <span class="vote-count">${item.votes_count || 0}</span>
@@ -398,6 +408,10 @@
           if (btn.disabled) return;
           const id = Number(btn.dataset.id);
           const alreadyVoted = myVotes.has(id);
+          if (pendingVoteIds.has(id)) return;
+          pendingVoteIds.add(id);
+          btn.disabled = true;
+          btn.setAttribute('aria-busy', 'true');
           btn.classList.remove('burst');
           void btn.offsetWidth;
           btn.classList.add('burst');
@@ -414,14 +428,23 @@
             await refresh();
           } catch (e) {
             showToast(alreadyVoted ? 'Не удалось снять голос' : 'Не удалось поставить +1', 'error');
+          } finally {
+            pendingVoteIds.delete(id);
+            render();
           }
         });
       });
     }
 
     async function onSubmit() {
+      if (state.room?.is_questions_open !== true) {
+        showToast('Приём вопросов закрыт.', 'error');
+        return;
+      }
+      if (submittingQuestion) return;
       const text = normalizeQuestion(questionInput.value);
       if (!text) { showToast('Напишите вопрос.', 'error'); return; }
+      submittingQuestion = true;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Отправляю…';
       try {
@@ -444,6 +467,7 @@
       } catch (e) {
         showToast(e.message || 'Не удалось отправить вопрос.', 'error');
       } finally {
+        submittingQuestion = false;
         submitBtn.disabled = !state.room?.is_questions_open;
         submitBtn.textContent = 'Отправить вопрос';
       }

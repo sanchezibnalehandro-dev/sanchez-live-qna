@@ -211,9 +211,10 @@
         <div class="card-inner">
           <div class="live-main">
             <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
-            <div class="live-context"><div class="live-label">Сейчас в эфире</div><h1>Панель управления</h1><p id="roomLabel">Загрузка…</p></div>
-            <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button></div>
+            <div class="live-context"><div class="live-label">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
+            <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button><button class="btn ghost" id="qrBtn" style="padding:8px 10px;">▣ QR</button><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;">↗ Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;">↗ Модератор</button></div>
           </div>
+          <div id="qrPanel" style="display:none; margin-top:10px; text-align:right;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:var(--color-surface-qr); padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div>
           <div class="live-controls">
             <label class="live-toggle">Приём вопросов <strong id="questionsOpenSub">Загрузка…</strong><span class="toggle-pill"><input type="checkbox" id="questionsOpenToggle"><span class="toggle-track"></span></span></label>
             <label class="live-toggle">Премодерация <strong id="moderationSub">Загрузка…</strong><span class="toggle-pill"><input type="checkbox" id="moderationToggle"><span class="toggle-track"></span></span></label>
@@ -244,7 +245,6 @@
         <aside class="card console-panel editor-panel" id="editorPanel"><div class="panel-body">
           <div class="panel-head"><div><h2>Редактор спикера</h2><p>Выберите спикера</p></div><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div></div>
           <div class="editor-card"><div class="editor-note">Realtime-обновления не заменят локальный черновик.</div><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><span class="arrow">▼</span></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div>
-          <div class="editor-card"><h2 class="section-title">Утилиты</h2><div class="utility-grid"><button class="btn ghost" id="qrBtn">▣ QR</button><button class="btn ghost" id="openGuestBtn">↗ Гостевая</button><button class="btn ghost" id="openModBtn">↗ Модератор</button><button class="btn ghost" id="exportCsvBtnDuplicate" disabled>↓ CSV</button></div><div id="qrPanel" style="display:none; margin-top:10px; text-align:center;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:var(--color-surface-qr); padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div></div>
           <div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn">🗑 Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button><div id="logoutConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Выйти из аккаунта?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" style="flex:1;">Отмена</button></div></div></div>
         </div></aside>
       </section>
@@ -266,6 +266,7 @@
 
     const roomSlug = getRoomSlug();
     const roomLabel       = document.getElementById('roomLabel');
+    const activeSpeakerName = document.getElementById('activeSpeakerName');
     const statusEl        = document.getElementById('status');
     const nameInput       = document.getElementById('nameInput');
     const regaliaInput    = document.getElementById('regaliaInput');
@@ -420,7 +421,7 @@
 
       document.getElementById('openGuestBtn').addEventListener('click', () => window.open(`./ask.html?room=${roomSlug}`, '_blank', 'noopener'));
       document.getElementById('openModBtn').addEventListener('click',   () => window.open(`./mod-auth.html?room=${roomSlug}`, '_blank', 'noopener'));
-      document.getElementById('refreshBtn').addEventListener('click', () => { _refreshing = false; refresh(); });
+      document.getElementById('refreshBtn').addEventListener('click', () => refresh());
       const logoutBtn = document.getElementById('logoutBtn');
       const logoutConfirmRow = document.getElementById('logoutConfirmRow');
       let logoutTimer = null;
@@ -496,10 +497,18 @@
 
       // God mode — добавить вопрос вручную
       const godSessionId = getGuestSessionId(roomSlug + '-admin');
-      document.getElementById('godSubmitBtn').addEventListener('click', async () => {
+      const godSubmitBtn = document.getElementById('godSubmitBtn');
+      let submittingGodQuestion = false;
+      godSubmitBtn.addEventListener('click', async () => {
+        if (submittingGodQuestion) return;
         const text = normalizeQuestion(document.getElementById('godQuestionInput').value);
         if (!text) return;
         const godStatus = document.getElementById('godStatus');
+        const previousText = godSubmitBtn.textContent;
+        submittingGodQuestion = true;
+        godSubmitBtn.disabled = true;
+        godSubmitBtn.setAttribute('aria-busy', 'true');
+        godSubmitBtn.textContent = 'Публикую…';
         try {
           const activeSpeaker = await getActiveSpeaker(state.room.id);
           await submitQuestion({
@@ -520,6 +529,11 @@
         } catch (e) {
           godStatus.textContent = e.message || 'Ошибка.';
           godStatus.className = 'status error';
+        } finally {
+          submittingGodQuestion = false;
+          godSubmitBtn.disabled = false;
+          godSubmitBtn.removeAttribute('aria-busy');
+          godSubmitBtn.textContent = previousText;
         }
       });
 
@@ -734,6 +748,8 @@
 
     function render() {
       roomLabel.textContent = `Комната: ${state.room?.slug || roomSlug}`;
+      const activeSpeaker = state.speakers.find(speaker => speaker.is_active);
+      activeSpeakerName.textContent = activeSpeaker?.name || activeSpeaker?.fallback_label || 'Активный спикер не выбран';
 
       qOpenToggle.checked = Boolean(state.room?.is_questions_open);
       modToggle.checked   = Boolean(state.room?.moderation_enabled);
