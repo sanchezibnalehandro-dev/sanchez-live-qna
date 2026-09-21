@@ -7,7 +7,8 @@ export const DEFAULT_ROOM_SLUG = 'sanchez-live';
 const volatileGuestSessions = new Map();
 
 export function getRoomSlug() {
-  return DEFAULT_ROOM_SLUG;
+  const roomSlug = new URLSearchParams(window.location.search).get('room');
+  return roomSlug?.trim() || DEFAULT_ROOM_SLUG;
 }
 
 export function getGuestSessionId(room) {
@@ -33,7 +34,7 @@ export function getGuestSessionId(room) {
 export async function getRoomBySlug(roomSlug) {
   const { data, error } = await supabase
     .from('qna_rooms')
-    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, active_speaker_id')
+    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id')
     .eq('slug', roomSlug)
     .single();
   if (error) throw error;

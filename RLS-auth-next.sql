@@ -138,7 +138,8 @@ revoke all privileges on table public.qna_questions from anon;
 revoke all privileges on table public.qna_question_votes from anon;
 
 grant select (
-  id, slug, title, fallback_label, is_questions_open, moderation_enabled, active_speaker_id
+  id, slug, title, fallback_label, is_questions_open, moderation_enabled,
+  mode, moderator_name, moderator_regalia, active_speaker_id
 ) on public.qna_rooms to anon;
 
 grant select (

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title></title>
   <link rel="stylesheet" href="./theme.css" />
-  <link rel="stylesheet" href="./brands/sanchez.css" />
+  <link rel="stylesheet" href="./brands/sanchez.css" data-brand-stylesheet />
   <style>
     .toggle-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -211,7 +211,7 @@
         <div class="card-inner">
           <div class="live-main">
             <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
-            <div class="live-context"><div class="live-label">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
+            <div class="live-context"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
             <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button><button class="btn ghost" id="qrBtn" style="padding:8px 10px;">▣ QR</button><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;">↗ Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;">↗ Модератор</button></div>
           </div>
           <div id="qrPanel" style="display:none; margin-top:10px; text-align:right;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:var(--color-surface-qr); padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div>
@@ -225,9 +225,9 @@
 
       <section class="admin-workspace" id="adminWorkspace">
         <aside class="card console-panel speakers-panel" id="speakersPanel"><div class="panel-body">
-          <div class="panel-head"><div><h2>Спикеры</h2><p>Участники · порядок программы</p></div><button class="btn primary" id="addSpeakerBtn" style="padding:8px 10px;font-size:11px;">+ Добавить</button></div>
+          <div class="panel-head"><div><h2 id="speakersPanelTitle">Спикеры</h2><p id="speakersPanelSubtitle">Участники · порядок программы</p></div><button class="btn primary" id="addSpeakerBtn" style="padding:8px 10px;font-size:11px;">+ Добавить</button></div>
           <div class="speaker-scroll"><div class="list" id="speakersList"></div></div>
-          <div class="speaker-footer"><button class="btn ghost" id="clearSpeakerFilter">Все спикеры</button></div>
+          <div class="speaker-footer" id="speakerFilterFooter"><button class="btn ghost" id="clearSpeakerFilter">Все спикеры</button></div>
         </div></aside>
         <button class="edge-rail" id="speakersRail" type="button" aria-label="Свернуть панель спикеров" aria-expanded="true"><span>‹</span><span class="edge-rail-label">Спикеры</span></button>
 
@@ -243,7 +243,7 @@
 
         <button class="edge-rail" id="editorRail" type="button" aria-label="Свернуть редактор спикера" aria-expanded="true"><span>›</span><span class="edge-rail-label">Редактор</span></button>
         <aside class="card console-panel editor-panel" id="editorPanel"><div class="panel-body">
-          <div class="panel-head"><div><h2>Редактор спикера</h2><p>Выберите спикера</p></div><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div></div>
+          <div class="panel-head"><div><h2 id="editorTitle">Редактор спикера</h2><p id="editorSubtitle">Выберите спикера</p></div><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div></div>
           <div class="editor-card"><div class="editor-note">Realtime-обновления не заменят локальный черновик.</div><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><span class="arrow">▼</span></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div>
           <div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn">🗑 Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button><div id="logoutConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Выйти из аккаунта?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" style="flex:1;">Отмена</button></div></div></div>
         </div></aside>
@@ -252,7 +252,7 @@
   </div>
 
   <script type="module">
-    import { BRAND, applyBrandIdentity } from './brand.js';
+    import { applyBrandIdentity, getBrandForRoomSlug } from './brand.js';
     import {
       supabase, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker,
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
@@ -262,9 +262,9 @@
       createSpeaker, deleteSpeaker, updateSpeakerOrder
     } from './supabase-qna.js';
 
-    applyBrandIdentity('admin');
-
     const roomSlug = getRoomSlug();
+    const roomBrand = getBrandForRoomSlug(roomSlug);
+    applyBrandIdentity('admin', roomBrand);
     const roomLabel       = document.getElementById('roomLabel');
     const activeSpeakerName = document.getElementById('activeSpeakerName');
     const statusEl        = document.getElementById('status');
@@ -322,12 +322,12 @@
     });
     document.addEventListener('click', () => dropdown.classList.remove('open'));
 
-    function buildDropdown(speakers) {
+    function buildDropdown(speakers, isPanel) {
       dropdown.innerHTML = speakers.map(s => `
         <div class="custom-select-option ${String(s.id) === String(selectedSpeakerId) ? 'selected' : ''}"
              data-id="${s.id}" data-name="${escapeHtml(s.name || s.topic || `спикер-${s.id}`)}">
           ${escapeHtml(s.name || s.topic || `спикер-${s.id}`)}
-          ${s.is_active ? ' ●' : ''}
+          ${!isPanel && s.is_active ? ' ●' : ''}
         </div>`).join('');
       dropdown.querySelectorAll('.custom-select-option').forEach(opt => {
         opt.addEventListener('click', () => {
@@ -419,8 +419,8 @@
         return;
       }
 
-      document.getElementById('openGuestBtn').addEventListener('click', () => window.open(`./ask.html?room=${roomSlug}`, '_blank', 'noopener'));
-      document.getElementById('openModBtn').addEventListener('click',   () => window.open(`./mod-auth.html?room=${roomSlug}`, '_blank', 'noopener'));
+      document.getElementById('openGuestBtn').addEventListener('click', () => window.open(`./ask.html?room=${encodeURIComponent(roomSlug)}`, '_blank', 'noopener'));
+      document.getElementById('openModBtn').addEventListener('click',   () => window.open(`./mod-auth.html?room=${encodeURIComponent(roomSlug)}`, '_blank', 'noopener'));
       document.getElementById('refreshBtn').addEventListener('click', () => refresh());
       const logoutBtn = document.getElementById('logoutBtn');
       const logoutConfirmRow = document.getElementById('logoutConfirmRow');
@@ -474,7 +474,7 @@
         addSpeakerBtn.textContent = 'Добавляю…';
         let speakerAdded = false;
         try {
-          const s = await createSpeaker(state.room.id, { name: 'Новый спикер' });
+          const s = await createSpeaker(state.room.id, { name: state.room.mode === 'panel' ? 'Новый участник' : 'Новый спикер' });
           speakerAdded = true;
           selectedSpeakerId = String(s.id);
           selectLabel.textContent = s.name;
@@ -488,7 +488,7 @@
           editorState.backgroundChanged = false;
           editorState.savedSpeaker = newSpeakerData;
           updateEditorStatus();
-          setStatus('Спикер добавлен. Заполните данные и нажмите «Сохранить».', 'success');
+          setStatus(`${state.room.mode === 'panel' ? 'Участник' : 'Спикер'} добавлен. Заполните данные и нажмите «Сохранить».`, 'success');
         } catch(e) {
           setStatus(e.message || 'Ошибка', 'error');
         } finally {
@@ -539,7 +539,7 @@
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
-        a.href = url; a.download = `${BRAND.csvPrefix}-${roomSlug}-${new Date().toISOString().slice(0,10)}.csv`;
+        a.href = url; a.download = `${roomBrand.csvPrefix}-${roomSlug}-${new Date().toISOString().slice(0,10)}.csv`;
         a.click(); URL.revokeObjectURL(url);
       });
 
@@ -559,7 +559,7 @@
         godSubmitBtn.textContent = 'Публикую…';
         let godQuestionSubmitted = false;
         try {
-          const activeSpeaker = await getActiveSpeaker(state.room.id);
+          const activeSpeaker = state.room.mode === 'panel' ? null : await getActiveSpeaker(state.room.id);
           await submitQuestion({
             roomId: state.room.id,
             speakerId: activeSpeaker?.id || null,
@@ -684,7 +684,7 @@
             editorState.backgroundChanged = false;
             editorState.savedSpeaker = readEditorForm();
             updateEditorStatus();
-          }, 'Данные спикера сохранены.');
+            }, `Данные ${state.room?.mode === 'panel' ? 'участника' : 'спикера'} сохранены.`);
         } finally {
           savingSpeaker = false;
           saveBtn.disabled = false;
@@ -707,7 +707,7 @@
       qrBtn.addEventListener('click', () => {
         const open = qrPanel.style.display !== 'none';
         if (!open && !qrReady) {
-          const url = location.origin + '/ask.html?room=' + roomSlug;
+          const url = location.origin + '/ask.html?room=' + encodeURIComponent(roomSlug);
           qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(url);
           qrUrlEl.textContent = url;
           qrReady = true;
@@ -814,7 +814,7 @@
 
     async function activateSelectedSpeaker(event) {
       const activateBtn = event?.currentTarget || document.getElementById('activateBtn');
-      if (activatingSpeaker || !selectedSpeakerId) return;
+      if (state.room?.mode === 'panel' || activatingSpeaker || !selectedSpeakerId) return;
 
       const previousText = activateBtn.textContent;
       activatingSpeaker = true;
@@ -861,9 +861,24 @@
     }
 
     function render() {
+      const isPanel = state.room?.mode === 'panel';
       roomLabel.textContent = `Комната: ${state.room?.slug || roomSlug}`;
       const activeSpeaker = state.speakers.find(speaker => speaker.is_active);
-      activeSpeakerName.textContent = activeSpeaker?.name || activeSpeaker?.fallback_label || 'Активный спикер не выбран';
+      document.getElementById('liveContextLabel').textContent = isPanel ? 'Пленарная сессия' : 'Сейчас в эфире';
+      activeSpeakerName.textContent = isPanel
+        ? (state.room?.title || state.room?.fallback_label || 'Пленарная сессия')
+        : (activeSpeaker?.name || activeSpeaker?.fallback_label || 'Активный спикер не выбран');
+      document.getElementById('speakersPanelTitle').textContent = isPanel ? 'Участники пленарной' : 'Спикеры';
+      document.getElementById('speakersPanelSubtitle').textContent = isPanel ? 'Состав панели · порядок программы' : 'Участники · порядок программы';
+      document.getElementById('editorTitle').textContent = isPanel ? 'Редактор участника' : 'Редактор спикера';
+      document.getElementById('editorSubtitle').textContent = isPanel ? 'Выберите участника панели' : 'Выберите спикера';
+      document.getElementById('activateBtn').style.display = isPanel ? 'none' : '';
+      document.getElementById('speakerFilterFooter').style.display = isPanel ? 'none' : '';
+      if (isPanel && state.speakerFilter) {
+        state.speakerFilter = null;
+        visibleQuestionLimit = QUESTION_PAGE_SIZE;
+        document.getElementById('speakerFilterLabel').textContent = '';
+      }
 
       qOpenToggle.checked = Boolean(state.room?.is_questions_open);
       modToggle.checked   = Boolean(state.room?.moderation_enabled);
@@ -884,7 +899,7 @@
           selectLabel.textContent = active.name || active.topic || `спикер-${active.id}`;
         }
       }
-      buildDropdown(state.speakers);
+      buildDropdown(state.speakers, isPanel);
       if (editorState.dirty) {
         const currentSpeaker = state.speakers.find(s => String(s.id) === String(selectedSpeakerId));
         if (!sameSpeakerData(getSpeakerData(currentSpeaker), editorState.savedSpeaker || getSpeakerData(currentSpeaker))) {
@@ -901,19 +916,19 @@
             const initials = (s.name || '?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
             const qCount = state.questions.filter(q => String(q.speaker_id) === String(s.id)).length;
             return `
-              <div class="speaker-row ${s.is_active ? 'active' : ''} ${String(s.id) === String(selectedSpeakerId) ? 'selected' : ''}" data-speaker-id="${s.id}" style="flex-wrap:nowrap;gap:8px;">
-                <button class="speaker-drag-handle" type="button" draggable="true" aria-label="Переместить ${escapeHtml(s.name || 'спикера')}" title="Перетащите, чтобы изменить порядок">⠿</button>
+              <div class="speaker-row ${!isPanel && s.is_active ? 'active' : ''} ${String(s.id) === String(selectedSpeakerId) ? 'selected' : ''}" data-speaker-id="${s.id}" style="flex-wrap:nowrap;gap:8px;">
+                <button class="speaker-drag-handle" type="button" draggable="true" aria-label="Переместить ${escapeHtml(s.name || (isPanel ? 'участника' : 'спикера'))}" title="Перетащите, чтобы изменить порядок">⠿</button>
                 <div class="speaker-avatar" style="flex-shrink:0;">${initials}</div>
                 <div class="speaker-info" style="flex:1;min-width:0;overflow:hidden;">
-                  <div class="speaker-name"><span class="speaker-name-text">${escapeHtml(s.name || 'Без имени')}</span>${s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
-                  <div class="speaker-meta">${escapeHtml([s.regalia, s.topic].filter(Boolean).join(' · ') || '—')} · ${qCount} вопр.</div>
+                  <div class="speaker-name"><span class="speaker-name-text">${escapeHtml(s.name || 'Без имени')}</span>${!isPanel && s.is_active ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ACTIVE</span>' : ''}</div>
+                  <div class="speaker-meta">${escapeHtml([s.regalia, s.topic].filter(Boolean).join(' · ') || '—')}${isPanel ? '' : ` · ${qCount} вопр.`}</div>
                 </div>
                 <div class="speaker-actions">
-                  ${!s.is_active ? String(pendingSpeakerDeletionId) === String(s.id)
+                  ${isPanel || !s.is_active ? String(pendingSpeakerDeletionId) === String(s.id)
                     ? `<span style="display:flex;gap:4px;"><button class="btn danger" style="padding:4px 7px;font-size:10px;" data-sp-delete-confirm="${s.id}">Да, удалить</button><button class="btn ghost" style="padding:4px 7px;font-size:10px;" data-sp-delete-cancel="${s.id}">Отмена</button></span>`
-                    : `<button class="btn ghost" style="padding:4px 8px;font-size:13px;color:var(--color-danger);border-color:color-mix(in srgb, var(--color-danger) 30%, transparent);" data-sp-delete="${s.id}" title="Удалить спикера">✕</button>` : ''}
+                    : `<button class="btn ghost" style="padding:4px 8px;font-size:13px;color:var(--color-danger);border-color:color-mix(in srgb, var(--color-danger) 30%, transparent);" data-sp-delete="${s.id}" title="Удалить ${isPanel ? 'участника' : 'спикера'}">✕</button>` : ''}
                 </div>
-                ${String(s.id) === String(selectedSpeakerId) ? `
+                ${!isPanel && String(s.id) === String(selectedSpeakerId) ? `
                   <div class="speaker-expanded-actions">
                     <button class="btn ghost" data-sp-filter="${s.id}" data-sp-name="${escapeHtml(s.name||'Спикер')}">Вопросы</button>
                     ${s.is_active

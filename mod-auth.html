@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title></title>
   <link rel="stylesheet" href="./theme.css" />
-  <link rel="stylesheet" href="./brands/sanchez.css" />
+  <link rel="stylesheet" href="./brands/sanchez.css" data-brand-stylesheet />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
 
@@ -82,7 +82,7 @@
         <div class="card-inner moderator-live-grid">
           <div>
             <div class="moderator-brand"><div class="brand-logo-mark" data-brand-mark></div><span class="moderator-brand-label"><span data-brand-name></span> · Модератор</span></div>
-            <div class="live-speaker-label">Сейчас в эфире</div>
+            <div class="live-speaker-label" id="liveContextLabel">Сейчас в эфире</div>
             <h1 id="speakerName">Загрузка…</h1>
             <p class="subcopy" id="speakerMeta"></p>
           </div>
@@ -115,17 +115,17 @@
   </div>
 
   <script type="module">
-    import { applyBrandIdentity } from './brand.js';
+    import { applyBrandIdentity, getBrandForRoomSlug } from './brand.js';
     import {
       supabase, getRoomSlug, getRoomBySlug, getActiveSpeaker, listQuestions,
       setQuestionStatus, setQuestionPinned, approveQuestion, subscribeRoom, escapeHtml, formatClock
     } from './supabase-qna.js';
 
-    applyBrandIdentity('moderator');
-
     const roomSlug = getRoomSlug();
+    applyBrandIdentity('moderator', getBrandForRoomSlug(roomSlug));
     const roomChip     = document.getElementById('roomChip');
     const moderationChip = document.getElementById('moderationChip');
+    const liveContextLabel = document.getElementById('liveContextLabel');
     const speakerName  = document.getElementById('speakerName');
     const speakerMeta  = document.getElementById('speakerMeta');
     const questionsList = document.getElementById('questionsList');
@@ -202,9 +202,10 @@
       _refreshing = true;
       _pendingRefresh = false;
       try {
-        state.room      = await getRoomBySlug(roomSlug);
-        state.speaker   = await getActiveSpeaker(state.room.id);
-        state.questions = await listQuestions(state.room.id, state.speaker?.id, { includeHidden: true, includeAsked: true, includePending: true });
+        state.room = await getRoomBySlug(roomSlug);
+        const isPanel = state.room.mode === 'panel';
+        state.speaker = isPanel ? null : await getActiveSpeaker(state.room.id);
+        state.questions = await listQuestions(state.room.id, isPanel ? null : state.speaker?.id, { includeHidden: true, includeAsked: true, includePending: true });
         maxVotes = Math.max(1, ...state.questions.map(q => q.votes_count || 0));
         render();
       } finally {
@@ -217,13 +218,19 @@
     }
 
     function render() {
-      // Спикер
+      const isPanel = state.room?.mode === 'panel';
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
-      speakerName.textContent = state.speaker?.name || state.speaker?.fallback_label || fallback;
-      speakerMeta.innerHTML = [state.speaker?.regalia, state.speaker?.topic]
+      liveContextLabel.textContent = isPanel ? 'Пленарная сессия' : 'Сейчас в эфире';
+      speakerName.textContent = isPanel
+        ? (state.room?.title || fallback)
+        : (state.speaker?.name || state.speaker?.fallback_label || fallback);
+      const metadata = isPanel
+        ? [state.room?.moderator_name && `Модератор: ${state.room.moderator_name}`, state.room?.moderator_regalia]
+        : [state.speaker?.regalia, state.speaker?.topic];
+      speakerMeta.innerHTML = metadata
         .filter(Boolean)
         .map(value => `<span>${escapeHtml(value)}</span>`)
-        .join('<br>') || 'Активный спикер не задан';
+        .join('<br>') || (isPanel ? 'Модератор пленарной сессии' : 'Активный спикер не задан');
 
       // Статус комнаты
       const isOpen = state.room?.is_questions_open;
@@ -268,7 +275,7 @@
 
       questionsList.innerHTML = rows.map((item) => {
         const author   = [item.author_name, item.author_company].filter(Boolean).join(' · ');
-        const speaker = state.speaker?.name || state.speaker?.fallback_label || state.room?.fallback_label || '';
+        const speaker = isPanel ? '' : (state.speaker?.name || state.speaker?.fallback_label || state.room?.fallback_label || '');
         const isAsked   = item.status === 'asked';
         const isHidden  = item.status === 'hidden';
         const isPending = item.status === 'pending';
