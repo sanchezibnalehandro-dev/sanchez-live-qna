@@ -47,7 +47,7 @@ create table if not exists public.qna_question_votes (
   unique(question_id, session_id)
 );
 
-do $
+do $$
 begin
   if not exists (
     select 1
@@ -62,7 +62,7 @@ begin
       on delete set null;
   end if;
 end;
-$;
+$$;
 
 alter table public.qna_questions
   drop constraint if exists qna_questions_text_length_check,
