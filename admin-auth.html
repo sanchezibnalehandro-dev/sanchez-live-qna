@@ -696,7 +696,7 @@
 
       await refresh();
       if (unsubscribe) unsubscribe();
-      unsubscribe = subscribeRoom(state.room.id, () => refresh({ realtime: true }), setRealtimeStatus);
+      unsubscribe = subscribeRoom(state.room.id, () => queueRefresh({ realtime: true }), setRealtimeStatus);
 
       // QR toggle
       const qrBtn   = document.getElementById('qrBtn');
@@ -736,6 +736,15 @@
       pendingSpeakerDeletionId = null;
     }
 
+    function reportRefreshError(error) {
+      console.error('Admin data refresh failed', error);
+      setStatus('Не удалось обновить данные. Проверьте соединение.', 'error');
+    }
+
+    function queueRefresh(options = {}) {
+      void refresh(options).catch(reportRefreshError);
+    }
+
     async function refresh({ realtime = false } = {}) {
       if (_refreshing || _sortingSpeakers) {
         _pendingRefresh = true;
@@ -769,7 +778,7 @@
           const pendingRealtime = _pendingRealtimeRefresh;
           _pendingRefresh = false;
           _pendingRealtimeRefresh = false;
-          refresh({ realtime: pendingRealtime });
+          queueRefresh({ realtime: pendingRealtime });
         }
       }
     }
@@ -1160,7 +1169,7 @@
           const pendingRealtime = _pendingRealtimeRefresh;
           _pendingRefresh = false;
           _pendingRealtimeRefresh = false;
-          refresh({ realtime: pendingRealtime });
+          queueRefresh({ realtime: pendingRealtime });
         }
       }
     }

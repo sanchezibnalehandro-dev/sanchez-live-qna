@@ -242,9 +242,10 @@ export function subscribeRoom(roomId, onChange, onStatus) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers',       filter: `room_id=eq.${roomId}` }, debounced)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions',      filter: `room_id=eq.${roomId}` }, debounced)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_question_votes' }, debounced)
-    .subscribe((status) => {
-      onStatus?.(status);
-      // Переподключаемся при разрыве
+    .subscribe((status, error) => {
+      onStatus?.(status, error);
+      if (error) console.error('Realtime subscription error', error);
+      // После сбоя перепроверяем фактическое состояние через обычный fetch.
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         setTimeout(() => onChange(), 1000);
       }

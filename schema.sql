@@ -254,9 +254,9 @@ end;
 $$;
 
 revoke execute on function public.submit_guest_question(bigint, bigint, text, text, text, text)
-from public, authenticated;
+from public;
 grant execute on function public.submit_guest_question(bigint, bigint, text, text, text, text)
-to anon;
+to anon, authenticated;
 
 create or replace function public.reorder_qna_speakers(
   p_room_id bigint,
