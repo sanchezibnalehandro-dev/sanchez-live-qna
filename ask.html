@@ -86,6 +86,8 @@
       background: var(--green);
       animation: pulse-dot 2s infinite;
     }
+    .live-tag.connecting .live-tag-dot { background: var(--color-warning); animation: none; }
+    .live-tag.offline .live-tag-dot { background: var(--color-danger); animation: none; }
 
     /* Индикатор состояния приёма */
     .reception-indicator {
@@ -209,9 +211,9 @@
         <div class="card-inner stack" style="gap:14px;">
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
             <h2 class="section-title" style="margin:0;">Ваш вопрос</h2>
-            <span id="charCount" style="font-size:11px; color:var(--muted);">0 / 600</span>
+            <span id="charCount" style="font-size:11px; color:var(--muted);">0 / 200</span>
           </div>
-          <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" maxlength="600" style="min-height:110px;"></textarea>
+          <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" maxlength="200" style="min-height:110px;"></textarea>
           <div class="divider"></div>
           <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:-4px;">Имя и компания (опционально)</div>
           <div class="meta-grid">
@@ -227,7 +229,7 @@
         <div class="card-inner">
           <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px;">
             <h2 class="section-title" style="margin:0;">Вопросы <span class="badge open" id="countBadge" style="vertical-align:middle;">0</span></h2>
-            <span class="live-tag"><span class="live-tag-dot"></span> live</span>
+            <span class="live-tag connecting" id="realtimeStatus"><span class="live-tag-dot"></span> подключение…</span>
           </div>
           <div class="list" id="questionsList">
             <div class="empty">Вопросов пока нет — задайте первый!</div>
@@ -243,7 +245,7 @@
     import { applyBrandIdentity } from './brand.js';
     import {
       getRoomSlug, getGuestSessionId, getRoomBySlug, getActiveSpeaker,
-      listQuestions, submitQuestion, addVote, removeVote, subscribeRoom,
+      listQuestions, submitGuestQuestion, addVote, removeVote, subscribeRoom,
       escapeHtml, formatClock, normalizeQuestion
     } from './supabase-qna.js';
 
@@ -264,13 +266,30 @@
     const formCard       = document.getElementById('formCard');
     const countBadge     = document.getElementById('countBadge');
 
+    function loadLocalSet(key) {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+        return new Set(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveLocalSet(key, values) {
+      try {
+        localStorage.setItem(key, JSON.stringify([...values]));
+      } catch {
+        // Current in-memory state remains valid even if browser storage is unavailable.
+      }
+    }
+
     // Голоса текущей сессии (local set для UI)
-    const myVotes = new Set(JSON.parse(localStorage.getItem(`qna-votes:${roomSlug}`) || '[]'));
-    function saveVotes() { localStorage.setItem(`qna-votes:${roomSlug}`, JSON.stringify([...myVotes])); }
+    const myVotes = loadLocalSet(`qna-votes:${roomSlug}`);
+    function saveVotes() { saveLocalSet(`qna-votes:${roomSlug}`, myVotes); }
 
     // Свои вопросы — отдельно от голосов
-    const myQuestions = new Set(JSON.parse(localStorage.getItem(`qna-own-questions:${roomSlug}`) || '[]'));
-    function saveMyQuestions() { localStorage.setItem(`qna-own-questions:${roomSlug}`, JSON.stringify([...myQuestions])); }
+    const myQuestions = loadLocalSet(`qna-own-questions:${roomSlug}`);
+    function saveMyQuestions() { saveLocalSet(`qna-own-questions:${roomSlug}`, myQuestions); }
 
     const state = { room: null, speaker: null, questions: [] };
     let unsubscribe = null;
@@ -299,7 +318,7 @@
         state.speaker = await getActiveSpeaker(state.room.id);
         await refresh();
         if (unsubscribe) unsubscribe();
-        unsubscribe = subscribeRoom(state.room.id, refresh);
+        unsubscribe = subscribeRoom(state.room.id, refresh, setRealtimeStatus);
       } catch (e) {
         const isNotFound = e?.code === 'PGRST116' || String(e?.message || '').includes('JSON object requested');
         speakerNameEl.textContent = isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
@@ -416,6 +435,7 @@
           void btn.offsetWidth;
           btn.classList.add('burst');
           btn.addEventListener('animationend', () => btn.classList.remove('burst'), { once: true });
+          let voteSaved = false;
           try {
             if (alreadyVoted) {
               await removeVote(id, sessionId);
@@ -424,10 +444,15 @@
               await addVote(id, sessionId);
               myVotes.add(id);
             }
+            voteSaved = true;
             saveVotes();
-            await refresh();
           } catch (e) {
             showToast(alreadyVoted ? 'Не удалось снять голос' : 'Не удалось поставить +1', 'error');
+          }
+          try {
+            if (voteSaved) await refresh();
+          } catch (e) {
+            showToast('Голос сохранён, но данные не удалось обновить.', 'error');
           } finally {
             pendingVoteIds.delete(id);
             render();
@@ -447,25 +472,30 @@
       submittingQuestion = true;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Отправляю…';
+      let questionSubmitted = false;
       try {
-        const newQ = await submitQuestion({
+        const newQ = await submitGuestQuestion({
           roomId: state.room.id,
           speakerId: state.speaker?.id || null,
           text,
           authorName: nameInput.value,
           authorCompany: companyInput.value,
-          sessionId,
-          moderationEnabled: Boolean(state.room.moderation_enabled)
+          sessionId
         });
-        // Запоминаем свой вопрос (отдельно от голосов)
+        questionSubmitted = true;
+        // Запоминаем свой вопрос отдельно от голосов; storage failure не отменяет подтверждённый INSERT.
         if (newQ?.id) { myQuestions.add(newQ.id); saveMyQuestions(); }
         questionInput.value = '';
         nameInput.value = '';
         companyInput.value = '';
-        showToast(state.room.moderation_enabled ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
-        await refresh();
+        showToast(newQ?.status === 'pending' ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
       } catch (e) {
         showToast(e.message || 'Не удалось отправить вопрос.', 'error');
+      }
+      try {
+        if (questionSubmitted) await refresh();
+      } catch (e) {
+        showToast('Вопрос сохранён, но данные не удалось обновить.', 'error');
       } finally {
         submittingQuestion = false;
         submitBtn.disabled = !state.room?.is_questions_open;
@@ -484,6 +514,20 @@
         el.classList.add('out');
         el.addEventListener('animationend', () => el.remove(), { once: true });
       }, 3000);
+    }
+
+    function setRealtimeStatus(status) {
+      const realtimeStatus = document.getElementById('realtimeStatus');
+      if (status === 'SUBSCRIBED') {
+        realtimeStatus.className = 'live-tag';
+        realtimeStatus.innerHTML = '<span class="live-tag-dot"></span> live';
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        realtimeStatus.className = 'live-tag offline';
+        realtimeStatus.innerHTML = '<span class="live-tag-dot"></span> нет связи';
+      } else {
+        realtimeStatus.className = 'live-tag connecting';
+        realtimeStatus.innerHTML = '<span class="live-tag-dot"></span> подключение…';
+      }
     }
   </script>
 </body>

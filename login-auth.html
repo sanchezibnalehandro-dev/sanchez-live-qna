@@ -57,6 +57,7 @@
     const passwordInput = document.getElementById('passwordInput');
     const statusEl = document.getElementById('status');
     const enterBtn = document.getElementById('enterBtn');
+    let loggingIn = false;
 
     boot();
     enterBtn.addEventListener('click', login);
@@ -71,6 +72,7 @@
     }
 
     async function login() {
+      if (loggingIn) return;
       statusEl.textContent = '';
       const email = emailInput.value.trim();
       const password = passwordInput.value;
@@ -78,16 +80,23 @@
         setStatus('Введите email и пароль.', 'error');
         return;
       }
+      loggingIn = true;
       enterBtn.disabled = true;
       enterBtn.textContent = 'Вхожу…';
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      enterBtn.disabled = false;
-      enterBtn.textContent = 'Войти';
-      if (error) {
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          setStatus(error.message || 'Не удалось войти.', 'error');
+          return;
+        }
+        location.href = `./admin-auth.html?room=${encodeURIComponent(room)}`;
+      } catch (error) {
         setStatus(error.message || 'Не удалось войти.', 'error');
-        return;
+      } finally {
+        loggingIn = false;
+        enterBtn.disabled = false;
+        enterBtn.textContent = 'Войти';
       }
-      location.href = `./admin-auth.html?room=${encodeURIComponent(room)}`;
     }
 
     function setStatus(message, type = '') {

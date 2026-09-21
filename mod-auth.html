@@ -302,15 +302,21 @@
         btn.disabled = true;
         btn.setAttribute('aria-busy', 'true');
         btn.textContent = 'Сохраняю…';
+        let actionSaved = false;
         try {
           if (action === 'approve') await approveQuestion(id);
           if (action === 'ask')  await setQuestionStatus(id, 'asked');
           if (action === 'hide') await setQuestionStatus(id, 'hidden');
           if (action === 'open') await setQuestionStatus(id, 'open');
           if (action === 'pin')  await setQuestionPinned(id, btn.dataset.pinned !== '1');
-          await refresh();
+          actionSaved = true;
         } catch (e) {
           setStatus(e.message || 'Не удалось выполнить действие', 'error');
+        }
+        try {
+          if (actionSaved) await refresh();
+        } catch (e) {
+          setStatus('Изменение сохранено, но данные не удалось обновить.', 'error');
         } finally {
           pendingQuestionActions.delete(actionKey);
           render();

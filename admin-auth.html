@@ -339,9 +339,9 @@
 
     const state = { room: null, speakers: [], questions: [], filter: 'all', speakerFilter: null };
     let unsubscribe = null;
-    let _busy = false;
     let _refreshing = false;
     let _pendingRefresh = false;
+    let _pendingRealtimeRefresh = false;
     let _sortingSpeakers = false;
     let draggedSpeakerId = null;
     const pendingToggles = new Set();
@@ -437,25 +437,73 @@
         logoutTimer = setTimeout(resetLogoutUI, 6000);
       });
       document.getElementById('logoutCancelBtn').addEventListener('click', resetLogoutUI);
-      document.getElementById('logoutConfirmBtn').addEventListener('click', () => {
-        resetLogoutUI();
-        logout();
+      const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
+      let loggingOut = false;
+      logoutConfirmBtn.addEventListener('click', async () => {
+        if (loggingOut) return;
+        loggingOut = true;
+        clearTimeout(logoutTimer);
+        logoutTimer = null;
+        logoutConfirmBtn.disabled = true;
+        logoutConfirmBtn.setAttribute('aria-busy', 'true');
+        logoutConfirmBtn.textContent = 'Выхожу…';
+        try {
+          const { error } = await supabase.auth.signOut({ scope: 'local' });
+          if (error) throw error;
+          location.href = `./login-auth.html?room=${encodeURIComponent(roomSlug)}`;
+        } catch (error) {
+          setStatus(error?.message || 'Не удалось выйти из аккаунта.', 'error');
+        } finally {
+          loggingOut = false;
+          if (logoutConfirmBtn.isConnected) {
+            logoutConfirmBtn.disabled = false;
+            logoutConfirmBtn.removeAttribute('aria-busy');
+            logoutConfirmBtn.textContent = 'Да, выйти';
+          }
+        }
       });
 
       // Добавить нового спикера (защита от двойного клика)
       let _addingSpeaker = false;
-      document.getElementById('addSpeakerBtn').addEventListener('click', async () => {
+      const addSpeakerBtn = document.getElementById('addSpeakerBtn');
+      addSpeakerBtn.addEventListener('click', async () => {
         if (_addingSpeaker) return;
         _addingSpeaker = true;
+        addSpeakerBtn.disabled = true;
+        addSpeakerBtn.setAttribute('aria-busy', 'true');
+        addSpeakerBtn.textContent = 'Добавляю…';
+        let speakerAdded = false;
         try {
           const s = await createSpeaker(state.room.id, { name: 'Новый спикер' });
-          await refresh();
+          speakerAdded = true;
           selectedSpeakerId = String(s.id);
           selectLabel.textContent = s.name;
-          fillFormFromId(selectedSpeakerId);
+          const newSpeakerData = getSpeakerData(s);
+          editorState.isFilling = true;
+          nameInput.value = newSpeakerData.name;
+          regaliaInput.value = newSpeakerData.regalia;
+          topicInput.value = newSpeakerData.topic;
+          editorState.isFilling = false;
+          editorState.dirty = false;
+          editorState.backgroundChanged = false;
+          editorState.savedSpeaker = newSpeakerData;
+          updateEditorStatus();
           setStatus('Спикер добавлен. Заполните данные и нажмите «Сохранить».', 'success');
-        } catch(e) { setStatus(e.message || 'Ошибка', 'error'); }
-        finally { _addingSpeaker = false; }
+        } catch(e) {
+          setStatus(e.message || 'Ошибка', 'error');
+        } finally {
+          _addingSpeaker = false;
+          addSpeakerBtn.disabled = false;
+          addSpeakerBtn.removeAttribute('aria-busy');
+          addSpeakerBtn.textContent = '+ Добавить';
+        }
+        if (!speakerAdded) return;
+        try {
+          await refresh();
+          fillFormFromId(selectedSpeakerId);
+        } catch (e) {
+          setStatus('Спикер добавлен, но данные не удалось обновить.', 'error');
+        }
       });
 
       // Сбросить фильтр по спикеру
@@ -479,15 +527,15 @@
           rows.push([
             q.id,
             sp?.name || '',
-            `"${(q.text||'').replace(/"/g,'""')}"`,
-            `"${(q.author_name||'').replace(/"/g,'""')}"`,
-            `"${(q.author_company||'').replace(/"/g,'""')}"`,
+            q.text || '',
+            q.author_name || '',
+            q.author_company || '',
             q.status,
             q.votes_count || 0,
             new Date(q.created_at).toLocaleString('ru-RU')
           ]);
         });
-        const csv = rows.map(r => r.join(',')).join('\n');
+        const csv = rows.map(r => r.map(csvCell).join(',')).join('\n');
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
@@ -509,6 +557,7 @@
         godSubmitBtn.disabled = true;
         godSubmitBtn.setAttribute('aria-busy', 'true');
         godSubmitBtn.textContent = 'Публикую…';
+        let godQuestionSubmitted = false;
         try {
           const activeSpeaker = await getActiveSpeaker(state.room.id);
           await submitQuestion({
@@ -520,12 +569,12 @@
             sessionId: godSessionId,
             moderationEnabled: false   // god mode всегда публикует сразу
           });
+          godQuestionSubmitted = true;
           document.getElementById('godQuestionInput').value = '';
           document.getElementById('godNameInput').value = '';
           document.getElementById('godCompanyInput').value = '';
           godStatus.textContent = 'Вопрос опубликован.';
           godStatus.className = 'status success';
-          await refresh();
         } catch (e) {
           godStatus.textContent = e.message || 'Ошибка.';
           godStatus.className = 'status error';
@@ -534,6 +583,13 @@
           godSubmitBtn.disabled = false;
           godSubmitBtn.removeAttribute('aria-busy');
           godSubmitBtn.textContent = previousText;
+        }
+        if (!godQuestionSubmitted) return;
+        try {
+          await refresh();
+        } catch (e) {
+          godStatus.textContent = 'Вопрос опубликован, но данные не удалось обновить.';
+          godStatus.className = 'status error';
         }
       });
 
@@ -548,16 +604,35 @@
         clearTimer = setTimeout(() => resetClearUI(), 8000);
       });
       document.getElementById('clearCancelBtn').addEventListener('click', resetClearUI);
-      document.getElementById('clearConfirmBtn').addEventListener('click', async () => {
+      const clearConfirmBtn = document.getElementById('clearConfirmBtn');
+      let clearingQuestions = false;
+      clearConfirmBtn.addEventListener('click', async () => {
+        if (clearingQuestions) return;
+        clearingQuestions = true;
         clearTimeout(clearTimer);
+        clearConfirmBtn.disabled = true;
+        clearConfirmBtn.setAttribute('aria-busy', 'true');
+        clearConfirmBtn.textContent = 'Удаляю…';
+        let questionsCleared = false;
         try {
           await deleteAllQuestions(state.room.id);
+          questionsCleared = true;
           setStatus('Все вопросы удалены.', 'success');
-          await refresh();
         } catch (e) {
           setStatus(e.message || 'Не удалось удалить вопросы.', 'error');
+        } finally {
+          clearingQuestions = false;
+          clearConfirmBtn.disabled = false;
+          clearConfirmBtn.removeAttribute('aria-busy');
+          clearConfirmBtn.textContent = 'Да, удалить всё';
+          resetClearUI();
         }
-        resetClearUI();
+        if (!questionsCleared) return;
+        try {
+          await refresh();
+        } catch (e) {
+          setStatus('Все вопросы удалены, но данные не удалось обновить.', 'error');
+        }
       });
       function resetClearUI() {
         clearTimeout(clearTimer);
@@ -594,15 +669,28 @@
         success: value => value ? 'Премодерация включена.' : 'Премодерация выключена.',
       }));
 
-      document.getElementById('saveBtn').addEventListener('click', async () => {
-        if (!selectedSpeakerId) return;
-        await mutate(async () => {
-          await updateSpeaker(Number(selectedSpeakerId), readEditorForm());
-          editorState.dirty = false;
-          editorState.backgroundChanged = false;
-          editorState.savedSpeaker = readEditorForm();
-          updateEditorStatus();
-        }, 'Данные спикера сохранены.');
+      const saveBtn = document.getElementById('saveBtn');
+      let savingSpeaker = false;
+      saveBtn.addEventListener('click', async () => {
+        if (!selectedSpeakerId || savingSpeaker) return;
+        savingSpeaker = true;
+        saveBtn.disabled = true;
+        saveBtn.setAttribute('aria-busy', 'true');
+        saveBtn.textContent = 'Сохраняю…';
+        try {
+          await mutate(async () => {
+            await updateSpeaker(Number(selectedSpeakerId), readEditorForm());
+            editorState.dirty = false;
+            editorState.backgroundChanged = false;
+            editorState.savedSpeaker = readEditorForm();
+            updateEditorStatus();
+          }, 'Данные спикера сохранены.');
+        } finally {
+          savingSpeaker = false;
+          saveBtn.disabled = false;
+          saveBtn.removeAttribute('aria-busy');
+          saveBtn.textContent = 'Сохранить';
+        }
       });
       document.getElementById('activateBtn').addEventListener('click', activateSelectedSpeaker);
 
@@ -649,16 +737,22 @@
     }
 
     async function refresh({ realtime = false } = {}) {
-      if (_refreshing || _sortingSpeakers) { _pendingRefresh = true; return; }
-      const questionFeedSnapshot = realtime ? captureQuestionFeedSnapshot() : null;
+      if (_refreshing || _sortingSpeakers) {
+        _pendingRefresh = true;
+        _pendingRealtimeRefresh ||= realtime;
+        return;
+      }
+      const questionFeedSnapshot = captureQuestionFeedSnapshot();
       _refreshing = true;
       _pendingRefresh = false;
+      _pendingRealtimeRefresh = false;
       try {
         state.room      = await getRoomBySlug(roomSlug);
         state.speakers  = await listSpeakers(state.room.id);
         state.questions = await listQuestions(state.room.id, null, { includeHidden: true, includeAsked: true, includePending: true });
+        const shouldPreserveRealtimePosition = realtime || _pendingRealtimeRefresh;
         render();
-        if (questionFeedSnapshot) {
+        if (shouldPreserveRealtimePosition) {
           const newQuestionsTotal = state.questions.filter(question => !questionFeedSnapshot.questionIds.has(String(question.id))).length;
           if (newQuestionsTotal && questionFeedSnapshot.nearTop) {
             newQuestionsSinceScrollTop = 0;
@@ -671,7 +765,12 @@
         }
       } finally {
         _refreshing = false;
-        if (_pendingRefresh) refresh();
+        if (_pendingRefresh) {
+          const pendingRealtime = _pendingRealtimeRefresh;
+          _pendingRefresh = false;
+          _pendingRealtimeRefresh = false;
+          refresh({ realtime: pendingRealtime });
+        }
       }
     }
 
@@ -712,12 +811,18 @@
       activatingSpeaker = true;
       activateBtn.disabled = true;
       activateBtn.textContent = 'Переключаю…';
+      let speakerActivated = false;
       try {
         await setActiveSpeaker(state.room.id, Number(selectedSpeakerId));
-        await refresh();
+        speakerActivated = true;
         setStatus('Активный спикер обновлён.', 'success');
       } catch (error) {
         setStatus(error.message || 'Не удалось обновить активного спикера.', 'error');
+      }
+      try {
+        if (speakerActivated) await refresh();
+      } catch (error) {
+        setStatus('Активный спикер обновлён, но данные не удалось обновить.', 'error');
       } finally {
         activatingSpeaker = false;
         if (activateBtn.isConnected) {
@@ -861,18 +966,24 @@
           speakerDeleteTimer = null;
           btn.disabled = true;
           btn.textContent = 'Удаляю…';
+          let speakerDeleted = false;
           try {
             await deleteSpeaker(Number(speakerId));
+            speakerDeleted = true;
             if (String(selectedSpeakerId) === String(speakerId)) {
               selectedSpeakerId = null;
               selectLabel.textContent = 'Выберите спикера';
             }
             resetSpeakerDeleteConfirmation();
-            await refresh();
           } catch (e) {
             resetSpeakerDeleteConfirmation();
             render();
             setStatus(e.message || 'Ошибка удаления', 'error');
+          }
+          try {
+            if (speakerDeleted) await refresh();
+          } catch (e) {
+            setStatus('Спикер удалён, но данные не удалось обновить.', 'error');
           } finally {
             deletingSpeakerId = null;
           }
@@ -928,7 +1039,7 @@
                   ${!isHidden ? questionActionButton(item, 'hide', 'Скрыть', 'warn') : ''}
                   ${isHidden || isAsked ? questionActionButton(item, 'open', 'Вернуть', 'ghost') : ''}
                   ${!isPending ? questionActionButton(item, 'pin', isPinned ? 'Открепить' : 'Закрепить', 'ghost') : ''}
-                  <button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="addvote" data-id="${item.id}">+1 ✦</button>
+                   <button class="btn ghost" style="padding:7px 12px;font-size:11px;" data-action="addvote" data-id="${item.id}"${pendingQuestionActions.has(questionActionKey(item.id, 'addvote')) ? ' disabled aria-busy="true"' : ''}>${pendingQuestionActions.has(questionActionKey(item.id, 'addvote')) ? 'Сохраняю…' : '+1 ✦'}</button>
                 </div>
               </div>`;
           }).join('') + (remainingQuestions > 0
@@ -944,7 +1055,7 @@
       questionsList.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', async () => {
         const action = btn.dataset.action;
         const id = Number(btn.dataset.id);
-        const isManagedQuestionAction = ['approve', 'ask', 'hide', 'open', 'pin'].includes(action);
+        const isManagedQuestionAction = ['approve', 'ask', 'hide', 'open', 'pin', 'addvote'].includes(action);
         const actionKey = questionActionKey(id, action);
         if (isManagedQuestionAction && pendingQuestionActions.has(actionKey)) return;
 
@@ -954,6 +1065,7 @@
           btn.setAttribute('aria-busy', 'true');
           btn.textContent = 'Сохраняю…';
         }
+        let actionSaved = false;
         try {
           if (action === 'approve') await approveQuestion(id);
           if (action === 'ask')     await setQuestionStatus(id, 'asked');
@@ -961,9 +1073,14 @@
           if (action === 'open')    await setQuestionStatus(id, 'open');
           if (action === 'pin')     await setQuestionPinned(id, btn.dataset.pinned !== '1');
           if (action === 'addvote') await addVote(id, getGuestSessionId(roomSlug + '-admin-' + id));
-          await refresh();
+          actionSaved = true;
         } catch (e) {
           setStatus(e.message || 'Ошибка', 'error');
+        }
+        try {
+          if (actionSaved) await refresh();
+        } catch (e) {
+          setStatus('Изменение сохранено, но данные не удалось обновить.', 'error');
         } finally {
           if (isManagedQuestionAction) {
             pendingQuestionActions.delete(actionKey);
@@ -1040,8 +1157,10 @@
       } finally {
         _sortingSpeakers = false;
         if (_pendingRefresh) {
+          const pendingRealtime = _pendingRealtimeRefresh;
           _pendingRefresh = false;
-          refresh();
+          _pendingRealtimeRefresh = false;
+          refresh({ realtime: pendingRealtime });
         }
       }
     }
@@ -1061,21 +1180,25 @@
     }
 
     async function mutate(fn, successMsg) {
-      _busy = true;
       try {
         await fn();
-        setStatus(successMsg, 'success');
-        await refresh();
       } catch (e) {
         setStatus(e.message || 'Не удалось выполнить действие.', 'error');
-      } finally {
-        _busy = false;
+        return false;
       }
+      setStatus(successMsg, 'success');
+      try {
+        await refresh();
+      } catch (e) {
+        setStatus('Изменение сохранено, но данные не удалось обновить.', 'error');
+      }
+      return true;
     }
 
-    async function logout() {
-      await supabase.auth.signOut();
-      location.href = `./login-auth.html?room=${encodeURIComponent(roomSlug)}`;
+    function csvCell(value) {
+      let text = String(value ?? '');
+      if (/^[\s\u0000-\u001F]*[=+\-@]/.test(text)) text = `'${text}`;
+      return `"${text.replace(/"/g, '""')}"`;
     }
 
     function setStatus(message, type = '') {
