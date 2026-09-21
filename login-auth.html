@@ -57,7 +57,7 @@
 
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
-    import { supabase, getRoomSlug, getEventKey } from './supabase-qna.js';
+    import { supabase, getRoomSlug, getEventKey, getCurrentEventRoom } from './supabase-qna.js';
 
     const room = getRoomSlug();
     const eventKey = getEventKey();
@@ -65,12 +65,22 @@
     const next = params.get('next') === 'moderator' ? 'moderator' : 'admin';
     applyBrandIdentity('login', getBrandForRoute(room, eventKey));
 
-    function destinationUrl() {
-      const page = next === 'moderator' ? 'mod-auth.html' : 'admin-auth.html';
-      const route = eventKey
-        ? `event=${encodeURIComponent(eventKey)}`
-        : `room=${encodeURIComponent(room)}`;
-      return `./${page}?${route}`;
+    async function destinationUrl() {
+      if (next === 'moderator') {
+        const route = eventKey
+          ? `event=${encodeURIComponent(eventKey)}`
+          : `room=${encodeURIComponent(room)}`;
+        return `./mod-auth.html?${route}`;
+      }
+
+      if (eventKey) {
+        const currentRoom = await getCurrentEventRoom(eventKey);
+        if (currentRoom?.slug) {
+          return `./admin-auth.html?room=${encodeURIComponent(currentRoom.slug)}`;
+        }
+      }
+
+      return `./admin-auth.html?room=${encodeURIComponent(room)}`;
     }
     const emailInput = document.getElementById('emailInput');
     const passwordInput = document.getElementById('passwordInput');
@@ -86,7 +96,7 @@
     async function boot() {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        location.href = destinationUrl();
+        location.href = await destinationUrl();
       }
     }
 
