@@ -330,7 +330,7 @@ create or replace function public.set_active_qna_speaker(
 returns void
 language plpgsql
 set search_path = public
-as $
+as $$
 begin
   if auth.role() <> 'authenticated' then
     raise exception 'Authentication required' using errcode = '42501';
