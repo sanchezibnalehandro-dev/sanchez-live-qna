@@ -50,7 +50,7 @@ alter table public.qna_rooms
   alter column is_current_session set default false,
   alter column is_current_session set not null;
 
-do $
+do $event$
 begin
   if not exists (
     select 1 from pg_constraint
@@ -72,8 +72,7 @@ begin
       check (event_key is null or is_current_session or not is_questions_open);
   end if;
 end;
-$;
-
+$event$;
 do $$
 begin
   if not exists (
