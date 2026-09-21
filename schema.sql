@@ -8,6 +8,8 @@ create table if not exists public.qna_rooms (
   mode text not null default 'speaker' check (mode in ('speaker', 'panel')),
   moderator_name text null,
   moderator_regalia text null,
+  event_key text null,
+  session_order integer not null default 100,
   active_speaker_id bigint null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -27,6 +29,18 @@ where mode is null;
 alter table public.qna_rooms
   alter column mode set default 'speaker',
   alter column mode set not null;
+
+alter table public.qna_rooms
+  add column if not exists event_key text,
+  add column if not exists session_order integer;
+
+update public.qna_rooms
+set session_order = 100
+where session_order is null;
+
+alter table public.qna_rooms
+  alter column session_order set default 100,
+  alter column session_order set not null;
 
 do $$
 begin

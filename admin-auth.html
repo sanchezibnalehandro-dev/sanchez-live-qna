@@ -18,13 +18,13 @@
     .toggle-pill input { opacity: 0; width: 0; height: 0; }
     .toggle-track {
       position: absolute; inset: 0; border-radius: 999px;
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
+      background: var(--color-neutral-soft); border: 1px solid var(--color-neutral-border);
       cursor: pointer; transition: background 0.2s;
     }
     .toggle-track::after {
       content: ''; position: absolute; left: 3px; top: 3px;
       width: 16px; height: 16px; border-radius: 50%;
-      background: #fff; transition: transform 0.2s;
+      background: #fff; box-shadow: 0 1px 3px color-mix(in srgb, var(--color-neutral-text) 40%, transparent); transition: transform 0.2s;
     }
     .toggle-pill input:checked + .toggle-track { background: var(--color-accent); border-color: var(--color-accent-hover); }
     .toggle-pill input:checked + .toggle-track::after { transform: translateX(20px); }
@@ -104,6 +104,9 @@
     .live-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--green); }
     .live-context h1 { margin-top: 4px; font-size: clamp(22px, 2.1vw, 30px); background: none; color: var(--text); -webkit-text-fill-color: var(--text); }
     .live-context p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .event-session-control { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 11px; font-weight: 700; }
+    .event-session-select { max-width: 240px; min-height: 30px; padding: 4px 28px 4px 9px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-raised); color: var(--text); font: inherit; }
+    .event-session-select:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
     .live-statuses { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
     .live-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--bg3); color: var(--color-accent-text); font-size: 11px; font-weight: 700; white-space: nowrap; }
     .live-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
@@ -211,7 +214,7 @@
         <div class="card-inner">
           <div class="live-main">
             <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
-            <div class="live-context"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
+            <div class="live-context"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p><label class="event-session-control" id="eventSessionControl" hidden>Сессия<select class="event-session-select" id="eventSessionSelect" aria-label="Сессия"></select></label></div>
             <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button><button class="btn ghost" id="qrBtn" style="padding:8px 10px;">▣ QR</button><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;">↗ Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;">↗ Модератор</button></div>
           </div>
           <div id="qrPanel" style="display:none; margin-top:10px; text-align:right;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:var(--color-surface-qr); padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div>
@@ -254,7 +257,7 @@
   <script type="module">
     import { applyBrandIdentity, getBrandForRoomSlug } from './brand.js';
     import {
-      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker,
+      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, listEventRooms, listSpeakers, updateSpeaker,
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
@@ -283,6 +286,8 @@
     const qOpenSub        = document.getElementById('questionsOpenSub');
     const modSub          = document.getElementById('moderationSub');
     const realtimeStatus  = document.getElementById('realtimeStatus');
+    const eventSessionControl = document.getElementById('eventSessionControl');
+    const eventSessionSelect = document.getElementById('eventSessionSelect');
     const filterTabs      = Array.from(document.querySelectorAll('.filter-tab'));
 
     // Кастомный select
@@ -353,6 +358,35 @@
     let newQuestionsSinceScrollTop = 0;
     const QUESTION_PAGE_SIZE = 50;
     let visibleQuestionLimit = QUESTION_PAGE_SIZE;
+
+    function renderEventSessionSelector(eventRooms) {
+      const showSelector = state.room?.event_key != null && eventRooms.length >= 2;
+      eventSessionControl.hidden = !showSelector;
+      if (!showSelector) {
+        eventSessionSelect.replaceChildren();
+        return;
+      }
+
+      eventSessionSelect.replaceChildren(...eventRooms.map(room => {
+        const option = document.createElement('option');
+        option.value = room.slug;
+        option.textContent = room.title;
+        option.selected = room.slug === state.room.slug;
+        return option;
+      }));
+    }
+
+    async function loadEventSessionSelector() {
+      const eventRooms = await listEventRooms(state.room?.event_key);
+      renderEventSessionSelector(eventRooms);
+    }
+
+    eventSessionSelect.addEventListener('change', () => {
+      const nextSlug = eventSessionSelect.value;
+      if (nextSlug && nextSlug !== roomSlug) {
+        location.href = `./admin-auth.html?room=${encodeURIComponent(nextSlug)}`;
+      }
+    });
 
     function selectSpeakerForEditing(id) {
       const nextId = String(id);
@@ -697,6 +731,12 @@
       document.getElementById('activateBtn').addEventListener('click', activateSelectedSpeaker);
 
       await refresh();
+      try {
+        await loadEventSessionSelector();
+      } catch (error) {
+        console.error('Event session selector failed to load', error);
+        eventSessionControl.hidden = true;
+      }
       if (unsubscribe) unsubscribe();
       unsubscribe = subscribeRoom(state.room.id, () => queueRefresh({ realtime: true }), setRealtimeStatus);
 

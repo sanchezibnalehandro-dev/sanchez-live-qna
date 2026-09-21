@@ -34,11 +34,24 @@ export function getGuestSessionId(room) {
 export async function getRoomBySlug(roomSlug) {
   const { data, error } = await supabase
     .from('qna_rooms')
-    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id')
+    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order')
     .eq('slug', roomSlug)
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function listEventRooms(eventKey) {
+  if (!eventKey?.trim()) return [];
+
+  const { data, error } = await supabase
+    .from('qna_rooms')
+    .select('id, slug, title, mode, moderator_name, moderator_regalia, is_questions_open, moderation_enabled, session_order')
+    .eq('event_key', eventKey)
+    .order('session_order', { ascending: true })
+    .order('id', { ascending: true });
+  if (error) throw error;
+  return data || [];
 }
 
 export async function getActiveSpeaker(roomId) {
