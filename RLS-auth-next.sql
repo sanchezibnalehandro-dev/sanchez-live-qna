@@ -105,21 +105,6 @@ drop policy if exists auth_insert_votes on public.qna_question_votes;
 drop policy if exists public_delete_votes on public.qna_question_votes;
 drop policy if exists auth_delete_votes on public.qna_question_votes;
 
-create policy public_insert_votes
-on public.qna_question_votes
-for insert
-to anon
-with check (
-  exists (
-    select 1
-    from public.qna_questions question
-    join public.qna_rooms room on room.id = question.room_id
-    where question.id = qna_question_votes.question_id
-      and question.status = 'open'
-      and (room.event_key is null or room.is_current_session = true)
-  )
-);
-
 create policy auth_insert_votes
 on public.qna_question_votes
 for insert
@@ -154,8 +139,7 @@ grant select (
   status, is_pinned, votes_count, created_at, asked_at
 ) on public.qna_questions to anon;
 
-grant insert (question_id, session_id)
-on public.qna_question_votes to anon;
+-- Guest votes go through add_vote() so current-session and ownership checks are atomic.
 
 
 -- Авторизованный интерфейс получает только CRUD, который использует приложение.
@@ -171,4 +155,4 @@ grant insert, delete on public.qna_question_votes to authenticated;
 
 grant usage, select on sequence public.qna_speakers_id_seq to authenticated;
 grant usage, select on sequence public.qna_questions_id_seq to authenticated;
-grant usage, select on sequence public.qna_question_votes_id_seq to anon, authenticated;
+grant usage, select on sequence public.qna_question_votes_id_seq to authenticated;
