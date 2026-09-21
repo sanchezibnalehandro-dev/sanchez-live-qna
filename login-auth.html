@@ -57,7 +57,7 @@
 
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
-    import { supabase, getRoomSlug, getEventKey, getCurrentEventRoom } from './supabase-qna.js';
+    import { supabase, getRoomSlug, getEventKey, getCurrentEventRoom, listEventRooms } from './supabase-qna.js';
 
     const room = getRoomSlug();
     const eventKey = getEventKey();
@@ -78,6 +78,15 @@
         if (currentRoom?.slug) {
           return `./admin-auth.html?room=${encodeURIComponent(currentRoom.slug)}`;
         }
+
+        const eventRooms = await listEventRooms(eventKey);
+        if (eventRooms[0]?.slug) {
+          return `./admin-auth.html?room=${encodeURIComponent(eventRooms[0].slug)}`;
+        }
+
+        const error = new Error('Мероприятие не найдено.');
+        error.code = 'EVENT_NOT_FOUND';
+        throw error;
       }
 
       return `./admin-auth.html?room=${encodeURIComponent(room)}`;
@@ -95,8 +104,11 @@
 
     async function boot() {
       const { data } = await supabase.auth.getSession();
-      if (data.session) {
+      if (!data.session) return;
+      try {
         location.href = await destinationUrl();
+      } catch (error) {
+        setStatus(error?.code === 'EVENT_NOT_FOUND' ? 'Мероприятие не найдено. Проверьте ссылку.' : (error?.message || 'Не удалось открыть интерфейс.'), 'error');
       }
     }
 
