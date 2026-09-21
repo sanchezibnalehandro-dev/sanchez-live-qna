@@ -170,7 +170,7 @@ create or replace function public.submit_guest_question(
 returns table(id bigint, status text)
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $
 declare
   v_questions_open boolean;
