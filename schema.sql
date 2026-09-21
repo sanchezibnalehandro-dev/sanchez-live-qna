@@ -298,7 +298,8 @@ begin
   from public.qna_questions question
   join public.qna_rooms room on room.id = question.room_id
   where question.id = p_question_id
-  for share of question, room;
+  for no key update of question
+  for share of room;
 
   if not found then
     raise exception 'QUESTION_NOT_FOUND' using errcode = '22023';
