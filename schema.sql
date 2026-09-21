@@ -515,8 +515,7 @@ begin
   select event_key
   into v_event_key
   from public.qna_rooms
-  where id = p_room_id
-  for update;
+  where id = p_room_id;
 
   if not found then
     raise exception 'Room not found' using errcode = '22023';
