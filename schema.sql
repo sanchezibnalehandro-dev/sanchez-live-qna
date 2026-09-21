@@ -47,6 +47,29 @@ create table if not exists public.qna_question_votes (
   unique(question_id, session_id)
 );
 
+alter table public.qna_questions
+  drop constraint if exists qna_questions_text_length_check,
+  drop constraint if exists qna_questions_author_name_length_check,
+  drop constraint if exists qna_questions_author_company_length_check,
+  drop constraint if exists qna_questions_session_id_length_check;
+
+alter table public.qna_questions
+  add constraint qna_questions_text_length_check
+    check (char_length(text) <= 200 and char_length(btrim(text)) >= 1),
+  add constraint qna_questions_author_name_length_check
+    check (author_name is null or char_length(author_name) <= 120),
+  add constraint qna_questions_author_company_length_check
+    check (author_company is null or char_length(author_company) <= 120),
+  add constraint qna_questions_session_id_length_check
+    check (session_id is null or char_length(session_id) between 8 and 128);
+
+alter table public.qna_question_votes
+  drop constraint if exists qna_question_votes_session_id_length_check;
+
+alter table public.qna_question_votes
+  add constraint qna_question_votes_session_id_length_check
+    check (char_length(session_id) between 8 and 128);
+
 create index if not exists qna_questions_room_speaker_idx
   on public.qna_questions(room_id, speaker_id, created_at desc);
 
@@ -135,3 +158,109 @@ $$;
 
 revoke execute on function public.remove_vote(bigint, text) from public;
 grant execute on function public.remove_vote(bigint, text) to anon, authenticated;
+
+create or replace function public.reorder_qna_speakers(
+  p_room_id bigint,
+  p_order jsonb
+)
+returns void
+language plpgsql
+set search_path = public
+as $$
+declare
+  v_requested integer;
+  v_distinct integer;
+  v_existing integer;
+  v_room_total integer;
+begin
+  if auth.role() <> 'authenticated' then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  if jsonb_typeof(p_order) <> 'array' then
+    raise exception 'p_order must be a JSON array' using errcode = '22023';
+  end if;
+
+  select count(*), count(distinct x.id)
+  into v_requested, v_distinct
+  from jsonb_to_recordset(p_order) as x(id bigint, sort_order integer)
+  where x.id is not null and x.sort_order is not null;
+
+  if v_requested <> jsonb_array_length(p_order) or v_distinct <> v_requested then
+    raise exception 'Invalid or duplicate speaker order entries' using errcode = '22023';
+  end if;
+
+  select count(*)
+  into v_room_total
+  from public.qna_speakers
+  where room_id = p_room_id;
+
+  if v_requested <> v_room_total then
+    raise exception 'Complete speaker order required' using errcode = '22023';
+  end if;
+
+  select count(*)
+  into v_existing
+  from public.qna_speakers s
+  join jsonb_to_recordset(p_order) as x(id bigint, sort_order integer)
+    on x.id = s.id
+  where s.room_id = p_room_id;
+
+  if v_existing <> v_requested then
+    raise exception 'Speaker order contains rows outside the room' using errcode = '22023';
+  end if;
+
+  update public.qna_speakers s
+  set sort_order = x.sort_order
+  from jsonb_to_recordset(p_order) as x(id bigint, sort_order integer)
+  where s.id = x.id
+    and s.room_id = p_room_id;
+end;
+$$;
+
+revoke execute on function public.reorder_qna_speakers(bigint, jsonb)
+from public, anon;
+grant execute on function public.reorder_qna_speakers(bigint, jsonb)
+to authenticated;
+
+create or replace function public.set_active_qna_speaker(
+  p_room_id bigint,
+  p_speaker_id bigint
+)
+returns void
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.role() <> 'authenticated' then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  if not exists (
+    select 1
+    from public.qna_speakers
+    where id = p_speaker_id
+      and room_id = p_room_id
+  ) then
+    raise exception 'Speaker does not belong to room' using errcode = '22023';
+  end if;
+
+  update public.qna_speakers
+  set is_active = (id = p_speaker_id)
+  where room_id = p_room_id;
+
+  update public.qna_rooms
+  set active_speaker_id = p_speaker_id
+  where id = p_room_id;
+
+  if not found then
+    raise exception 'Room not found' using errcode = '22023';
+  end if;
+end;
+$$;
+
+revoke execute on function public.set_active_qna_speaker(bigint, bigint)
+from public, anon;
+grant execute on function public.set_active_qna_speaker(bigint, bigint)
+to authenticated;
+

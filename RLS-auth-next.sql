@@ -80,14 +80,35 @@ on public.qna_questions
 for insert
 to anon
 with check (
-  status in ('open', 'pending')
-  and is_pinned = false
+  is_pinned = false
   and votes_count = 0
   and exists (
     select 1
     from public.qna_rooms room
     where room.id = qna_questions.room_id
       and room.is_questions_open = true
+      and qna_questions.status = case
+        when room.moderation_enabled then 'pending'
+        else 'open'
+      end
+      and (
+        (
+          qna_questions.speaker_id is null
+          and not exists (
+            select 1
+            from public.qna_speakers speaker
+            where speaker.room_id = room.id
+              and speaker.is_active = true
+          )
+        )
+        or exists (
+          select 1
+          from public.qna_speakers speaker
+          where speaker.id = qna_questions.speaker_id
+            and speaker.room_id = room.id
+            and speaker.is_active = true
+        )
+      )
   )
 );
 
@@ -117,13 +138,27 @@ using (true);
 
 drop policy if exists public_read_votes on public.qna_question_votes;
 drop policy if exists public_insert_votes on public.qna_question_votes;
+drop policy if exists auth_insert_votes on public.qna_question_votes;
 drop policy if exists public_delete_votes on public.qna_question_votes;
 drop policy if exists auth_delete_votes on public.qna_question_votes;
 
 create policy public_insert_votes
 on public.qna_question_votes
 for insert
-to anon, authenticated
+to anon
+with check (
+  exists (
+    select 1
+    from public.qna_questions question
+    where question.id = qna_question_votes.question_id
+      and question.status = 'open'
+  )
+);
+
+create policy auth_insert_votes
+on public.qna_question_votes
+for insert
+to authenticated
 with check (true);
 
 create policy auth_delete_votes
