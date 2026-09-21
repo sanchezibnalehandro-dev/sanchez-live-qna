@@ -47,6 +47,23 @@ create table if not exists public.qna_question_votes (
   unique(question_id, session_id)
 );
 
+do $
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'qna_rooms_active_speaker_id_fkey'
+      and conrelid = 'public.qna_rooms'::regclass
+  ) then
+    alter table public.qna_rooms
+      add constraint qna_rooms_active_speaker_id_fkey
+      foreign key (active_speaker_id)
+      references public.qna_speakers(id)
+      on delete set null;
+  end if;
+end;
+$;
+
 alter table public.qna_questions
   drop constraint if exists qna_questions_text_length_check,
   drop constraint if exists qna_questions_author_name_length_check,
