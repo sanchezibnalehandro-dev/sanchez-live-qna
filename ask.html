@@ -259,7 +259,7 @@
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
     import {
-      getRoomSlug, getEventKey, getGuestSessionId, getRoomBySlug, getCurrentEventRoom, getActiveSpeaker,
+      getRoomSlug, getEventKey, getGuestSessionId, getRoomBySlug, getCurrentEventRoom, listEventRooms, getActiveSpeaker,
       listSpeakers, listQuestions, submitGuestQuestion, addVote, removeVote, subscribeRoom, subscribeEvent,
       escapeHtml, formatClock, normalizeQuestion
     } from './supabase-qna.js';
@@ -310,8 +310,12 @@
       myVotes = loadLocalSet(`qna-votes:${roomSlug}`);
       myQuestions = loadLocalSet(`qna-own-questions:${roomSlug}`);
     }
-    function saveVotes() { if (activeRoomSlug) saveLocalSet(`qna-votes:${activeRoomSlug}`, myVotes); }
-    function saveMyQuestions() { if (activeRoomSlug) saveLocalSet(`qna-own-questions:${activeRoomSlug}`, myQuestions); }
+    function saveVotesForRoom(roomSlug, votes) {
+      if (roomSlug) saveLocalSet(`qna-votes:${roomSlug}`, votes);
+    }
+    function saveMyQuestionsForRoom(roomSlug, questions) {
+      if (roomSlug) saveLocalSet(`qna-own-questions:${roomSlug}`, questions);
+    }
 
     function saveDraft(roomSlug) {
       if (!roomSlug) return;
@@ -363,15 +367,11 @@
         }
         await refresh();
       } catch (e) {
-        const noCurrentSession = e?.code === 'CURRENT_SESSION_NOT_SET';
-        const isNotFound = e?.code === 'PGRST116' || String(e?.message || '').includes('JSON object requested');
-        speakerNameEl.textContent = noCurrentSession ? 'Сессия ещё не выбрана' : isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
-        speakerMetaEl.textContent = noCurrentSession
-          ? 'Для этого мероприятия пока не назначена текущая сессия.'
-          : isNotFound
-            ? `Комната «${requestedRoomSlug}» не существует. Проверьте QR-код или ссылку.`
-            : (e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.');
-        document.getElementById('formCard').style.display = 'none';
+        if (!renderTerminalRouteError(e)) {
+          speakerNameEl.textContent = 'Ошибка загрузки';
+          speakerMetaEl.textContent = e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.';
+          formCard.style.display = 'none';
+        }
       }
     }
 
@@ -379,9 +379,51 @@
       if (!eventKey) return getRoomBySlug(requestedRoomSlug);
       const room = await getCurrentEventRoom(eventKey);
       if (room) return room;
-      const error = new Error('Для мероприятия не выбрана текущая сессия.');
-      error.code = 'CURRENT_SESSION_NOT_SET';
+      const eventRooms = await listEventRooms(eventKey);
+      const error = new Error(eventRooms.length
+        ? 'Для мероприятия не выбрана текущая сессия.'
+        : 'Мероприятие не найдено.');
+      error.code = eventRooms.length ? 'CURRENT_SESSION_NOT_SET' : 'EVENT_NOT_FOUND';
       throw error;
+    }
+
+    function renderTerminalRouteError(error) {
+      const noCurrentSession = error?.code === 'CURRENT_SESSION_NOT_SET';
+      const invalidEvent = error?.code === 'EVENT_NOT_FOUND';
+      const invalidRoom = error?.code === 'PGRST116' || String(error?.message || '').includes('JSON object requested');
+      if (!noCurrentSession && !invalidEvent && !invalidRoom) return false;
+
+      if (activeRoomSlug) saveDraft(activeRoomSlug);
+      unsubscribeRoom?.();
+      unsubscribeRoom = null;
+      subscribedRoomId = null;
+      realtimeChannels.room = 'SUBSCRIBED';
+      state.room = null;
+      state.speaker = null;
+      state.speakers = [];
+      state.questions = [];
+
+      speakerNameEl.textContent = invalidEvent
+        ? 'Мероприятие не найдено'
+        : noCurrentSession ? 'Сессия ещё не выбрана' : 'Комната не найдена';
+      speakerMetaEl.textContent = invalidEvent
+        ? `Мероприятие «${eventKey}» не существует. Проверьте QR-код или ссылку.`
+        : noCurrentSession
+          ? 'Для этого мероприятия пока не назначена текущая сессия.'
+          : `Комната «${requestedRoomSlug}» не существует. Проверьте QR-код или ссылку.`;
+
+      panelParticipants.style.display = 'none';
+      formCard.style.display = 'none';
+      closedBanner.style.display = 'none';
+      countBadge.textContent = '0';
+      questionsList.innerHTML = '<div class="empty"><div class="empty-title">Вопросы недоступны</div></div>';
+
+      const indicator = document.getElementById('receptionIndicator');
+      const label = document.getElementById('receptionLabel');
+      indicator.className = 'reception-indicator closed';
+      label.textContent = 'Недоступно';
+      document.getElementById('realtimeStatus').hidden = true;
+      return true;
     }
 
     function setRealtimeChannelStatus(channel, status) {
@@ -437,6 +479,8 @@
         state.speakers = isPanel ? await listSpeakers(state.room.id) : [];
         state.questions = await listQuestions(state.room.id, isPanel ? null : state.speaker?.id, { includeHidden: false, includeAsked: true });
         render();
+      } catch (error) {
+        if (!renderTerminalRouteError(error)) throw error;
       } finally {
         _refreshing = false;
         if (_pendingRefresh) {
@@ -447,6 +491,7 @@
     }
 
     function render() {
+      document.getElementById('realtimeStatus').hidden = false;
       formCard.style.display = '';
       const isPanel = state.room?.mode === 'panel';
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
@@ -543,8 +588,12 @@
         btn.addEventListener('click', async () => {
           if (btn.disabled) return;
           const id = Number(btn.dataset.id);
-          const alreadyVoted = myVotes.has(id);
-          if (pendingVoteIds.has(id)) return;
+          const operationRoomId = state.room?.id;
+          const operationRoomSlug = activeRoomSlug;
+          const operationSessionId = sessionId;
+          const operationVotes = myVotes;
+          const alreadyVoted = operationVotes.has(id);
+          if (!operationRoomId || !operationRoomSlug || !operationSessionId || pendingVoteIds.has(id)) return;
           pendingVoteIds.add(id);
           btn.disabled = true;
           btn.setAttribute('aria-busy', 'true');
@@ -555,59 +604,84 @@
           let voteSaved = false;
           try {
             if (alreadyVoted) {
-              await removeVote(id, sessionId);
-              myVotes.delete(id);
+              await removeVote(id, operationSessionId);
+              operationVotes.delete(id);
             } else {
-              await addVote(id, sessionId);
-              myVotes.add(id);
+              await addVote(id, operationSessionId);
+              operationVotes.add(id);
             }
             voteSaved = true;
-            saveVotes();
+            saveVotesForRoom(operationRoomSlug, operationVotes);
           } catch (e) {
-            showToast(alreadyVoted ? 'Не удалось снять голос' : 'Не удалось поставить +1', 'error');
+            const message = String(e?.message || '');
+            if (message.includes('SESSION_NOT_CURRENT')) {
+              showToast('Сессия уже сменилась. Голос не применён.', 'error');
+              queueRefresh();
+            } else if (message.includes('CANNOT_VOTE_OWN_QUESTION')) {
+              showToast('Нельзя голосовать за свой вопрос.', 'error');
+            } else {
+              showToast(alreadyVoted ? 'Не удалось снять голос' : 'Не удалось поставить +1', 'error');
+            }
           }
+          const stillSameRoom = state.room?.id === operationRoomId && activeRoomSlug === operationRoomSlug;
           try {
-            if (voteSaved) await refresh();
+            if (voteSaved && stillSameRoom) await refresh();
+            else if (voteSaved) showToast(alreadyVoted ? 'Голос снят в предыдущей сессии.' : 'Голос учтён в предыдущей сессии.', 'success');
           } catch (e) {
             showToast('Голос сохранён, но данные не удалось обновить.', 'error');
           } finally {
             pendingVoteIds.delete(id);
-            render();
+            if (state.room) render();
           }
         });
       });
     }
 
     async function onSubmit() {
-      if (state.room?.is_questions_open !== true) {
+      const operationRoom = state.room;
+      const operationRoomSlug = activeRoomSlug;
+      const operationSessionId = sessionId;
+      const operationQuestions = myQuestions;
+      const operationIsCurrent = !operationRoom?.event_key || operationRoom?.is_current_session === true;
+      if (!operationRoom || !operationRoomSlug || !operationSessionId || !operationIsCurrent || operationRoom.is_questions_open !== true) {
         showToast('Приём вопросов закрыт.', 'error');
         return;
       }
       if (submittingQuestion) return;
       const text = normalizeQuestion(questionInput.value);
       if (!text) { showToast('Напишите вопрос.', 'error'); return; }
+      const authorName = operationRoom.mode === 'panel' ? '' : nameInput.value;
+      const authorCompany = operationRoom.mode === 'panel' ? '' : companyInput.value;
+      const speakerId = operationRoom.mode === 'panel' ? null : state.speaker?.id || null;
       submittingQuestion = true;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Отправляю…';
       let questionSubmitted = false;
       try {
         const newQ = await submitGuestQuestion({
-          roomId: state.room.id,
-          speakerId: state.room.mode === 'panel' ? null : state.speaker?.id || null,
+          roomId: operationRoom.id,
+          speakerId,
           text,
-          authorName: state.room.mode === 'panel' ? '' : nameInput.value,
-          authorCompany: state.room.mode === 'panel' ? '' : companyInput.value,
-          sessionId
+          authorName,
+          authorCompany,
+          sessionId: operationSessionId
         });
         questionSubmitted = true;
-        // Запоминаем свой вопрос отдельно от голосов; storage failure не отменяет подтверждённый INSERT.
-        if (newQ?.id) { myQuestions.add(newQ.id); saveMyQuestions(); }
-        questionInput.value = '';
-        clearDraft(activeRoomSlug);
-        updateCharCount();
-        nameInput.value = '';
-        companyInput.value = '';
-        showToast(newQ?.status === 'pending' ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
+        if (newQ?.id) {
+          operationQuestions.add(newQ.id);
+          saveMyQuestionsForRoom(operationRoomSlug, operationQuestions);
+        }
+        clearDraft(operationRoomSlug);
+        const stillSameRoom = state.room?.id === operationRoom.id && activeRoomSlug === operationRoomSlug;
+        if (stillSameRoom) {
+          questionInput.value = '';
+          updateCharCount();
+          nameInput.value = '';
+          companyInput.value = '';
+          showToast(newQ?.status === 'pending' ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
+        } else {
+          showToast('Вопрос отправлен в предыдущую сессию.', 'success');
+        }
       } catch (e) {
         const message = String(e?.message || '');
         if (message.includes('SESSION_NOT_CURRENT')) {
@@ -618,13 +692,17 @@
         }
       }
       try {
-        if (questionSubmitted) await refresh();
+        const stillSameRoom = state.room?.id === operationRoom.id && activeRoomSlug === operationRoomSlug;
+        if (questionSubmitted && stillSameRoom) await refresh();
       } catch (e) {
         showToast('Вопрос сохранён, но данные не удалось обновить.', 'error');
       } finally {
         submittingQuestion = false;
-        submitBtn.disabled = !state.room?.is_questions_open;
+        const currentIsOpen = (!state.room?.event_key || state.room?.is_current_session === true)
+          && state.room?.is_questions_open === true;
+        submitBtn.disabled = !currentIsOpen;
         submitBtn.textContent = 'Отправить вопрос';
+        if (state.room) render();
       }
     }
 
