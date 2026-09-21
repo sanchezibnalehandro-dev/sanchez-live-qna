@@ -1,5 +1,5 @@
 -- Актуальная RLS-модель для минимального Q&A.
--- Guest: читает публичные данные, отправляет вопросы и голоса.
+-- Guest: читает публичные данные, отправляет вопросы через submit_guest_question() и голоса.
 -- Authenticated: управляет комнатой, спикерами и вопросами.
 -- Снятие гостевого голоса выполняется через scoped RPC remove_vote() из schema.sql.
 
@@ -74,43 +74,6 @@ on public.qna_questions
 for select
 to authenticated
 using (true);
-
-create policy public_insert_questions
-on public.qna_questions
-for insert
-to anon
-with check (
-  is_pinned = false
-  and votes_count = 0
-  and exists (
-    select 1
-    from public.qna_rooms room
-    where room.id = qna_questions.room_id
-      and room.is_questions_open = true
-      and qna_questions.status = case
-        when room.moderation_enabled then 'pending'
-        else 'open'
-      end
-      and (
-        (
-          qna_questions.speaker_id is null
-          and not exists (
-            select 1
-            from public.qna_speakers speaker
-            where speaker.room_id = room.id
-              and speaker.is_active = true
-          )
-        )
-        or exists (
-          select 1
-          from public.qna_speakers speaker
-          where speaker.id = qna_questions.speaker_id
-            and speaker.room_id = room.id
-            and speaker.is_active = true
-        )
-      )
-  )
-);
 
 create policy auth_insert_questions
 on public.qna_questions
@@ -187,10 +150,6 @@ grant select (
   status, is_pinned, votes_count, created_at, asked_at
 ) on public.qna_questions to anon;
 
-grant insert (
-  room_id, speaker_id, text, author_name, author_company, session_id, status
-) on public.qna_questions to anon;
-
 grant insert (question_id, session_id)
 on public.qna_question_votes to anon;
 
@@ -207,5 +166,5 @@ grant select, insert, update, delete on public.qna_questions to authenticated;
 grant insert, delete on public.qna_question_votes to authenticated;
 
 grant usage, select on sequence public.qna_speakers_id_seq to authenticated;
-grant usage, select on sequence public.qna_questions_id_seq to anon, authenticated;
+grant usage, select on sequence public.qna_questions_id_seq to authenticated;
 grant usage, select on sequence public.qna_question_votes_id_seq to anon, authenticated;
