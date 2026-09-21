@@ -118,7 +118,7 @@
           setStatus(error.message || 'Не удалось войти.', 'error');
           return;
         }
-        location.href = destinationUrl();
+        location.href = await destinationUrl();
       } catch (error) {
         setStatus(error.message || 'Не удалось войти.', 'error');
       } finally {
