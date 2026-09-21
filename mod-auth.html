@@ -126,8 +126,8 @@
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
     import {
-      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getEventKey, getRoomBySlug, getCurrentEventRoom, getActiveSpeaker, listQuestions,
-      setQuestionStatus, setQuestionPinned, approveQuestion, subscribeRoom, subscribeEvent, escapeHtml, formatClock
+      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getEventKey, getRoomBySlug, getCurrentEventRoom, listEventRooms, getActiveSpeaker, listQuestions,
+      moderateQuestionStatus, moderateQuestionPinned, subscribeRoom, subscribeEvent, escapeHtml, formatClock
     } from './supabase-qna.js';
 
     const eventKey = getEventKey();
@@ -200,13 +200,20 @@
         await refresh();
       } catch (e) {
         const noCurrentSession = e?.code === 'CURRENT_SESSION_NOT_SET';
+        const invalidEvent = e?.code === 'EVENT_NOT_FOUND';
         const isNotFound = e?.code === 'PGRST116' || String(e?.message || '').includes('JSON object requested');
-        speakerName.textContent = noCurrentSession ? 'Сессия ещё не выбрана' : isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
-        speakerMeta.textContent = noCurrentSession
-          ? 'Для этого мероприятия пока не назначена текущая сессия.'
-          : isNotFound
-            ? `Комната «${requestedRoomSlug}» не существует. Проверьте ссылку.`
-            : (e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.');
+        speakerName.textContent = invalidEvent ? 'Мероприятие не найдено' : noCurrentSession ? 'Сессия ещё не выбрана' : isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
+        speakerMeta.textContent = invalidEvent
+          ? `Мероприятие «${eventKey}» не существует. Проверьте ссылку.`
+          : noCurrentSession
+            ? 'Для этого мероприятия пока не назначена текущая сессия.'
+            : isNotFound
+              ? `Комната «${requestedRoomSlug}» не существует. Проверьте ссылку.`
+              : (e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.');
+        roomChip.className = 'room-chip closed';
+        roomChip.textContent = 'Нет активной сессии';
+        questionsList.innerHTML = '';
+        setRealtimeStatus('CHANNEL_ERROR');
         return;
       }
     }
@@ -224,8 +231,11 @@
       if (!eventKey) return getRoomBySlug(requestedRoomSlug);
       const room = await getCurrentEventRoom(eventKey);
       if (room) return room;
-      const error = new Error('Для мероприятия не выбрана текущая сессия.');
-      error.code = 'CURRENT_SESSION_NOT_SET';
+      const eventRooms = await listEventRooms(eventKey);
+      const error = new Error(eventRooms.length
+        ? 'Для мероприятия не выбрана текущая сессия.'
+        : 'Мероприятие не найдено.');
+      error.code = eventRooms.length ? 'CURRENT_SESSION_NOT_SET' : 'EVENT_NOT_FOUND';
       throw error;
     }
 
@@ -276,8 +286,11 @@
 
     function render() {
       const isPanel = state.room?.mode === 'panel';
+      const isLiveRoom = !state.room?.event_key || state.room?.is_current_session === true;
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
-      liveContextLabel.textContent = isPanel ? 'Сессия' : 'Сейчас в эфире';
+      liveContextLabel.textContent = isPanel
+        ? (isLiveRoom ? 'Сессия' : 'Сессия не в эфире')
+        : 'Сейчас в эфире';
       speakerName.textContent = isPanel
         ? (state.room?.title || fallback)
         : (state.speaker?.name || state.speaker?.fallback_label || fallback);
@@ -290,9 +303,9 @@
         .join('<br>') || (isPanel ? 'Модератор сессии' : 'Активный спикер не задан');
 
       // Статус комнаты
-      const isOpen = state.room?.is_questions_open;
+      const isOpen = isLiveRoom && state.room?.is_questions_open;
       roomChip.className = `room-chip ${isOpen ? 'open' : 'closed'}`;
-      roomChip.textContent = isOpen ? 'Приём открыт' : 'Приём закрыт';
+      roomChip.textContent = isLiveRoom ? (isOpen ? 'Приём открыт' : 'Приём закрыт') : 'Не в эфире';
       const moderationEnabled = Boolean(state.room?.moderation_enabled);
       moderationChip.className = `live-chip ${moderationEnabled ? 'warn' : ''}`.trim();
       moderationChip.textContent = moderationEnabled ? 'Премодерация · вкл' : 'Премодерация · выкл';
@@ -378,16 +391,24 @@
         btn.disabled = true;
         btn.setAttribute('aria-busy', 'true');
         btn.textContent = 'Сохраняю…';
+        const actionRoomId = state.room?.id;
         let actionSaved = false;
         try {
-          if (action === 'approve') await approveQuestion(id);
-          if (action === 'ask')  await setQuestionStatus(id, 'asked');
-          if (action === 'hide') await setQuestionStatus(id, 'hidden');
-          if (action === 'open') await setQuestionStatus(id, 'open');
-          if (action === 'pin')  await setQuestionPinned(id, btn.dataset.pinned !== '1');
+          if (!actionRoomId) throw new Error('Комната не загружена.');
+          if (action === 'approve') await moderateQuestionStatus(actionRoomId, id, 'open');
+          if (action === 'ask')  await moderateQuestionStatus(actionRoomId, id, 'asked');
+          if (action === 'hide') await moderateQuestionStatus(actionRoomId, id, 'hidden');
+          if (action === 'open') await moderateQuestionStatus(actionRoomId, id, 'open');
+          if (action === 'pin')  await moderateQuestionPinned(actionRoomId, id, btn.dataset.pinned !== '1');
           actionSaved = true;
         } catch (e) {
-          setStatus(e.message || 'Не удалось выполнить действие', 'error');
+          const message = String(e?.message || '');
+          if (message.includes('SESSION_NOT_CURRENT')) {
+            setStatus('Сессия уже сменилась. Обновляю очередь.', 'error');
+            queueRefresh();
+          } else {
+            setStatus(e.message || 'Не удалось выполнить действие', 'error');
+          }
         }
         try {
           if (actionSaved) await refresh();
@@ -402,7 +423,10 @@
 
     function questionActionButton(item, action, label, className) {
       const pending = pendingQuestionActions.has(`${item.id}:${action}`);
-      return `<button class="btn ${className}" data-action="${action}" data-id="${item.id}"${action === 'pin' ? ` data-pinned="${item.is_pinned ? '1' : '0'}"` : ''}${pending ? ' disabled aria-busy="true"' : ''}>${pending ? 'Сохраняю…' : label}</button>`;
+      const liveRoom = !state.room?.event_key || state.room?.is_current_session === true;
+      const disabled = pending || !liveRoom;
+      const title = liveRoom ? '' : ' title="Сессия не в эфире"';
+      return `<button class="btn ${className}" data-action="${action}" data-id="${item.id}"${action === 'pin' ? ` data-pinned="${item.is_pinned ? '1' : '0'}"` : ''}${disabled ? ' disabled' : ''}${pending ? ' aria-busy="true"' : ''}${title}>${pending ? 'Сохраняю…' : label}</button>`;
     }
 
     function setRealtimeStatus(channelStatus) {
