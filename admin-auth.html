@@ -388,7 +388,7 @@
       eventSessionSelect.replaceChildren(...eventRooms.map(room => {
         const option = document.createElement('option');
         option.value = room.slug;
-        option.textContent = `${room.is_current_session ? '● ' : ''}${room.title}`;
+        option.textContent = room.title;
         option.selected = room.slug === state.room.slug;
         return option;
       }));
