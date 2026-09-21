@@ -79,6 +79,10 @@ create index if not exists qna_questions_status_idx
 create index if not exists qna_speakers_room_idx
   on public.qna_speakers(room_id, sort_order);
 
+create unique index if not exists qna_speakers_one_active_per_room_idx
+  on public.qna_speakers(room_id)
+  where is_active = true;
+
 create or replace function public.qna_touch_updated_at()
 returns trigger
 language plpgsql
@@ -355,8 +359,14 @@ begin
   end if;
 
   update public.qna_speakers
-  set is_active = (id = p_speaker_id)
-  where room_id = p_room_id;
+  set is_active = false
+  where room_id = p_room_id
+    and is_active = true;
+
+  update public.qna_speakers
+  set is_active = true
+  where id = p_speaker_id
+    and room_id = p_room_id;
 
   update public.qna_rooms
   set active_speaker_id = p_speaker_id
