@@ -58,6 +58,7 @@ using (true);
 
 drop policy if exists public_read_questions on public.qna_questions;
 drop policy if exists public_insert_questions on public.qna_questions;
+drop policy if exists auth_insert_questions on public.qna_questions;
 drop policy if exists auth_read_questions on public.qna_questions;
 drop policy if exists auth_update_questions on public.qna_questions;
 drop policy if exists auth_delete_questions on public.qna_questions;
@@ -77,7 +78,23 @@ using (true);
 create policy public_insert_questions
 on public.qna_questions
 for insert
-to anon, authenticated
+to anon
+with check (
+  status in ('open', 'pending')
+  and is_pinned = false
+  and votes_count = 0
+  and exists (
+    select 1
+    from public.qna_rooms room
+    where room.id = qna_questions.room_id
+      and room.is_questions_open = true
+  )
+);
+
+create policy auth_insert_questions
+on public.qna_questions
+for insert
+to authenticated
 with check (
   status in ('open', 'pending')
   and is_pinned = false
