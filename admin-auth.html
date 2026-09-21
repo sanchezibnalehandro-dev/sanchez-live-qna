@@ -478,6 +478,16 @@
           speakerAdded = true;
           selectedSpeakerId = String(s.id);
           selectLabel.textContent = s.name;
+          const newSpeakerData = getSpeakerData(s);
+          editorState.isFilling = true;
+          nameInput.value = newSpeakerData.name;
+          regaliaInput.value = newSpeakerData.regalia;
+          topicInput.value = newSpeakerData.topic;
+          editorState.isFilling = false;
+          editorState.dirty = false;
+          editorState.backgroundChanged = false;
+          editorState.savedSpeaker = newSpeakerData;
+          updateEditorStatus();
           setStatus('Спикер добавлен. Заполните данные и нажмите «Сохранить».', 'success');
         } catch(e) {
           setStatus(e.message || 'Ошибка', 'error');
