@@ -84,8 +84,14 @@
     @media (max-width: 420px) { .queue-head { align-items: flex-start; flex-direction: column; } .focus-mode-btn { width: 100%; } .moderator-console .question-actions { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body>
-  <div class="moderator-console app">
+<body class="is-booting">
+  <div class="bootstrap-screen" id="bootstrapScreen" role="status" aria-live="polite">
+    <div class="bootstrap-card">
+      <div class="bootstrap-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="bootstrap-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div></div>
+      <p class="bootstrap-message" id="bootstrapMessage">Загрузка…</p>
+    </div>
+  </div>
+  <div class="moderator-console app" id="appShell" inert aria-hidden="true">
     <main class="moderator-shell shell">
       <section class="card moderator-live">
         <div class="card-inner moderator-live-grid">
@@ -107,7 +113,7 @@
         <div class="card-inner">
           <div class="queue-head">
             <div><h2 class="queue-title">Вопросы · <span id="countLabel">0</span></h2><p class="queue-subtitle">Выберите очередь и обработайте следующий вопрос</p></div>
-            <button class="btn ghost focus-mode-btn" id="focusModeBtn" type="button" aria-pressed="false">Только вопросы</button>
+            <div class="question-header-actions"><div class="question-sort" role="group" aria-label="Сортировка вопросов"><button class="question-sort-btn active" type="button" data-sort="votes" aria-pressed="true">По голосам</button><button class="question-sort-btn" type="button" data-sort="newest" aria-pressed="false">Новые</button></div><button class="btn ghost focus-mode-btn" id="focusModeBtn" type="button" aria-pressed="false">Только вопросы</button></div>
           </div>
           <div class="filter-grid" aria-label="Очереди вопросов">
             <button class="filter-tab active" data-filter="all"><span class="filter-count" id="sAll">0</span><span class="filter-label">Все</span></button>
@@ -133,6 +139,12 @@
     const eventKey = getEventKey();
     const requestedRoomSlug = getRoomSlug();
     applyBrandIdentity('moderator', getBrandForRoute(requestedRoomSlug, eventKey));
+    const appShell = document.getElementById('appShell');
+    const bootstrapScreen = document.getElementById('bootstrapScreen');
+    const bootstrapMessage = document.getElementById('bootstrapMessage');
+    const sortButtons = Array.from(document.querySelectorAll('[data-sort]'));
+    const sortScope = eventKey ? `event:${eventKey}` : `room:${requestedRoomSlug}`;
+    const sortModeKey = `sanchez-live-sort:moderator:${sortScope}`;
     const roomChip     = document.getElementById('roomChip');
     const moderationChip = document.getElementById('moderationChip');
     const liveContextLabel = document.getElementById('liveContextLabel');
@@ -148,7 +160,46 @@
       ? 'sanchez-live-moderator-focus-mode'
       : `sanchez-live-moderator-focus-mode:${focusScope}`;
 
-    const state = { room: null, speaker: null, questions: [], filter: 'all' };
+    function finishBootstrap() {
+      appShell.removeAttribute('inert');
+      appShell.removeAttribute('aria-hidden');
+      document.body.classList.remove('is-booting');
+      document.body.classList.add('is-ready');
+    }
+
+    function showBootstrapError(error) {
+      console.error('Moderator initial load failed', error);
+      bootstrapScreen.classList.add('is-error');
+      bootstrapScreen.setAttribute('role', 'alert');
+      bootstrapMessage.textContent = error?.message || 'Не удалось загрузить данные. Обновите страницу и попробуйте снова.';
+    }
+
+    function loadSortMode() {
+      try {
+        const value = localStorage.getItem(sortModeKey);
+        return value === 'newest' ? 'newest' : 'votes';
+      } catch {
+        return 'votes';
+      }
+    }
+
+    function persistSortMode(mode) {
+      try { localStorage.setItem(sortModeKey, mode); } catch {}
+    }
+
+    function sortQuestions(questions, mode) {
+      return [...questions].sort((left, right) => {
+        const pinned = Number(Boolean(right.is_pinned)) - Number(Boolean(left.is_pinned));
+        if (pinned) return pinned;
+        if (mode === 'votes') {
+          const votes = Number(right.votes_count || 0) - Number(left.votes_count || 0);
+          if (votes) return votes;
+        }
+        return (Date.parse(right.created_at) || 0) - (Date.parse(left.created_at) || 0);
+      });
+    }
+
+    const state = { room: null, speaker: null, questions: [], filter: 'all', sortMode: loadSortMode() };
     let unsubscribeRoom = null;
     let unsubscribeEvent = null;
     let subscribedRoomId = null;
@@ -171,10 +222,14 @@
       document.body.classList.remove('focus-questions');
     }
 
-    boot();
+    void boot().catch(showBootstrapError);
 
     async function boot() {
-      const { data } = await supabase.auth.getSession();
+      const { data, error: authError } = await supabase.auth.getSession();
+      if (authError) {
+        showBootstrapError(authError);
+        return;
+      }
       if (!data.session) {
         const route = eventKey
           ? `event=${encodeURIComponent(eventKey)}`
@@ -192,29 +247,22 @@
       focusModeBtn.addEventListener('click', () => {
         setFocusMode(!document.body.classList.contains('focus-questions'));
       });
+      sortButtons.forEach(button => button.addEventListener('click', () => {
+        const mode = button.dataset.sort;
+        if (mode !== 'votes' && mode !== 'newest') return;
+        state.sortMode = mode;
+        persistSortMode(mode);
+        if (state.room) render();
+      }));
 
       try {
         if (eventKey) {
           unsubscribeEvent = subscribeEvent(eventKey, queueRefresh, (status) => setRealtimeChannelStatus('event', status));
         }
         await refresh();
+        finishBootstrap();
       } catch (e) {
-        const noCurrentSession = e?.code === 'CURRENT_SESSION_NOT_SET';
-        const invalidEvent = e?.code === 'EVENT_NOT_FOUND';
-        const isNotFound = e?.code === 'PGRST116' || String(e?.message || '').includes('JSON object requested');
-        speakerName.textContent = invalidEvent ? 'Мероприятие не найдено' : noCurrentSession ? 'Сессия ещё не выбрана' : isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
-        speakerMeta.textContent = invalidEvent
-          ? `Мероприятие «${eventKey}» не существует. Проверьте ссылку.`
-          : noCurrentSession
-            ? 'Для этого мероприятия пока не назначена текущая сессия.'
-            : isNotFound
-              ? `Комната «${requestedRoomSlug}» не существует. Проверьте ссылку.`
-              : (e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.');
-        roomChip.className = 'room-chip closed';
-        roomChip.textContent = 'Нет активной сессии';
-        questionsList.innerHTML = '';
-        setRealtimeStatus('CHANNEL_ERROR');
-        return;
+        showBootstrapError(e);
       }
     }
 
@@ -324,6 +372,11 @@
 
     function render() {
       document.getElementById('realtimeChip').hidden = false;
+      sortButtons.forEach(button => {
+        const active = button.dataset.sort === state.sortMode;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
       const isPanel = state.room?.mode === 'panel';
       const isLiveRoom = !state.room?.event_key || state.room?.is_current_session === true;
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
@@ -359,9 +412,10 @@
       document.getElementById('sHidden').textContent = all.filter(q => q.status === 'hidden').length;
 
       // Фильтрация
-      const rows = state.filter === 'all'
+      const filteredRows = state.filter === 'all'
         ? all
         : all.filter(q => q.status === state.filter);
+      const rows = sortQuestions(filteredRows, state.sortMode);
 
       countLabel.textContent = rows.length;
 

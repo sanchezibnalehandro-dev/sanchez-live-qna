@@ -187,8 +187,14 @@
     }
   </style>
 </head>
-<body>
-  <div class="app">
+<body class="is-booting">
+  <div class="bootstrap-screen" id="bootstrapScreen" role="status" aria-live="polite">
+    <div class="bootstrap-card">
+      <div class="bootstrap-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="bootstrap-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div></div>
+      <p class="bootstrap-message" id="bootstrapMessage">Загрузка…</p>
+    </div>
+  </div>
+  <div class="app" id="appShell" inert aria-hidden="true">
     <main class="shell guest-shell">
 
       <!-- Шапка -->
@@ -242,9 +248,12 @@
       <!-- Лента вопросов -->
       <section class="card">
         <div class="card-inner">
-          <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
             <h2 class="section-title" style="margin:0;">Вопросы <span class="badge open" id="countBadge" style="vertical-align:middle;">0</span></h2>
-            <span class="live-tag connecting" id="realtimeStatus"><span class="live-tag-dot"></span> подключение…</span>
+            <div class="question-header-actions">
+              <div class="question-sort" role="group" aria-label="Сортировка вопросов"><button class="question-sort-btn active" type="button" data-sort="votes" aria-pressed="true">По голосам</button><button class="question-sort-btn" type="button" data-sort="newest" aria-pressed="false">Новые</button></div>
+              <span class="live-tag connecting" id="realtimeStatus"><span class="live-tag-dot"></span> подключение…</span>
+            </div>
           </div>
           <div class="list" id="questionsList">
             <div class="empty">Вопросов пока нет — задайте первый!</div>
@@ -269,6 +278,52 @@
     let activeRoomSlug = eventKey ? null : requestedRoomSlug;
     applyBrandIdentity('guest', getBrandForRoute(requestedRoomSlug, eventKey));
     let sessionId = null;
+
+    const appShell = document.getElementById('appShell');
+    const bootstrapScreen = document.getElementById('bootstrapScreen');
+    const bootstrapMessage = document.getElementById('bootstrapMessage');
+    const sortButtons = Array.from(document.querySelectorAll('[data-sort]'));
+    const sortScope = eventKey ? `event:${eventKey}` : `room:${requestedRoomSlug}`;
+    const sortModeKey = `sanchez-live-sort:guest:${sortScope}`;
+
+    function finishBootstrap() {
+      appShell.removeAttribute('inert');
+      appShell.removeAttribute('aria-hidden');
+      document.body.classList.remove('is-booting');
+      document.body.classList.add('is-ready');
+    }
+
+    function showBootstrapError(error) {
+      console.error('Guest initial load failed', error);
+      bootstrapScreen.classList.add('is-error');
+      bootstrapScreen.setAttribute('role', 'alert');
+      bootstrapMessage.textContent = error?.message || 'Не удалось загрузить данные. Обновите страницу и попробуйте снова.';
+    }
+
+    function loadSortMode() {
+      try {
+        const value = localStorage.getItem(sortModeKey);
+        return value === 'newest' ? 'newest' : 'votes';
+      } catch {
+        return 'votes';
+      }
+    }
+
+    function persistSortMode(mode) {
+      try { localStorage.setItem(sortModeKey, mode); } catch {}
+    }
+
+    function sortQuestions(questions, mode) {
+      return [...questions].sort((left, right) => {
+        const pinned = Number(Boolean(right.is_pinned)) - Number(Boolean(left.is_pinned));
+        if (pinned) return pinned;
+        if (mode === 'votes') {
+          const votes = Number(right.votes_count || 0) - Number(left.votes_count || 0);
+          if (votes) return votes;
+        }
+        return (Date.parse(right.created_at) || 0) - (Date.parse(left.created_at) || 0);
+      });
+    }
 
     const speakerNameEl = document.getElementById('speakerName');
     const speakerMetaEl = document.getElementById('speakerMeta');
@@ -332,7 +387,7 @@
       try { sessionStorage.removeItem(`qna-draft:${roomSlug}`); } catch {}
     }
 
-    const state = { room: null, speaker: null, speakers: [], questions: [] };
+    const state = { room: null, speaker: null, speakers: [], questions: [], sortMode: loadSortMode() };
     let unsubscribeRoom = null;
     let unsubscribeEvent = null;
     let subscribedRoomId = null;
@@ -358,6 +413,13 @@
     });
 
     submitBtn.addEventListener('click', onSubmit);
+    sortButtons.forEach(button => button.addEventListener('click', () => {
+      const mode = button.dataset.sort;
+      if (mode !== 'votes' && mode !== 'newest') return;
+      state.sortMode = mode;
+      persistSortMode(mode);
+      if (state.room) render();
+    }));
     boot();
 
     async function boot() {
@@ -366,12 +428,10 @@
           unsubscribeEvent = subscribeEvent(eventKey, queueRefresh, (status) => setRealtimeChannelStatus('event', status));
         }
         await refresh();
+        finishBootstrap();
       } catch (e) {
-        if (!renderTerminalRouteError(e)) {
-          speakerNameEl.textContent = 'Ошибка загрузки';
-          speakerMetaEl.textContent = e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.';
-          formCard.style.display = 'none';
-        }
+        if (renderTerminalRouteError(e)) finishBootstrap();
+        else showBootstrapError(e);
       }
     }
 
@@ -493,6 +553,11 @@
     function render() {
       document.getElementById('realtimeStatus').hidden = false;
       formCard.style.display = '';
+      sortButtons.forEach(button => {
+        const active = button.dataset.sort === state.sortMode;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
       const isPanel = state.room?.mode === 'panel';
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
       const name = isPanel
@@ -534,7 +599,7 @@
       label.textContent   = isOpen ? 'Приём открыт' : 'Приём закрыт';
 
       // Лента вопросов
-      const qs = state.questions.filter(q => q.status !== 'hidden');
+      const qs = sortQuestions(state.questions.filter(q => q.status !== 'hidden'), state.sortMode);
       countBadge.textContent = String(qs.length);
 
       if (!qs.length) {
