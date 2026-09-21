@@ -268,7 +268,7 @@
     const requestedRoomSlug = getRoomSlug();
     let activeRoomSlug = eventKey ? null : requestedRoomSlug;
     applyBrandIdentity('guest', getBrandForRoute(requestedRoomSlug, eventKey));
-    const sessionId = getGuestSessionId(eventKey ? `event:${eventKey}` : requestedRoomSlug);
+    let sessionId = null;
 
     const speakerNameEl = document.getElementById('speakerName');
     const speakerMetaEl = document.getElementById('speakerMeta');
@@ -407,6 +407,8 @@
           syncLocalQuestionState(state.room.slug);
           applyBrandIdentity('guest', getBrandForRoute(state.room.slug, eventKey));
         }
+        const sessionScope = state.room.event_key ? `event:${state.room.event_key}` : state.room.slug;
+        sessionId = getGuestSessionId(sessionScope);
         ensureRoomSubscription(state.room.id);
         const isPanel = state.room.mode === 'panel';
         state.speaker = isPanel ? null : await getActiveSpeaker(state.room.id);
