@@ -374,6 +374,14 @@
     const QUESTION_PAGE_SIZE = 50;
     let visibleQuestionLimit = QUESTION_PAGE_SIZE;
 
+    function renderEventSessionState() {
+      const isCurrent = Boolean(state.room?.is_current_session);
+      eventSessionState.textContent = isCurrent ? '● Текущая' : '○ Не в эфире';
+      eventSessionState.classList.toggle('inactive', !isCurrent);
+      eventSessionActivateBtn.hidden = isCurrent;
+      eventSessionActivateBtn.disabled = switchingEventSession;
+    }
+
     function renderEventSessionSelector(eventRooms) {
       state.eventRooms = eventRooms;
       const showSelector = state.room?.event_key != null && eventRooms.length >= 1;
@@ -393,10 +401,7 @@
         return option;
       }));
       eventSessionSelect.disabled = switchingEventSession;
-      eventSessionState.textContent = state.room?.is_current_session ? '● Текущая' : '○ Не в эфире';
-      eventSessionState.classList.toggle('inactive', !state.room?.is_current_session);
-      eventSessionActivateBtn.hidden = Boolean(state.room?.is_current_session);
-      eventSessionActivateBtn.disabled = switchingEventSession;
+      renderEventSessionState();
     }
 
     async function loadEventSessionSelector() {
@@ -1008,11 +1013,7 @@
       modSub.textContent = pendingToggles.has('moderation_enabled')
         ? 'Сохраняю…'
         : state.room?.moderation_enabled ? 'Вопросы проходят проверку' : 'Вопросы публикуются сразу';
-      if (!eventSessionControl.hidden) {
-        eventSessionState.textContent = state.room?.is_current_session ? '● Текущая' : '○ Не в эфире';
-        eventSessionState.classList.toggle('inactive', !state.room?.is_current_session);
-        eventSessionActivateBtn.hidden = Boolean(state.room?.is_current_session);
-      }
+      if (!eventSessionControl.hidden) renderEventSessionState();
 
       // Если выбранного спикера ещё нет — берём активного
       if (!selectedSpeakerId) {
