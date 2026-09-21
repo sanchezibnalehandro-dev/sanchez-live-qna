@@ -5,10 +5,43 @@ create table if not exists public.qna_rooms (
   fallback_label text not null default 'Вопросы спикеру',
   is_questions_open boolean not null default true,
   moderation_enabled boolean not null default false,
+  mode text not null default 'speaker' check (mode in ('speaker', 'panel')),
+  moderator_name text null,
+  moderator_regalia text null,
   active_speaker_id bigint null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- `create table if not exists` не меняет уже развёрнутую таблицу.
+-- Поэтому ниже — безопасный additive upgrade для существующих комнат.
+alter table public.qna_rooms
+  add column if not exists mode text,
+  add column if not exists moderator_name text null,
+  add column if not exists moderator_regalia text null;
+
+update public.qna_rooms
+set mode = 'speaker'
+where mode is null;
+
+alter table public.qna_rooms
+  alter column mode set default 'speaker',
+  alter column mode set not null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'qna_rooms_mode_check'
+      and conrelid = 'public.qna_rooms'::regclass
+  ) then
+    alter table public.qna_rooms
+      add constraint qna_rooms_mode_check
+      check (mode in ('speaker', 'panel'));
+  end if;
+end;
+$$;
 
 create table if not exists public.qna_speakers (
   id bigserial primary key,
@@ -196,6 +229,7 @@ as $$
 declare
   v_questions_open boolean;
   v_moderation_enabled boolean;
+  v_mode text;
   v_status text;
   v_id bigint;
   v_session_id text := btrim(p_session_id);
@@ -216,8 +250,8 @@ begin
     raise exception 'INVALID_AUTHOR_COMPANY' using errcode = '22023';
   end if;
 
-  select room.is_questions_open, room.moderation_enabled
-  into v_questions_open, v_moderation_enabled
+  select room.is_questions_open, room.moderation_enabled, room.mode
+  into v_questions_open, v_moderation_enabled, v_mode
   from public.qna_rooms room
   where room.id = p_room_id
   for update;
@@ -230,7 +264,11 @@ begin
     raise exception 'QUESTIONS_CLOSED' using errcode = '42501';
   end if;
 
-  if exists (
+  if v_mode = 'panel' then
+    if p_speaker_id is not null then
+      raise exception 'PANEL_QUESTION_MUST_NOT_TARGET_SPEAKER' using errcode = '22023';
+    end if;
+  elsif exists (
     select 1
     from public.qna_speakers speaker
     where speaker.room_id = p_room_id
@@ -352,18 +390,25 @@ returns void
 language plpgsql
 set search_path = public
 as $$
+declare
+  v_mode text;
 begin
   if auth.role() <> 'authenticated' then
     raise exception 'Authentication required' using errcode = '42501';
   end if;
 
-  perform 1
+  select mode
+  into v_mode
   from public.qna_rooms
   where id = p_room_id
   for update;
 
   if not found then
     raise exception 'Room not found' using errcode = '22023';
+  end if;
+
+  if v_mode = 'panel' then
+    raise exception 'Active speaker is not used in panel mode' using errcode = '22023';
   end if;
 
   if not exists (
