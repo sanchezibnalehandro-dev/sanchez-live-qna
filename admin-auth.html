@@ -449,11 +449,10 @@
         logoutConfirmBtn.textContent = 'Выхожу…';
         try {
           const { error } = await supabase.auth.signOut({ scope: 'local' });
-          if (error) {
-            setStatus(error.message || 'Не удалось выйти из аккаунта.', 'error');
-            return;
-          }
+          if (error) throw error;
           location.href = `./login-auth.html?room=${encodeURIComponent(roomSlug)}`;
+        } catch (error) {
+          setStatus(error?.message || 'Не удалось выйти из аккаунта.', 'error');
         } finally {
           loggingOut = false;
           if (logoutConfirmBtn.isConnected) {
@@ -733,7 +732,7 @@
         _pendingRealtimeRefresh ||= realtime;
         return;
       }
-      const questionFeedSnapshot = realtime ? captureQuestionFeedSnapshot() : null;
+      const questionFeedSnapshot = captureQuestionFeedSnapshot();
       _refreshing = true;
       _pendingRefresh = false;
       _pendingRealtimeRefresh = false;
@@ -741,8 +740,9 @@
         state.room      = await getRoomBySlug(roomSlug);
         state.speakers  = await listSpeakers(state.room.id);
         state.questions = await listQuestions(state.room.id, null, { includeHidden: true, includeAsked: true, includePending: true });
+        const shouldPreserveRealtimePosition = realtime || _pendingRealtimeRefresh;
         render();
-        if (questionFeedSnapshot) {
+        if (shouldPreserveRealtimePosition) {
           const newQuestionsTotal = state.questions.filter(question => !questionFeedSnapshot.questionIds.has(String(question.id))).length;
           if (newQuestionsTotal && questionFeedSnapshot.nearTop) {
             newQuestionsSinceScrollTop = 0;

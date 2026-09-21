@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-qna-config.js
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 export const DEFAULT_ROOM_SLUG = 'sanchez-live';
+const volatileGuestSessions = new Map();
 
 export function getRoomSlug() {
   return DEFAULT_ROOM_SLUG;
@@ -11,10 +12,20 @@ export function getRoomSlug() {
 
 export function getGuestSessionId(room) {
   const key = `qna-session:${room}`;
-  let value = localStorage.getItem(key);
+  let value = null;
+  try {
+    value = localStorage.getItem(key);
+  } catch {
+    value = volatileGuestSessions.get(key) || null;
+  }
   if (!value) {
-    value = crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    localStorage.setItem(key, value);
+    value = volatileGuestSessions.get(key) || crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    volatileGuestSessions.set(key, value);
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Keep a stable in-memory session for this page when storage is unavailable.
+    }
   }
   return value;
 }
@@ -69,6 +80,19 @@ export async function listQuestions(roomId, speakerId, { includeHidden = false, 
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
+}
+
+export async function submitGuestQuestion({ roomId, speakerId, text, authorName = '', authorCompany = '', sessionId }) {
+  const { data, error } = await supabase.rpc('submit_guest_question', {
+    p_room_id: roomId,
+    p_speaker_id: speakerId,
+    p_text: normalizeQuestion(text),
+    p_author_name: cleanOptional(authorName),
+    p_author_company: cleanOptional(authorCompany),
+    p_session_id: sessionId
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? (data[0] || null) : data;
 }
 
 export async function submitQuestion({ roomId, speakerId, text, authorName = '', authorCompany = '', sessionId, moderationEnabled = false }) {

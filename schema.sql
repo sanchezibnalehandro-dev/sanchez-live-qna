@@ -159,6 +159,105 @@ $$;
 revoke execute on function public.remove_vote(bigint, text) from public;
 grant execute on function public.remove_vote(bigint, text) to anon, authenticated;
 
+create or replace function public.submit_guest_question(
+  p_room_id bigint,
+  p_speaker_id bigint,
+  p_text text,
+  p_author_name text,
+  p_author_company text,
+  p_session_id text
+)
+returns table(id bigint, status text)
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  v_questions_open boolean;
+  v_moderation_enabled boolean;
+  v_status text;
+  v_id bigint;
+  v_session_id text := btrim(p_session_id);
+begin
+  if p_text is null or char_length(btrim(p_text)) < 1 or char_length(btrim(p_text)) > 200 then
+    raise exception 'INVALID_QUESTION' using errcode = '22023';
+  end if;
+
+  if v_session_id is null or char_length(v_session_id) < 8 or char_length(v_session_id) > 128 then
+    raise exception 'INVALID_SESSION' using errcode = '22023';
+  end if;
+
+  if p_author_name is not null and char_length(btrim(p_author_name)) > 120 then
+    raise exception 'INVALID_AUTHOR_NAME' using errcode = '22023';
+  end if;
+
+  if p_author_company is not null and char_length(btrim(p_author_company)) > 120 then
+    raise exception 'INVALID_AUTHOR_COMPANY' using errcode = '22023';
+  end if;
+
+  select room.is_questions_open, room.moderation_enabled
+  into v_questions_open, v_moderation_enabled
+  from public.qna_rooms room
+  where room.id = p_room_id;
+
+  if not found then
+    raise exception 'ROOM_NOT_FOUND' using errcode = '22023';
+  end if;
+
+  if not v_questions_open then
+    raise exception 'QUESTIONS_CLOSED' using errcode = '42501';
+  end if;
+
+  if exists (
+    select 1
+    from public.qna_speakers speaker
+    where speaker.room_id = p_room_id
+      and speaker.is_active = true
+  ) then
+    if p_speaker_id is null or not exists (
+      select 1
+      from public.qna_speakers speaker
+      where speaker.id = p_speaker_id
+        and speaker.room_id = p_room_id
+        and speaker.is_active = true
+    ) then
+      raise exception 'SPEAKER_NOT_ACTIVE' using errcode = '22023';
+    end if;
+  elsif p_speaker_id is not null then
+    raise exception 'SPEAKER_NOT_ACTIVE' using errcode = '22023';
+  end if;
+
+  v_status := case when v_moderation_enabled then 'pending' else 'open' end;
+
+  insert into public.qna_questions (
+    room_id,
+    speaker_id,
+    text,
+    author_name,
+    author_company,
+    session_id,
+    status
+  )
+  values (
+    p_room_id,
+    p_speaker_id,
+    btrim(p_text),
+    nullif(btrim(p_author_name), ''),
+    nullif(btrim(p_author_company), ''),
+    v_session_id,
+    v_status
+  )
+  returning qna_questions.id into v_id;
+
+  return query select v_id, v_status;
+end;
+$;
+
+revoke execute on function public.submit_guest_question(bigint, bigint, text, text, text, text)
+from public, authenticated;
+grant execute on function public.submit_guest_question(bigint, bigint, text, text, text, text)
+to anon;
+
 create or replace function public.reorder_qna_speakers(
   p_room_id bigint,
   p_order jsonb

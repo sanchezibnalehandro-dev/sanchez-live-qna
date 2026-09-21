@@ -245,7 +245,7 @@
     import { applyBrandIdentity } from './brand.js';
     import {
       getRoomSlug, getGuestSessionId, getRoomBySlug, getActiveSpeaker,
-      listQuestions, submitQuestion, addVote, removeVote, subscribeRoom,
+      listQuestions, submitGuestQuestion, addVote, removeVote, subscribeRoom,
       escapeHtml, formatClock, normalizeQuestion
     } from './supabase-qna.js';
 
@@ -266,13 +266,30 @@
     const formCard       = document.getElementById('formCard');
     const countBadge     = document.getElementById('countBadge');
 
+    function loadLocalSet(key) {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+        return new Set(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveLocalSet(key, values) {
+      try {
+        localStorage.setItem(key, JSON.stringify([...values]));
+      } catch {
+        // Current in-memory state remains valid even if browser storage is unavailable.
+      }
+    }
+
     // Голоса текущей сессии (local set для UI)
-    const myVotes = new Set(JSON.parse(localStorage.getItem(`qna-votes:${roomSlug}`) || '[]'));
-    function saveVotes() { localStorage.setItem(`qna-votes:${roomSlug}`, JSON.stringify([...myVotes])); }
+    const myVotes = loadLocalSet(`qna-votes:${roomSlug}`);
+    function saveVotes() { saveLocalSet(`qna-votes:${roomSlug}`, myVotes); }
 
     // Свои вопросы — отдельно от голосов
-    const myQuestions = new Set(JSON.parse(localStorage.getItem(`qna-own-questions:${roomSlug}`) || '[]'));
-    function saveMyQuestions() { localStorage.setItem(`qna-own-questions:${roomSlug}`, JSON.stringify([...myQuestions])); }
+    const myQuestions = loadLocalSet(`qna-own-questions:${roomSlug}`);
+    function saveMyQuestions() { saveLocalSet(`qna-own-questions:${roomSlug}`, myQuestions); }
 
     const state = { room: null, speaker: null, questions: [] };
     let unsubscribe = null;
@@ -427,8 +444,8 @@
               await addVote(id, sessionId);
               myVotes.add(id);
             }
-            saveVotes();
             voteSaved = true;
+            saveVotes();
           } catch (e) {
             showToast(alreadyVoted ? 'Не удалось снять голос' : 'Не удалось поставить +1', 'error');
           }
@@ -457,22 +474,21 @@
       submitBtn.textContent = 'Отправляю…';
       let questionSubmitted = false;
       try {
-        const newQ = await submitQuestion({
+        const newQ = await submitGuestQuestion({
           roomId: state.room.id,
           speakerId: state.speaker?.id || null,
           text,
           authorName: nameInput.value,
           authorCompany: companyInput.value,
-          sessionId,
-          moderationEnabled: Boolean(state.room.moderation_enabled)
+          sessionId
         });
-        // Запоминаем свой вопрос (отдельно от голосов)
-        if (newQ?.id) { myQuestions.add(newQ.id); saveMyQuestions(); }
         questionSubmitted = true;
+        // Запоминаем свой вопрос отдельно от голосов; storage failure не отменяет подтверждённый INSERT.
+        if (newQ?.id) { myQuestions.add(newQ.id); saveMyQuestions(); }
         questionInput.value = '';
         nameInput.value = '';
         companyInput.value = '';
-        showToast(state.room.moderation_enabled ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
+        showToast(newQ?.status === 'pending' ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
       } catch (e) {
         showToast(e.message || 'Не удалось отправить вопрос.', 'error');
       }
