@@ -171,7 +171,7 @@ returns table(id bigint, status text)
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_questions_open boolean;
   v_moderation_enabled boolean;
@@ -251,7 +251,7 @@ begin
 
   return query select v_id, v_status;
 end;
-$;
+$$;
 
 revoke execute on function public.submit_guest_question(bigint, bigint, text, text, text, text)
 from public, authenticated;
