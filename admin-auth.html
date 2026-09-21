@@ -254,7 +254,7 @@
   <script type="module">
     import { applyBrandIdentity, getBrandForRoomSlug } from './brand.js';
     import {
-      supabase, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker,
+      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, listSpeakers, updateSpeaker,
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
@@ -373,7 +373,9 @@
     const workspace = document.getElementById('adminWorkspace');
     const speakersRail = document.getElementById('speakersRail');
     const editorRail = document.getElementById('editorRail');
-    const panelStateKey = 'sanchez-live-admin-panels';
+    const panelStateKey = roomSlug === DEFAULT_ROOM_SLUG
+      ? 'sanchez-live-admin-panels'
+      : `sanchez-live-admin-panels:${roomSlug}`;
 
     function setPanelCollapsed(side, collapsed) {
       const rail = side === 'left' ? speakersRail : editorRail;
