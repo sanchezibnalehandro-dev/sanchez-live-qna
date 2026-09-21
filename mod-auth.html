@@ -218,7 +218,43 @@
       }
     }
 
+    function renderTerminalRouteError(error) {
+      const noCurrentSession = error?.code === 'CURRENT_SESSION_NOT_SET';
+      const invalidEvent = error?.code === 'EVENT_NOT_FOUND';
+      const invalidRoom = error?.code === 'PGRST116' || String(error?.message || '').includes('JSON object requested');
+      if (!noCurrentSession && !invalidEvent && !invalidRoom) return false;
+
+      unsubscribeRoom?.();
+      unsubscribeRoom = null;
+      subscribedRoomId = null;
+      realtimeChannels.room = 'SUBSCRIBED';
+      state.room = null;
+      state.speaker = null;
+      state.questions = [];
+
+      speakerName.textContent = invalidEvent
+        ? 'Мероприятие не найдено'
+        : noCurrentSession ? 'Сессия ещё не выбрана' : 'Комната не найдена';
+      speakerMeta.textContent = invalidEvent
+        ? `Мероприятие «${eventKey}» не существует. Проверьте ссылку.`
+        : noCurrentSession
+          ? 'Для этого мероприятия пока не назначена текущая сессия.'
+          : `Комната «${requestedRoomSlug}» не существует. Проверьте ссылку.`;
+      roomChip.className = 'room-chip closed';
+      roomChip.textContent = 'Нет активной сессии';
+      moderationChip.textContent = 'Премодерация · —';
+      countLabel.textContent = '0';
+      questionsList.innerHTML = '<div class="empty">Очередь недоступна.</div>';
+      filterTabs.forEach(tab => {
+        const counter = tab.querySelector('.filter-count');
+        if (counter) counter.textContent = '0';
+      });
+      document.getElementById('realtimeChip').hidden = true;
+      return true;
+    }
+
     function reportRefreshError(error) {
+      if (renderTerminalRouteError(error)) return;
       console.error('Moderator data refresh failed', error);
       setStatus('Не удалось обновить данные. Проверьте соединение.', 'error');
     }
@@ -275,6 +311,8 @@
         state.questions = await listQuestions(state.room.id, isPanel ? null : state.speaker?.id, { includeHidden: true, includeAsked: true, includePending: true });
         maxVotes = Math.max(1, ...state.questions.map(q => q.votes_count || 0));
         render();
+      } catch (error) {
+        if (!renderTerminalRouteError(error)) throw error;
       } finally {
         _refreshing = false;
         if (_pendingRefresh) {
@@ -285,6 +323,7 @@
     }
 
     function render() {
+      document.getElementById('realtimeChip').hidden = false;
       const isPanel = state.room?.mode === 'panel';
       const isLiveRoom = !state.room?.event_key || state.room?.is_current_session === true;
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
