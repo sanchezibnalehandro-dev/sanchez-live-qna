@@ -504,7 +504,7 @@ create or replace function public.set_current_event_session(
 returns void
 language plpgsql
 set search_path = public
-as $
+as $current$
 declare
   v_event_key text;
 begin
@@ -542,7 +542,7 @@ begin
   set is_current_session = true
   where id = p_room_id;
 end;
-$;
+$current$;
 
 revoke execute on function public.set_current_event_session(bigint)
 from public, anon;
