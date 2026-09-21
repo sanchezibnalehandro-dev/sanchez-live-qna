@@ -113,12 +113,29 @@
     .live-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--green); }
     .live-context h1 { margin-top: 4px; font-size: clamp(22px, 2.1vw, 30px); background: none; color: var(--text); -webkit-text-fill-color: var(--text); }
     .live-context p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .event-session-control { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 11px; font-weight: 700; }
-    .event-session-select { max-width: 240px; min-height: 30px; padding: 4px 28px 4px 9px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-raised); color: var(--text); font: inherit; }
+    .event-session-control {
+      display: grid; grid-template-columns: auto minmax(260px, 1fr) auto auto; align-items: center; gap: 10px;
+      margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-2); border-radius: 12px;
+      background: color-mix(in srgb, var(--color-surface-raised) 72%, transparent);
+    }
+    .event-session-label { display: grid; gap: 2px; min-width: 120px; }
+    .event-session-label strong { color: var(--text); font-size: 11px; font-weight: 800; }
+    .event-session-label span { color: var(--muted); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+    .event-session-select {
+      width: 100%; min-width: 0; min-height: 36px; padding: 6px 34px 6px 11px;
+      border: 1px solid var(--color-border); border-radius: 10px;
+      background: var(--color-surface-raised); color: var(--text); font: inherit; font-size: 11px; font-weight: 700;
+    }
     .event-session-select:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
     .event-session-state { white-space: nowrap; font-size: 10px; font-weight: 800; color: var(--color-success-text); }
     .event-session-state.inactive { color: var(--color-warning-text); }
-    .event-session-activate { min-height: 30px; padding: 4px 9px; font-size: 10px; }
+    .event-session-activate { min-height: 36px; padding: 6px 12px; font-size: 10px; white-space: nowrap; }
+    @media (max-width: 920px) {
+      .event-session-control { grid-template-columns: 1fr; align-items: stretch; }
+      .event-session-label { min-width: 0; }
+      .event-session-state { justify-self: start; }
+      .event-session-activate { width: 100%; }
+    }
     .live-statuses { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
     .live-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--bg3); color: var(--color-accent-text); font-size: 11px; font-weight: 700; white-space: nowrap; }
     .live-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
@@ -226,8 +243,14 @@
         <div class="card-inner">
           <div class="live-main">
             <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
-            <div class="live-context"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p><div class="event-session-control" id="eventSessionControl" hidden><label for="eventSessionSelect">Сессия</label><select class="event-session-select" id="eventSessionSelect" aria-label="Сессия"></select><span class="event-session-state" id="eventSessionState"></span><button class="btn ghost event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button></div></div>
+            <div class="live-context"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
             <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button><button class="btn ghost" id="qrBtn" style="padding:8px 10px;">▣ QR</button><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;">↗ Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;">↗ Модератор</button></div>
+          </div>
+          <div class="event-session-control" id="eventSessionControl" hidden>
+            <div class="event-session-label"><strong>Сессия мероприятия</strong><span>Редактирование / эфир</span></div>
+            <select class="event-session-select" id="eventSessionSelect" aria-label="Сессия мероприятия"></select>
+            <span class="event-session-state" id="eventSessionState"></span>
+            <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
           </div>
           <div id="qrPanel" style="display:none; margin-top:10px; text-align:right;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:var(--color-surface-qr); padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div>
           <div class="live-controls">
@@ -436,20 +459,28 @@
       }
     }
 
-    eventSessionSelect.addEventListener('change', async () => {
+    eventSessionSelect.addEventListener('change', () => {
       const nextRoom = state.eventRooms.find(room => room.slug === eventSessionSelect.value);
       if (!nextRoom || nextRoom.slug === state.room?.slug) return;
-      const activated = await activateEventSession(nextRoom);
-      if (activated) {
-        location.href = `./admin-auth.html?room=${encodeURIComponent(nextRoom.slug)}`;
+      if (editorState.dirty) {
+        setStatus('Сохраните изменения участника перед переходом в другую сессию.', 'error');
+        eventSessionSelect.value = state.room.slug;
+        return;
       }
+      location.href = `./admin-auth.html?room=${encodeURIComponent(nextRoom.slug)}`;
     });
 
     eventSessionActivateBtn.addEventListener('click', async () => {
-      const currentRoom = state.eventRooms.find(room => room.slug === state.room?.slug);
-      const activated = await activateEventSession(currentRoom);
-      if (activated) {
-        location.reload();
+      const viewedRoom = state.eventRooms.find(room => room.slug === state.room?.slug);
+      if (!viewedRoom || viewedRoom.is_current_session) return;
+      const activated = await activateEventSession(viewedRoom);
+      if (!activated) return;
+      setStatus('Сессия стала текущей.', 'success');
+      try {
+        await refresh();
+        await loadEventSessionSelector();
+      } catch (error) {
+        setStatus('Сессия переключена, но данные не удалось обновить.', 'error');
       }
     });
 
