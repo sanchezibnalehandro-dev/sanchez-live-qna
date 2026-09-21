@@ -731,7 +731,12 @@
       document.getElementById('activateBtn').addEventListener('click', activateSelectedSpeaker);
 
       await refresh();
-      await loadEventSessionSelector();
+      try {
+        await loadEventSessionSelector();
+      } catch (error) {
+        console.error('Event session selector failed to load', error);
+        eventSessionControl.hidden = true;
+      }
       if (unsubscribe) unsubscribe();
       unsubscribe = subscribeRoom(state.room.id, () => queueRefresh({ realtime: true }), setRealtimeStatus);
 
