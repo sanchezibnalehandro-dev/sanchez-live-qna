@@ -148,10 +148,11 @@ export async function submitQuestion({ roomId, speakerId, text, authorName = '',
 }
 
 export async function addVote(questionId, sessionId) {
-  const { error } = await supabase
-    .from('qna_question_votes')
-    .insert({ question_id: questionId, session_id: sessionId });
-  if (error && !String(error.message || '').toLowerCase().includes('duplicate')) throw error;
+  const { error } = await supabase.rpc('add_vote', {
+    p_question_id: questionId,
+    p_session_id: sessionId
+  });
+  if (error) throw error;
   return null;
 }
 
@@ -186,6 +187,26 @@ export async function setQuestionPinned(questionId, isPinned) {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function moderateQuestionStatus(roomId, questionId, status) {
+  const { data, error } = await supabase.rpc('moderate_qna_question_status', {
+    p_room_id: roomId,
+    p_question_id: questionId,
+    p_status: status
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? (data[0] || null) : data;
+}
+
+export async function moderateQuestionPinned(roomId, questionId, isPinned) {
+  const { data, error } = await supabase.rpc('moderate_qna_question_pin', {
+    p_room_id: roomId,
+    p_question_id: questionId,
+    p_is_pinned: isPinned
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? (data[0] || null) : data;
 }
 
 export async function setRoomQuestionsOpen(roomId, isOpen) {
@@ -269,39 +290,66 @@ export async function setCurrentEventSession(roomId) {
 }
 
 export function subscribeRoom(roomId, onChange, onStatus) {
-  // Дебаунс: схлопываем частые события в один вызов
-  let timer = null;
+  let debounceTimer = null;
+  let failureTimer = null;
+  let active = true;
+
   const debounced = () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => onChange(), 150);
+    if (!active) return;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      if (active) onChange();
+    }, 150);
   };
 
-  const channel = supabase.channel(`qna-room-${roomId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_rooms',          filter: `id=eq.${roomId}` }, debounced)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers',       filter: `room_id=eq.${roomId}` }, debounced)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions',      filter: `room_id=eq.${roomId}` }, debounced)
+  const channel = supabase.channel(`qna-room-${roomId}`, {
+    config: { postgres_changes_options: { wait: true, timeout: 15000 } }
+  })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_rooms',     filter: `id=eq.${roomId}` }, debounced)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers',  filter: `room_id=eq.${roomId}` }, debounced)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions', filter: `room_id=eq.${roomId}` }, debounced)
     .subscribe((status, error) => {
+      if (!active) return;
       onStatus?.(status, error);
       if (error) console.error('Realtime subscription error', error);
-      // После сбоя перепроверяем фактическое состояние через обычный fetch.
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        setTimeout(() => onChange(), 1000);
+
+      if (status === 'SUBSCRIBED') {
+        clearTimeout(failureTimer);
+        debounced();
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        clearTimeout(failureTimer);
+        failureTimer = setTimeout(() => {
+          if (active) onChange();
+        }, 1000);
       }
     });
 
-  return () => { clearTimeout(timer); supabase.removeChannel(channel); };
+  return () => {
+    active = false;
+    clearTimeout(debounceTimer);
+    clearTimeout(failureTimer);
+    void supabase.removeChannel(channel);
+  };
 }
 
 export function subscribeEvent(eventKey, onChange, onStatus) {
   if (!eventKey?.trim()) return () => {};
 
-  let timer = null;
+  let debounceTimer = null;
+  let failureTimer = null;
+  let active = true;
+
   const debounced = () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => onChange(), 100);
+    if (!active) return;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      if (active) onChange();
+    }, 100);
   };
 
-  const channel = supabase.channel(`qna-event-${eventKey}`)
+  const channel = supabase.channel(`qna-event-${eventKey}`, {
+    config: { postgres_changes_options: { wait: true, timeout: 15000 } }
+  })
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
@@ -309,14 +357,27 @@ export function subscribeEvent(eventKey, onChange, onStatus) {
       filter: `event_key=eq.${eventKey}`
     }, debounced)
     .subscribe((status, error) => {
+      if (!active) return;
       onStatus?.(status, error);
       if (error) console.error('Event Realtime subscription error', error);
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        setTimeout(() => onChange(), 1000);
+
+      if (status === 'SUBSCRIBED') {
+        clearTimeout(failureTimer);
+        debounced();
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        clearTimeout(failureTimer);
+        failureTimer = setTimeout(() => {
+          if (active) onChange();
+        }, 1000);
       }
     });
 
-  return () => { clearTimeout(timer); supabase.removeChannel(channel); };
+  return () => {
+    active = false;
+    clearTimeout(debounceTimer);
+    clearTimeout(failureTimer);
+    void supabase.removeChannel(channel);
+  };
 }
 
 export async function deleteAllQuestions(roomId) {
