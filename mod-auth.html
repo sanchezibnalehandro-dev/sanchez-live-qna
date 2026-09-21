@@ -5,7 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title></title>
   <link rel="stylesheet" href="./theme.css" />
-  <link rel="stylesheet" href="./brands/sanchez.css" data-brand-stylesheet />
+  <link rel="stylesheet" data-brand-stylesheet />
+  <script>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const room = (params.get('room') || '').trim();
+      const event = (params.get('event') || '').trim();
+      const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
+      document.querySelector('[data-brand-stylesheet]').href = isTasigo ? './brands/tasigo-esg.css' : './brands/sanchez.css';
+    })();
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
 
@@ -115,14 +124,15 @@
   </div>
 
   <script type="module">
-    import { applyBrandIdentity, getBrandForRoomSlug } from './brand.js';
+    import { applyBrandIdentity, getBrandForRoute } from './brand.js';
     import {
-      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, getActiveSpeaker, listQuestions,
-      setQuestionStatus, setQuestionPinned, approveQuestion, subscribeRoom, escapeHtml, formatClock
+      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getEventKey, getRoomBySlug, getCurrentEventRoom, getActiveSpeaker, listQuestions,
+      setQuestionStatus, setQuestionPinned, approveQuestion, subscribeRoom, subscribeEvent, escapeHtml, formatClock
     } from './supabase-qna.js';
 
-    const roomSlug = getRoomSlug();
-    applyBrandIdentity('moderator', getBrandForRoomSlug(roomSlug));
+    const eventKey = getEventKey();
+    const requestedRoomSlug = getRoomSlug();
+    applyBrandIdentity('moderator', getBrandForRoute(requestedRoomSlug, eventKey));
     const roomChip     = document.getElementById('roomChip');
     const moderationChip = document.getElementById('moderationChip');
     const liveContextLabel = document.getElementById('liveContextLabel');
@@ -133,12 +143,16 @@
     const countLabel   = document.getElementById('countLabel');
     const filterTabs   = Array.from(document.querySelectorAll('.filter-tab'));
     const focusModeBtn = document.getElementById('focusModeBtn');
-    const focusModeKey = roomSlug === DEFAULT_ROOM_SLUG
+    const focusScope = eventKey ? `event:${eventKey}` : requestedRoomSlug;
+    const focusModeKey = !eventKey && requestedRoomSlug === DEFAULT_ROOM_SLUG
       ? 'sanchez-live-moderator-focus-mode'
-      : `sanchez-live-moderator-focus-mode:${roomSlug}`;
+      : `sanchez-live-moderator-focus-mode:${focusScope}`;
 
     const state = { room: null, speaker: null, questions: [], filter: 'all' };
-    let unsubscribe = null;
+    let unsubscribeRoom = null;
+    let unsubscribeEvent = null;
+    let subscribedRoomId = null;
+    const realtimeChannels = { room: 'CONNECTING', event: eventKey ? 'CONNECTING' : 'SUBSCRIBED' };
     let maxVotes = 1;
     let _refreshing = false;
     let _pendingRefresh = false;
@@ -162,7 +176,10 @@
     async function boot() {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
-        location.href = `./login-auth.html?room=${encodeURIComponent(roomSlug)}`;
+        const route = eventKey
+          ? `event=${encodeURIComponent(eventKey)}`
+          : `room=${encodeURIComponent(requestedRoomSlug)}`;
+        location.href = `./login-auth.html?${route}&next=moderator`;
         return;
       }
 
@@ -177,17 +194,21 @@
       });
 
       try {
+        if (eventKey) {
+          unsubscribeEvent = subscribeEvent(eventKey, queueRefresh, (status) => setRealtimeChannelStatus('event', status));
+        }
         await refresh();
       } catch (e) {
+        const noCurrentSession = e?.code === 'CURRENT_SESSION_NOT_SET';
         const isNotFound = e?.code === 'PGRST116' || String(e?.message || '').includes('JSON object requested');
-        speakerName.textContent = isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
-        speakerMeta.textContent = isNotFound
-          ? `Комната «${roomSlug}» не существует. Проверьте параметр ?room= в ссылке.`
-          : (e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.');
+        speakerName.textContent = noCurrentSession ? 'Сессия ещё не выбрана' : isNotFound ? 'Комната не найдена' : 'Ошибка загрузки';
+        speakerMeta.textContent = noCurrentSession
+          ? 'Для этого мероприятия пока не назначена текущая сессия.'
+          : isNotFound
+            ? `Комната «${requestedRoomSlug}» не существует. Проверьте ссылку.`
+            : (e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.');
         return;
       }
-      if (unsubscribe) unsubscribe();
-      unsubscribe = subscribeRoom(state.room.id, queueRefresh, setRealtimeStatus);
     }
 
     function reportRefreshError(error) {
@@ -199,12 +220,46 @@
       void refresh().catch(reportRefreshError);
     }
 
+    async function resolveRoom() {
+      if (!eventKey) return getRoomBySlug(requestedRoomSlug);
+      const room = await getCurrentEventRoom(eventKey);
+      if (room) return room;
+      const error = new Error('Для мероприятия не выбрана текущая сессия.');
+      error.code = 'CURRENT_SESSION_NOT_SET';
+      throw error;
+    }
+
+    function setRealtimeChannelStatus(channel, status) {
+      realtimeChannels[channel] = status;
+      const statuses = Object.values(realtimeChannels);
+      if (statuses.some(value => value === 'CHANNEL_ERROR' || value === 'TIMED_OUT' || value === 'CLOSED')) {
+        setRealtimeStatus('CHANNEL_ERROR');
+      } else if (statuses.every(value => value === 'SUBSCRIBED')) {
+        setRealtimeStatus('SUBSCRIBED');
+      } else {
+        setRealtimeStatus('CONNECTING');
+      }
+    }
+
+    function ensureRoomSubscription(roomId) {
+      if (subscribedRoomId === roomId && unsubscribeRoom) return;
+      unsubscribeRoom?.();
+      subscribedRoomId = roomId;
+      realtimeChannels.room = 'CONNECTING';
+      setRealtimeChannelStatus('room', 'CONNECTING');
+      unsubscribeRoom = subscribeRoom(roomId, queueRefresh, (status) => setRealtimeChannelStatus('room', status));
+    }
+
     async function refresh() {
       if (_refreshing) { _pendingRefresh = true; return; }
       _refreshing = true;
       _pendingRefresh = false;
       try {
-        state.room = await getRoomBySlug(roomSlug);
+        const nextRoom = await resolveRoom();
+        const roomChanged = state.room?.id !== nextRoom.id;
+        state.room = nextRoom;
+        if (roomChanged) applyBrandIdentity('moderator', getBrandForRoute(state.room.slug, eventKey));
+        ensureRoomSubscription(state.room.id);
         const isPanel = state.room.mode === 'panel';
         state.speaker = isPanel ? null : await getActiveSpeaker(state.room.id);
         state.questions = await listQuestions(state.room.id, isPanel ? null : state.speaker?.id, { includeHidden: true, includeAsked: true, includePending: true });
@@ -222,7 +277,7 @@
     function render() {
       const isPanel = state.room?.mode === 'panel';
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
-      liveContextLabel.textContent = isPanel ? 'Пленарная сессия' : 'Сейчас в эфире';
+      liveContextLabel.textContent = isPanel ? 'Сессия' : 'Сейчас в эфире';
       speakerName.textContent = isPanel
         ? (state.room?.title || fallback)
         : (state.speaker?.name || state.speaker?.fallback_label || fallback);
@@ -232,7 +287,7 @@
       speakerMeta.innerHTML = metadata
         .filter(Boolean)
         .map(value => `<span>${escapeHtml(value)}</span>`)
-        .join('<br>') || (isPanel ? 'Модератор пленарной сессии' : 'Активный спикер не задан');
+        .join('<br>') || (isPanel ? 'Модератор сессии' : 'Активный спикер не задан');
 
       // Статус комнаты
       const isOpen = state.room?.is_questions_open;
