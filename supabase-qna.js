@@ -11,6 +11,11 @@ export function getRoomSlug() {
   return roomSlug?.trim() || DEFAULT_ROOM_SLUG;
 }
 
+export function getEventKey() {
+  const eventKey = new URLSearchParams(window.location.search).get('event');
+  return eventKey?.trim() || null;
+}
+
 export function getGuestSessionId(room) {
   const key = `qna-session:${room}`;
   let value = null;
@@ -34,7 +39,7 @@ export function getGuestSessionId(room) {
 export async function getRoomBySlug(roomSlug) {
   const { data, error } = await supabase
     .from('qna_rooms')
-    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order')
+    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order, is_current_session')
     .eq('slug', roomSlug)
     .single();
   if (error) throw error;
@@ -46,12 +51,25 @@ export async function listEventRooms(eventKey) {
 
   const { data, error } = await supabase
     .from('qna_rooms')
-    .select('id, slug, title, mode, moderator_name, moderator_regalia, is_questions_open, moderation_enabled, session_order')
+    .select('id, slug, title, mode, moderator_name, moderator_regalia, is_questions_open, moderation_enabled, session_order, is_current_session')
     .eq('event_key', eventKey)
     .order('session_order', { ascending: true })
     .order('id', { ascending: true });
   if (error) throw error;
   return data || [];
+}
+
+export async function getCurrentEventRoom(eventKey) {
+  if (!eventKey?.trim()) return null;
+
+  const { data, error } = await supabase
+    .from('qna_rooms')
+    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order, is_current_session')
+    .eq('event_key', eventKey)
+    .eq('is_current_session', true)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 export async function getActiveSpeaker(roomId) {
@@ -243,6 +261,13 @@ export async function setActiveSpeaker(roomId, speakerId) {
   if (error) throw error;
 }
 
+export async function setCurrentEventSession(roomId) {
+  const { error } = await supabase.rpc('set_current_event_session', {
+    p_room_id: roomId
+  });
+  if (error) throw error;
+}
+
 export function subscribeRoom(roomId, onChange, onStatus) {
   // Дебаунс: схлопываем частые события в один вызов
   let timer = null;
@@ -255,11 +280,37 @@ export function subscribeRoom(roomId, onChange, onStatus) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_rooms',          filter: `id=eq.${roomId}` }, debounced)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_speakers',       filter: `room_id=eq.${roomId}` }, debounced)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_questions',      filter: `room_id=eq.${roomId}` }, debounced)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'qna_question_votes' }, debounced)
     .subscribe((status, error) => {
       onStatus?.(status, error);
       if (error) console.error('Realtime subscription error', error);
       // После сбоя перепроверяем фактическое состояние через обычный fetch.
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setTimeout(() => onChange(), 1000);
+      }
+    });
+
+  return () => { clearTimeout(timer); supabase.removeChannel(channel); };
+}
+
+export function subscribeEvent(eventKey, onChange, onStatus) {
+  if (!eventKey?.trim()) return () => {};
+
+  let timer = null;
+  const debounced = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => onChange(), 100);
+  };
+
+  const channel = supabase.channel(`qna-event-${eventKey}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'qna_rooms',
+      filter: `event_key=eq.${eventKey}`
+    }, debounced)
+    .subscribe((status, error) => {
+      onStatus?.(status, error);
+      if (error) console.error('Event Realtime subscription error', error);
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         setTimeout(() => onChange(), 1000);
       }
