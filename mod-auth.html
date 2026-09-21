@@ -117,7 +117,7 @@
   <script type="module">
     import { applyBrandIdentity, getBrandForRoomSlug } from './brand.js';
     import {
-      supabase, getRoomSlug, getRoomBySlug, getActiveSpeaker, listQuestions,
+      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, getActiveSpeaker, listQuestions,
       setQuestionStatus, setQuestionPinned, approveQuestion, subscribeRoom, escapeHtml, formatClock
     } from './supabase-qna.js';
 
@@ -133,7 +133,9 @@
     const countLabel   = document.getElementById('countLabel');
     const filterTabs   = Array.from(document.querySelectorAll('.filter-tab'));
     const focusModeBtn = document.getElementById('focusModeBtn');
-    const focusModeKey = 'sanchez-live-moderator-focus-mode';
+    const focusModeKey = roomSlug === DEFAULT_ROOM_SLUG
+      ? 'sanchez-live-moderator-focus-mode'
+      : `sanchez-live-moderator-focus-mode:${roomSlug}`;
 
     const state = { room: null, speaker: null, questions: [], filter: 'all' };
     let unsubscribe = null;
