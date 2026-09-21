@@ -376,7 +376,7 @@
 
     function renderEventSessionSelector(eventRooms) {
       state.eventRooms = eventRooms;
-      const showSelector = state.room?.event_key != null && eventRooms.length >= 2;
+      const showSelector = state.room?.event_key != null && eventRooms.length >= 1;
       eventSessionControl.hidden = !showSelector;
       if (!showSelector) {
         eventSessionSelect.replaceChildren();
@@ -985,6 +985,8 @@
       document.getElementById('speakersPanelSubtitle').textContent = isPanel ? 'Состав панели · порядок программы' : 'Участники · порядок программы';
       document.getElementById('editorTitle').textContent = isPanel ? 'Редактор участника' : 'Редактор спикера';
       document.getElementById('editorSubtitle').textContent = isPanel ? 'Выберите участника панели' : 'Выберите спикера';
+      nameInput.placeholder = isPanel ? 'Имя участника' : 'Имя спикера';
+      if (!selectedSpeakerId) selectLabel.textContent = isPanel ? 'Выбрать участника' : 'Выбрать спикера';
       document.getElementById('activateBtn').style.display = isPanel ? 'none' : '';
       document.getElementById('speakerFilterFooter').style.display = isPanel ? 'none' : '';
       if (isPanel && state.speakerFilter) {
@@ -1058,7 +1060,7 @@
                   </div>` : ''}
               </div>`;
           }).join('')
-        : '<div class="empty">Список спикеров пуст.</div>';
+        : `<div class="empty">${isPanel ? 'Список участников пуст.' : 'Список спикеров пуст.'}</div>`;
 
       // Фильтр по спикеру из списка
       speakersList.querySelectorAll('[data-sp-filter]').forEach(btn => {
