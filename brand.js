@@ -13,15 +13,15 @@ export const SANCHEZ_BRAND = {
 
 export const BRAND = SANCHEZ_BRAND;
 
-const ROOM_BRANDS = {
-  'tasigo-esg-plenary': {
-    ...TASIGO_ESG_BRAND,
-    stylesheetHref: './brands/tasigo-esg.css'
-  }
+const TASIGO_ESG_ROOM_PREFIX = 'tasigo-esg-';
+const TASIGO_ESG_ROOM_BRAND = {
+  ...TASIGO_ESG_BRAND,
+  stylesheetHref: './brands/tasigo-esg.css'
 };
 
 export function getBrandForRoomSlug(roomSlug) {
-  return ROOM_BRANDS[roomSlug] || SANCHEZ_BRAND;
+  if (roomSlug?.startsWith(TASIGO_ESG_ROOM_PREFIX)) return TASIGO_ESG_ROOM_BRAND;
+  return SANCHEZ_BRAND;
 }
 
 const PAGE_TITLES = {
