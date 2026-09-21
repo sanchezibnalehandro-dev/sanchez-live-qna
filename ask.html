@@ -313,6 +313,21 @@
     function saveVotes() { if (activeRoomSlug) saveLocalSet(`qna-votes:${activeRoomSlug}`, myVotes); }
     function saveMyQuestions() { if (activeRoomSlug) saveLocalSet(`qna-own-questions:${activeRoomSlug}`, myQuestions); }
 
+    function saveDraft(roomSlug) {
+      if (!roomSlug) return;
+      try { sessionStorage.setItem(`qna-draft:${roomSlug}`, questionInput.value); } catch {}
+    }
+
+    function loadDraft(roomSlug) {
+      try { questionInput.value = sessionStorage.getItem(`qna-draft:${roomSlug}`) || ''; }
+      catch { questionInput.value = ''; }
+      updateCharCount();
+    }
+
+    function clearDraft(roomSlug) {
+      try { sessionStorage.removeItem(`qna-draft:${roomSlug}`); } catch {}
+    }
+
     const state = { room: null, speaker: null, speakers: [], questions: [] };
     let unsubscribeRoom = null;
     let unsubscribeEvent = null;
@@ -327,11 +342,15 @@
     const charCount = document.getElementById('charCount');
     const LIMIT = 200;
     questionInput.setAttribute('maxlength', LIMIT);
-    charCount.textContent = `0 / ${LIMIT}`;
-    questionInput.addEventListener('input', () => {
+    function updateCharCount() {
       const len = questionInput.value.length;
       charCount.textContent = `${len} / ${LIMIT}`;
       charCount.style.color = len > LIMIT * 0.9 ? (len >= LIMIT ? 'var(--danger)' : 'var(--yellow)') : 'var(--muted)';
+    }
+    updateCharCount();
+    questionInput.addEventListener('input', () => {
+      updateCharCount();
+      saveDraft(activeRoomSlug);
     });
 
     submitBtn.addEventListener('click', onSubmit);
@@ -402,9 +421,12 @@
       try {
         const nextRoom = await resolveRoom();
         const roomChanged = state.room?.id !== nextRoom.id;
+        const previousRoomSlug = activeRoomSlug;
+        if (roomChanged && previousRoomSlug) saveDraft(previousRoomSlug);
         state.room = nextRoom;
         if (roomChanged || activeRoomSlug !== state.room.slug) {
           syncLocalQuestionState(state.room.slug);
+          if (roomChanged) loadDraft(state.room.slug);
           applyBrandIdentity('guest', getBrandForRoute(state.room.slug, eventKey));
         }
         const sessionScope = state.room.event_key ? `event:${state.room.event_key}` : state.room.slug;
@@ -425,6 +447,7 @@
     }
 
     function render() {
+      formCard.style.display = '';
       const isPanel = state.room?.mode === 'panel';
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
       const name = isPanel
@@ -580,6 +603,8 @@
         // Запоминаем свой вопрос отдельно от голосов; storage failure не отменяет подтверждённый INSERT.
         if (newQ?.id) { myQuestions.add(newQ.id); saveMyQuestions(); }
         questionInput.value = '';
+        clearDraft(activeRoomSlug);
+        updateCharCount();
         nameInput.value = '';
         companyInput.value = '';
         showToast(newQ?.status === 'pending' ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
