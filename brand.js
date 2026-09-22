@@ -2,7 +2,7 @@ import { TASIGO_ESG_BRAND } from './brand-presets/tasigo-esg.js';
 
 export const SANCHEZ_BRAND = {
   key: 'sanchez',
-  name: 'SANCHEZ',
+  name: 'SANCHEZ_AI_SOLUTIONS',
   mark: 'S',
   productName: 'Live Q&A',
   csvPrefix: 'sanchez-qna',

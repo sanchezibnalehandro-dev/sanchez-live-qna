@@ -185,10 +185,72 @@
       font-size: 14px;
       font-weight: 500;
     }
+
+    .participant-hint {
+      margin: 0 0 10px;
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .participant-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .participant-item {
+      display: inline-flex;
+      min-width: 0;
+      max-width: 100%;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .participant-chip {
+      display: inline-flex;
+      min-width: 0;
+      max-width: 100%;
+      min-height: 44px;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 12px;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-pill);
+      background: var(--color-surface-subtle);
+      color: var(--color-text-secondary);
+      font: 700 12px/1.35 var(--font-body);
+      text-align: left;
+      overflow-wrap: anywhere;
+      cursor: pointer;
+    }
+    .participant-chip:hover { border-color: var(--color-border-strong); color: var(--color-text); }
+    .participant-chip:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
+    .participant-chip[aria-expanded="true"] {
+      border-color: var(--color-accent-border);
+      background: var(--color-accent-soft);
+      color: var(--color-accent-active-text);
+    }
+    .participant-chip-chevron { flex: 0 0 auto; font-size: 16px; line-height: 1; }
+    .participant-inline-regalia {
+      min-width: 0;
+      max-width: 100%;
+      margin-top: 5px;
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+    .char-count { font-size: 11px; color: var(--color-text-secondary); }
+    .char-count.is-warning { color: var(--color-warning-text); }
+    .char-count.is-danger { color: var(--color-danger-text); font-weight: 700; }
   </style>
 </head>
-<body>
-  <div class="app">
+<body class="is-booting">
+  <div class="bootstrap-screen" id="bootstrapScreen" role="status" aria-live="polite">
+    <div class="bootstrap-card">
+      <div class="bootstrap-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="bootstrap-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div></div>
+      <p class="bootstrap-message" id="bootstrapMessage">Загрузка…</p>
+    </div>
+  </div>
+  <div class="app" id="appShell" inert aria-hidden="true">
     <main class="shell guest-shell">
 
       <!-- Шапка -->
@@ -208,7 +270,8 @@
           <p class="subcopy" id="speakerMeta">Загрузка данных спикера…</p>
           <div id="panelParticipants" style="display:none; margin-top:16px;">
             <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:8px;">Участники сессии</div>
-            <div id="panelParticipantsList" class="row" style="flex-wrap:wrap; gap:6px;"></div>
+            <p class="participant-hint">Нажмите на участника, чтобы посмотреть должность и регалии</p>
+            <div id="panelParticipantsList" class="participant-list"></div>
           </div>
         </div>
       </section>
@@ -224,9 +287,9 @@
         <div class="card-inner stack" style="gap:14px;">
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
             <h2 class="section-title" style="margin:0;">Ваш вопрос</h2>
-            <span id="charCount" style="font-size:11px; color:var(--muted);">0 / 200</span>
+            <span class="char-count" id="charCount" aria-live="polite">0 / 200</span>
           </div>
-          <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" maxlength="200" style="min-height:110px;"></textarea>
+          <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" maxlength="200" aria-describedby="charCount" style="min-height:110px;"></textarea>
           <div id="guestIdentityFields">
             <div class="divider"></div>
             <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:-4px;">Имя и компания (опционально)</div>
@@ -242,9 +305,12 @@
       <!-- Лента вопросов -->
       <section class="card">
         <div class="card-inner">
-          <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
             <h2 class="section-title" style="margin:0;">Вопросы <span class="badge open" id="countBadge" style="vertical-align:middle;">0</span></h2>
-            <span class="live-tag connecting" id="realtimeStatus"><span class="live-tag-dot"></span> подключение…</span>
+            <div class="question-header-actions">
+              <div class="question-sort" role="group" aria-label="Сортировка вопросов"><button class="question-sort-btn active" type="button" data-sort="votes" aria-pressed="true">По голосам</button><button class="question-sort-btn" type="button" data-sort="newest" aria-pressed="false">Новые</button></div>
+              <span class="live-tag connecting" id="realtimeStatus"><span class="live-tag-dot"></span> подключение…</span>
+            </div>
           </div>
           <div class="list" id="questionsList">
             <div class="empty">Вопросов пока нет — задайте первый!</div>
@@ -269,6 +335,52 @@
     let activeRoomSlug = eventKey ? null : requestedRoomSlug;
     applyBrandIdentity('guest', getBrandForRoute(requestedRoomSlug, eventKey));
     let sessionId = null;
+
+    const appShell = document.getElementById('appShell');
+    const bootstrapScreen = document.getElementById('bootstrapScreen');
+    const bootstrapMessage = document.getElementById('bootstrapMessage');
+    const sortButtons = Array.from(document.querySelectorAll('[data-sort]'));
+    const sortScope = eventKey ? `event:${eventKey}` : `room:${requestedRoomSlug}`;
+    const sortModeKey = `sanchez-live-sort:guest:${sortScope}`;
+
+    function finishBootstrap() {
+      appShell.removeAttribute('inert');
+      appShell.removeAttribute('aria-hidden');
+      document.body.classList.remove('is-booting');
+      document.body.classList.add('is-ready');
+    }
+
+    function showBootstrapError(error) {
+      console.error('Guest initial load failed', error);
+      bootstrapScreen.classList.add('is-error');
+      bootstrapScreen.setAttribute('role', 'alert');
+      bootstrapMessage.textContent = error?.message || 'Не удалось загрузить данные. Обновите страницу и попробуйте снова.';
+    }
+
+    function loadSortMode() {
+      try {
+        const value = localStorage.getItem(sortModeKey);
+        return value === 'newest' ? 'newest' : 'votes';
+      } catch {
+        return 'votes';
+      }
+    }
+
+    function persistSortMode(mode) {
+      try { localStorage.setItem(sortModeKey, mode); } catch {}
+    }
+
+    function sortQuestions(questions, mode) {
+      return [...questions].sort((left, right) => {
+        const pinned = Number(Boolean(right.is_pinned)) - Number(Boolean(left.is_pinned));
+        if (pinned) return pinned;
+        if (mode === 'votes') {
+          const votes = Number(right.votes_count || 0) - Number(left.votes_count || 0);
+          if (votes) return votes;
+        }
+        return (Date.parse(right.created_at) || 0) - (Date.parse(left.created_at) || 0);
+      });
+    }
 
     const speakerNameEl = document.getElementById('speakerName');
     const speakerMetaEl = document.getElementById('speakerMeta');
@@ -325,14 +437,14 @@
     function loadDraft(roomSlug) {
       try { questionInput.value = sessionStorage.getItem(`qna-draft:${roomSlug}`) || ''; }
       catch { questionInput.value = ''; }
-      updateCharCount();
+      updateQuestionFormState();
     }
 
     function clearDraft(roomSlug) {
       try { sessionStorage.removeItem(`qna-draft:${roomSlug}`); } catch {}
     }
 
-    const state = { room: null, speaker: null, speakers: [], questions: [] };
+    const state = { room: null, speaker: null, speakers: [], questions: [], expandedParticipantId: null, sortMode: loadSortMode() };
     let unsubscribeRoom = null;
     let unsubscribeEvent = null;
     let subscribedRoomId = null;
@@ -342,22 +454,56 @@
     let submittingQuestion = false;
     const pendingVoteIds = new Set();
 
-    // Счётчик символов
+    // Счётчик символов и доступность отправки
     const charCount = document.getElementById('charCount');
     const LIMIT = 200;
     questionInput.setAttribute('maxlength', LIMIT);
-    function updateCharCount() {
-      const len = questionInput.value.length;
-      charCount.textContent = `${len} / ${LIMIT}`;
-      charCount.style.color = len > LIMIT * 0.9 ? (len >= LIMIT ? 'var(--danger)' : 'var(--yellow)') : 'var(--muted)';
+
+    function getParticipantName(participant) {
+      return participant?.name || participant?.fallback_label || '';
     }
-    updateCharCount();
+
+    function isQuestionOpen() {
+      return (!state.room?.event_key || state.room?.is_current_session === true)
+        && state.room?.is_questions_open === true;
+    }
+
+    function updateQuestionFormState() {
+      const userTextLength = normalizeQuestion(questionInput.value).length;
+      const isLimitExceeded = userTextLength > LIMIT;
+      const isWarning = !isLimitExceeded && userTextLength > LIMIT * 0.9;
+
+      charCount.textContent = `${userTextLength} / ${LIMIT}`;
+      charCount.classList.toggle('is-warning', isWarning);
+      charCount.classList.toggle('is-danger', isLimitExceeded);
+      charCount.setAttribute('aria-label', isLimitExceeded
+        ? `${userTextLength} из ${LIMIT} символов. Сократите вопрос.`
+        : `${userTextLength} из ${LIMIT} символов.`);
+      questionInput.setAttribute('aria-invalid', String(isLimitExceeded));
+      submitBtn.disabled = !isQuestionOpen() || submittingQuestion || isLimitExceeded;
+    }
+    updateQuestionFormState();
     questionInput.addEventListener('input', () => {
-      updateCharCount();
+      updateQuestionFormState();
       saveDraft(activeRoomSlug);
     });
 
+    panelParticipantsList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-participant-id]');
+      if (!button || state.room?.mode !== 'panel') return;
+      const participantId = button.dataset.participantId;
+      state.expandedParticipantId = state.expandedParticipantId === participantId ? null : participantId;
+      renderPanelParticipants(true);
+    });
+
     submitBtn.addEventListener('click', onSubmit);
+    sortButtons.forEach(button => button.addEventListener('click', () => {
+      const mode = button.dataset.sort;
+      if (mode !== 'votes' && mode !== 'newest') return;
+      state.sortMode = mode;
+      persistSortMode(mode);
+      if (state.room) render();
+    }));
     boot();
 
     async function boot() {
@@ -366,12 +512,10 @@
           unsubscribeEvent = subscribeEvent(eventKey, queueRefresh, (status) => setRealtimeChannelStatus('event', status));
         }
         await refresh();
+        finishBootstrap();
       } catch (e) {
-        if (!renderTerminalRouteError(e)) {
-          speakerNameEl.textContent = 'Ошибка загрузки';
-          speakerMetaEl.textContent = e?.message || 'Не удалось загрузить данные. Попробуйте обновить страницу.';
-          formCard.style.display = 'none';
-        }
+        if (renderTerminalRouteError(e)) finishBootstrap();
+        else showBootstrapError(e);
       }
     }
 
@@ -402,6 +546,7 @@
       state.speaker = null;
       state.speakers = [];
       state.questions = [];
+      state.expandedParticipantId = null;
 
       speakerNameEl.textContent = invalidEvent
         ? 'Мероприятие не найдено'
@@ -463,8 +608,10 @@
       try {
         const nextRoom = await resolveRoom();
         const roomChanged = state.room?.id !== nextRoom.id;
+        const roomModeChanged = state.room?.mode !== nextRoom.mode;
         const previousRoomSlug = activeRoomSlug;
         if (roomChanged && previousRoomSlug) saveDraft(previousRoomSlug);
+        if (roomChanged || roomModeChanged || nextRoom.mode !== 'panel') state.expandedParticipantId = null;
         state.room = nextRoom;
         if (roomChanged || activeRoomSlug !== state.room.slug) {
           syncLocalQuestionState(state.room.slug);
@@ -493,6 +640,11 @@
     function render() {
       document.getElementById('realtimeStatus').hidden = false;
       formCard.style.display = '';
+      sortButtons.forEach(button => {
+        const active = button.dataset.sort === state.sortMode;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
       const isPanel = state.room?.mode === 'panel';
       const fallback = state.room?.fallback_label || 'Вопросы спикеру';
       const name = isPanel
@@ -508,12 +660,6 @@
         .map(value => `<span>${escapeHtml(value)}</span>`)
         .join('<br>') || (isPanel ? 'Сессия' : 'Готовимся к сессии…');
 
-      panelParticipants.style.display = isPanel ? 'block' : 'none';
-      panelParticipantsList.innerHTML = isPanel
-        ? (state.speakers.length
-          ? state.speakers.map((speaker) => `<span class="badge open" style="font-size:10px; padding:5px 8px;">${escapeHtml(speaker.name || speaker.fallback_label || 'Участник')}</span>`).join('')
-          : '<span style="font-size:12px; color:var(--muted);">Список участников уточняется.</span>')
-        : '';
       guestIdentityFields.style.display = isPanel ? 'none' : 'block';
       questionInput.placeholder = isPanel ? 'Напишите вопрос модератору…' : 'Напишите вопрос спикеру…';
 
@@ -523,9 +669,10 @@
       questionInput.disabled = !isOpen;
       nameInput.disabled = !isOpen;
       companyInput.disabled = !isOpen;
-      submitBtn.disabled = !isOpen || submittingQuestion;
       formCard.style.opacity = isOpen ? '1' : '0.65';
       formCard.setAttribute('aria-disabled', String(!isOpen));
+      renderPanelParticipants(isPanel);
+      updateQuestionFormState();
 
       // Индикатор приёма
       const indicator = document.getElementById('receptionIndicator');
@@ -534,7 +681,7 @@
       label.textContent   = isOpen ? 'Приём открыт' : 'Приём закрыт';
 
       // Лента вопросов
-      const qs = state.questions.filter(q => q.status !== 'hidden');
+      const qs = sortQuestions(state.questions.filter(q => q.status !== 'hidden'), state.sortMode);
       countBadge.textContent = String(qs.length);
 
       if (!qs.length) {
@@ -637,6 +784,42 @@
       });
     }
 
+    function getExpandedParticipant() {
+      if (state.expandedParticipantId === null) return null;
+      return state.speakers.find((speaker) => String(speaker.id) === state.expandedParticipantId) || null;
+    }
+
+    function renderPanelParticipants(isPanel) {
+      panelParticipants.style.display = isPanel ? 'block' : 'none';
+      if (!isPanel) {
+        state.expandedParticipantId = null;
+        panelParticipantsList.innerHTML = '';
+        return;
+      }
+
+      let expandedParticipant = getExpandedParticipant();
+      if (state.expandedParticipantId !== null && !expandedParticipant) {
+        state.expandedParticipantId = null;
+        expandedParticipant = null;
+      }
+
+      panelParticipantsList.innerHTML = state.speakers.length
+        ? state.speakers.map((speaker) => {
+          const participantId = String(speaker.id);
+          const label = getParticipantName(speaker) || 'Участник';
+          const expanded = participantId === state.expandedParticipantId;
+          const regalia = String(speaker.regalia || '').trim();
+          const detailsId = `panel-participant-regalia-${participantId}`;
+          const ariaLabel = `${expanded ? 'Скрыть' : 'Показать'} информацию об участнике: ${label}`;
+          const ariaControls = regalia ? ` aria-controls="${escapeHtml(detailsId)}"` : '';
+          const inlineRegalia = expanded && regalia
+            ? `<div class="participant-inline-regalia" id="${escapeHtml(detailsId)}">${escapeHtml(regalia)}</div>`
+            : '';
+          return `<div class="participant-item"><button class="participant-chip" type="button" data-participant-id="${escapeHtml(participantId)}" aria-expanded="${expanded}"${ariaControls} aria-label="${escapeHtml(ariaLabel)}"><span>${escapeHtml(label)}</span><span class="participant-chip-chevron" aria-hidden="true">${expanded ? '⌄' : '›'}</span></button>${inlineRegalia}</div>`;
+        }).join('')
+        : '<span style="font-size:12px; color:var(--muted);">Список участников уточняется.</span>';
+    }
+
     async function onSubmit() {
       const operationRoom = state.room;
       const operationRoomSlug = activeRoomSlug;
@@ -648,8 +831,13 @@
         return;
       }
       if (submittingQuestion) return;
-      const text = normalizeQuestion(questionInput.value);
-      if (!text) { showToast('Напишите вопрос.', 'error'); return; }
+      const userText = normalizeQuestion(questionInput.value);
+      if (!userText) { showToast('Напишите вопрос.', 'error'); return; }
+      const text = userText;
+      if (text.length > LIMIT) {
+        showToast('Сократите вопрос: текст должен быть не длиннее 200 символов.', 'error');
+        return;
+      }
       const authorName = operationRoom.mode === 'panel' ? '' : nameInput.value;
       const authorCompany = operationRoom.mode === 'panel' ? '' : companyInput.value;
       const speakerId = operationRoom.mode === 'panel' ? null : state.speaker?.id || null;
@@ -675,7 +863,7 @@
         const stillSameRoom = state.room?.id === operationRoom.id && activeRoomSlug === operationRoomSlug;
         if (stillSameRoom) {
           questionInput.value = '';
-          updateCharCount();
+          updateQuestionFormState();
           nameInput.value = '';
           companyInput.value = '';
           showToast(newQ?.status === 'pending' ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
@@ -698,11 +886,9 @@
         showToast('Вопрос сохранён, но данные не удалось обновить.', 'error');
       } finally {
         submittingQuestion = false;
-        const currentIsOpen = (!state.room?.event_key || state.room?.is_current_session === true)
-          && state.room?.is_questions_open === true;
-        submitBtn.disabled = !currentIsOpen;
         submitBtn.textContent = 'Отправить вопрос';
         if (state.room) render();
+        else updateQuestionFormState();
       }
     }
 

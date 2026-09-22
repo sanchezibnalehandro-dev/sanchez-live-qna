@@ -1,8 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap');
 
 /* TASIGO × РБК Татарстан — «Маршрут устойчивого развития».
-   This file only supplies the existing theme contract; production continues
-   to load brands/sanchez.css until a future brand selector is introduced. */
+   Brand theme selected by the shared route-aware branding layer. */
 :root {
   --bg:         #f5f3eb;
   --bg2:        #eeeee4;
