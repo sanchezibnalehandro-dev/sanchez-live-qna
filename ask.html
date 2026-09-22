@@ -185,6 +185,76 @@
       font-size: 14px;
       font-weight: 500;
     }
+
+    .participant-hint {
+      margin: 0 0 10px;
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .participant-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .participant-chip {
+      display: inline-flex;
+      min-width: 0;
+      min-height: 44px;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 12px;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-pill);
+      background: var(--color-surface-subtle);
+      color: var(--color-text-secondary);
+      font: 700 12px/1.35 var(--font-body);
+      text-align: left;
+      overflow-wrap: anywhere;
+      cursor: pointer;
+    }
+    .participant-chip:hover { border-color: var(--color-border-strong); color: var(--color-text); }
+    .participant-chip:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
+    .participant-chip[aria-pressed="true"] {
+      border-color: var(--color-border-strong);
+      background: var(--color-accent-soft);
+      color: var(--color-accent-active-text);
+    }
+    .participant-chip:disabled { opacity: 0.5; cursor: not-allowed; }
+    .participant-chip-check { flex: 0 0 auto; }
+    .participant-target {
+      min-width: 0;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--color-accent-border);
+      border-radius: var(--radius-md);
+      background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface-raised));
+    }
+    .participant-target-label {
+      margin-bottom: 5px;
+      color: var(--color-text-secondary);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .participant-target-name,
+    .participant-target-regalia { overflow-wrap: anywhere; }
+    .participant-target-name { color: var(--color-text); font-size: 14px; font-weight: 700; line-height: 1.4; }
+    .participant-target-regalia { margin-top: 3px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.45; }
+    .participant-clear {
+      min-height: 36px;
+      margin-top: 10px;
+      padding: 7px 10px;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--color-text-secondary);
+      font: 700 12px/1 var(--font-body);
+      cursor: pointer;
+    }
+    .participant-clear:hover { border-color: var(--color-border-strong); color: var(--color-text); }
+    .participant-clear:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
   </style>
 </head>
 <body class="is-booting">
@@ -214,7 +284,9 @@
           <p class="subcopy" id="speakerMeta">Загрузка данных спикера…</p>
           <div id="panelParticipants" style="display:none; margin-top:16px;">
             <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:8px;">Участники сессии</div>
-            <div id="panelParticipantsList" class="row" style="flex-wrap:wrap; gap:6px;"></div>
+            <p class="participant-hint">Выберите участника, если хотите адресовать вопрос лично</p>
+            <div id="panelParticipantsList" class="participant-list"></div>
+            <div id="panelParticipantTarget" class="participant-target" hidden aria-live="polite"></div>
           </div>
         </div>
       </section>
@@ -329,6 +401,7 @@
     const speakerMetaEl = document.getElementById('speakerMeta');
     const panelParticipants = document.getElementById('panelParticipants');
     const panelParticipantsList = document.getElementById('panelParticipantsList');
+    const panelParticipantTarget = document.getElementById('panelParticipantTarget');
     const questionInput  = document.getElementById('questionInput');
     const nameInput      = document.getElementById('nameInput');
     const companyInput   = document.getElementById('companyInput');
@@ -387,7 +460,7 @@
       try { sessionStorage.removeItem(`qna-draft:${roomSlug}`); } catch {}
     }
 
-    const state = { room: null, speaker: null, speakers: [], questions: [], sortMode: loadSortMode() };
+    const state = { room: null, speaker: null, speakers: [], questions: [], selectedParticipantId: null, sortMode: loadSortMode() };
     let unsubscribeRoom = null;
     let unsubscribeEvent = null;
     let subscribedRoomId = null;
@@ -410,6 +483,22 @@
     questionInput.addEventListener('input', () => {
       updateCharCount();
       saveDraft(activeRoomSlug);
+    });
+
+    panelParticipantsList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-participant-id]');
+      const isCurrentEventSession = !state.room?.event_key || state.room?.is_current_session === true;
+      if (!button || state.room?.mode !== 'panel' || !isCurrentEventSession || state.room?.is_questions_open !== true) return;
+      const participantId = button.dataset.participantId;
+      state.selectedParticipantId = state.selectedParticipantId === participantId ? null : participantId;
+      renderPanelParticipants(true, true);
+    });
+
+    panelParticipantTarget.addEventListener('click', (event) => {
+      if (!event.target.closest('[data-clear-participant]')) return;
+      state.selectedParticipantId = null;
+      const isCurrentEventSession = !state.room?.event_key || state.room?.is_current_session === true;
+      renderPanelParticipants(state.room?.mode === 'panel', isCurrentEventSession && state.room?.is_questions_open === true);
     });
 
     submitBtn.addEventListener('click', onSubmit);
@@ -462,6 +551,7 @@
       state.speaker = null;
       state.speakers = [];
       state.questions = [];
+      state.selectedParticipantId = null;
 
       speakerNameEl.textContent = invalidEvent
         ? 'Мероприятие не найдено'
@@ -525,6 +615,7 @@
         const roomChanged = state.room?.id !== nextRoom.id;
         const previousRoomSlug = activeRoomSlug;
         if (roomChanged && previousRoomSlug) saveDraft(previousRoomSlug);
+        if (roomChanged) state.selectedParticipantId = null;
         state.room = nextRoom;
         if (roomChanged || activeRoomSlug !== state.room.slug) {
           syncLocalQuestionState(state.room.slug);
@@ -573,12 +664,6 @@
         .map(value => `<span>${escapeHtml(value)}</span>`)
         .join('<br>') || (isPanel ? 'Сессия' : 'Готовимся к сессии…');
 
-      panelParticipants.style.display = isPanel ? 'block' : 'none';
-      panelParticipantsList.innerHTML = isPanel
-        ? (state.speakers.length
-          ? state.speakers.map((speaker) => `<span class="badge open" style="font-size:10px; padding:5px 8px;">${escapeHtml(speaker.name || speaker.fallback_label || 'Участник')}</span>`).join('')
-          : '<span style="font-size:12px; color:var(--muted);">Список участников уточняется.</span>')
-        : '';
       guestIdentityFields.style.display = isPanel ? 'none' : 'block';
       questionInput.placeholder = isPanel ? 'Напишите вопрос модератору…' : 'Напишите вопрос спикеру…';
 
@@ -591,6 +676,7 @@
       submitBtn.disabled = !isOpen || submittingQuestion;
       formCard.style.opacity = isOpen ? '1' : '0.65';
       formCard.setAttribute('aria-disabled', String(!isOpen));
+      renderPanelParticipants(isPanel, isOpen);
 
       // Индикатор приёма
       const indicator = document.getElementById('receptionIndicator');
@@ -702,6 +788,48 @@
       });
     }
 
+    function getSelectedParticipant() {
+      if (state.selectedParticipantId === null) return null;
+      return state.speakers.find((speaker) => String(speaker.id) === state.selectedParticipantId) || null;
+    }
+
+    function renderPanelParticipants(isPanel, isOpen) {
+      panelParticipants.style.display = isPanel ? 'block' : 'none';
+      if (!isPanel) {
+        state.selectedParticipantId = null;
+        panelParticipantsList.innerHTML = '';
+        panelParticipantTarget.hidden = true;
+        panelParticipantTarget.innerHTML = '';
+        return;
+      }
+
+      let selectedParticipant = getSelectedParticipant();
+      if (state.selectedParticipantId !== null && !selectedParticipant) {
+        state.selectedParticipantId = null;
+        selectedParticipant = null;
+      }
+
+      panelParticipantsList.innerHTML = state.speakers.length
+        ? state.speakers.map((speaker) => {
+          const participantId = String(speaker.id);
+          const label = speaker.name || speaker.fallback_label || 'Участник';
+          const selected = participantId === state.selectedParticipantId;
+          const ariaLabel = selected
+            ? `Снять выбор участника: ${label}`
+            : `Адресовать вопрос участнику: ${label}`;
+          return `<button class="participant-chip" type="button" data-participant-id="${escapeHtml(participantId)}" aria-pressed="${selected}" aria-label="${escapeHtml(ariaLabel)}" ${isOpen ? '' : 'disabled'}>${selected ? '<span class="participant-chip-check" aria-hidden="true">✓</span>' : ''}<span>${escapeHtml(label)}</span></button>`;
+        }).join('')
+        : '<span style="font-size:12px; color:var(--muted);">Список участников уточняется.</span>';
+
+      panelParticipantTarget.hidden = !selectedParticipant;
+      panelParticipantTarget.innerHTML = selectedParticipant
+        ? `<div class="participant-target-label">Кому вопрос</div>
+           <div class="participant-target-name">${escapeHtml(selectedParticipant.name || selectedParticipant.fallback_label || 'Участник')}</div>
+           ${selectedParticipant.regalia ? `<div class="participant-target-regalia">${escapeHtml(selectedParticipant.regalia)}</div>` : ''}
+           <button class="participant-clear" type="button" data-clear-participant aria-label="Снять выбор участника">× Снять выбор</button>`
+        : '';
+    }
+
     async function onSubmit() {
       const operationRoom = state.room;
       const operationRoomSlug = activeRoomSlug;
@@ -713,8 +841,15 @@
         return;
       }
       if (submittingQuestion) return;
-      const text = normalizeQuestion(questionInput.value);
-      if (!text) { showToast('Напишите вопрос.', 'error'); return; }
+      const userText = normalizeQuestion(questionInput.value);
+      if (!userText) { showToast('Напишите вопрос.', 'error'); return; }
+      const operationParticipant = operationRoom.mode === 'panel' ? getSelectedParticipant() : null;
+      const participantName = operationParticipant?.name || operationParticipant?.fallback_label || '';
+      const text = participantName ? `КОМУ ВОПРОС: ${participantName}\n\n${userText}` : userText;
+      if (normalizeQuestion(text).length > LIMIT) {
+        showToast('Сократите вопрос: текст вместе с адресатом должен быть не длиннее 200 символов.', 'error');
+        return;
+      }
       const authorName = operationRoom.mode === 'panel' ? '' : nameInput.value;
       const authorCompany = operationRoom.mode === 'panel' ? '' : companyInput.value;
       const speakerId = operationRoom.mode === 'panel' ? null : state.speaker?.id || null;
@@ -740,6 +875,7 @@
         const stillSameRoom = state.room?.id === operationRoom.id && activeRoomSlug === operationRoomSlug;
         if (stillSameRoom) {
           questionInput.value = '';
+          state.selectedParticipantId = null;
           updateCharCount();
           nameInput.value = '';
           companyInput.value = '';
