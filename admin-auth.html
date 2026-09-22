@@ -99,7 +99,7 @@
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
     .admin-console { font-family: var(--font-console); font-variant-numeric: tabular-nums lining-nums; }
     .admin-console h1, .admin-console h2, .admin-console .section-title, .admin-console .stat-value { font-family: inherit; }
-    .admin-console .shell { max-width: 1480px; min-height: calc(100vh - 60px); gap: 12px; }
+    .admin-console .shell { max-width: 1480px; min-height: calc(100vh - 60px); grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
     .admin-live { overflow: hidden; }
     .admin-live .card-inner { padding: 16px; }
     .live-main { display: grid; grid-template-columns: auto minmax(260px, 1fr) auto; gap: 18px; align-items: center; }
@@ -109,8 +109,13 @@
     .live-brand-copy strong { font-size: clamp(10px, 1.25vw, 13px); letter-spacing: .07em; white-space: nowrap; }
     .live-brand-copy span { color: var(--muted); font-size: 10px; }
     .live-context { min-width: 0; border-left: 1px solid var(--border); padding-left: 18px; }
+    .live-context-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
     .live-label { color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
     .live-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--green); }
+    .live-intake-status { display: inline-flex; align-items: center; color: var(--color-neutral-text); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .live-intake-status::before { content: ''; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: currentColor; }
+    .live-intake-status[data-state="success"] { color: var(--color-success-text); }
+    .live-intake-status[data-state="warning"] { color: var(--color-warning-text); }
     .live-context h1 { margin-top: 4px; font-size: clamp(22px, 2.1vw, 30px); background: none; color: var(--text); -webkit-text-fill-color: var(--text); }
     .live-context p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .event-session-control {
@@ -251,7 +256,7 @@
     .responsive-panel-body, .responsive-question-body { display: flex; min-height: 0; flex: 1; flex-direction: column; }
     @media (max-width: 1180px) { .admin-workspace { grid-template-columns: 330px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.left-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.right-collapsed { grid-template-columns: 330px 42px minmax(0,1fr) 42px 56px; } .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 56px; } }
     @media (max-width: 1024px) {
-      .admin-console .shell { min-height: 0; align-content: start; }
+      .admin-console .shell { min-height: 0; grid-template-rows: auto; align-content: start; }
       .responsive-section-head { display: flex; min-height: 38px; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border-2); }
       .responsive-summary { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
       .responsive-section-toggle { display: inline-flex; width: 34px; height: 34px; flex: 0 0 34px; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-subtle); color: var(--color-accent-text); font: 800 20px/1 var(--font-console); cursor: pointer; transition: border-color .16s ease, background .16s ease; }
@@ -303,7 +308,7 @@
           <div class="responsive-section-body" id="liveAccordionBody">
             <div class="live-main">
               <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
-              <div class="live-context"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
+              <div class="live-context"><div class="live-context-status-row"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><div class="live-intake-status" id="liveIntakeStatus" data-state="neutral">Загрузка…</div></div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
               <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;">↻</button><button class="btn ghost" id="qrBtn" style="padding:8px 10px;">▣ QR</button><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;">↗ Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;">↗ Модератор</button></div>
             </div>
             <div class="event-session-control" id="eventSessionControl" hidden>
@@ -316,7 +321,7 @@
             <div class="live-controls">
               <div class="live-controls-label">Управление эфиром</div>
               <div class="live-control-list">
-                <label class="live-toggle" id="questionsOpenControl" data-state="neutral"><span class="live-toggle-copy"><span class="live-toggle-title">Приём вопросов</span><span class="live-toggle-sub" id="questionsOpenSub">Загрузка…</span></span><span class="live-toggle-action"><span class="live-control-state" id="questionsOpenState">—</span><span class="toggle-pill"><input type="checkbox" id="questionsOpenToggle"><span class="toggle-track"></span></span></span></label>
+                <label class="live-toggle" id="questionsOpenControl" data-state="neutral"><span class="live-toggle-copy"><span class="live-toggle-title">Приём вопросов</span><span class="live-toggle-sub" id="questionsOpenSub">Загрузка…</span></span><span class="live-toggle-action"><span class="toggle-pill"><input type="checkbox" id="questionsOpenToggle"><span class="toggle-track"></span></span></span></label>
                 <label class="live-toggle" id="moderationControl" data-state="neutral"><span class="live-toggle-copy"><span class="live-toggle-title">Премодерация</span><span class="live-toggle-sub" id="moderationSub">Загрузка…</span></span><span class="live-toggle-action"><span class="live-control-state" id="moderationState">—</span><span class="toggle-pill"><input type="checkbox" id="moderationToggle"><span class="toggle-track"></span></span></span></label>
               </div>
               <div class="live-status-message" id="status"></div>
@@ -1227,9 +1232,10 @@
           ? 'Сначала сделайте сессию текущей'
           : state.room?.is_questions_open ? 'Гости могут отправлять вопросы' : 'Закрыт для гостей';
       const questionsOpenControl = document.getElementById('questionsOpenControl');
-      const questionsOpenState = document.getElementById('questionsOpenState');
       questionsOpenControl.dataset.state = questionsOpenPending ? 'neutral' : eventRoomInactive ? 'warning' : state.room?.is_questions_open ? 'success' : 'warning';
-      questionsOpenState.textContent = questionsOpenPending ? 'Сохранение' : eventRoomInactive ? 'Не в эфире' : state.room?.is_questions_open ? 'Открыт' : 'Закрыт';
+      const liveIntakeStatus = document.getElementById('liveIntakeStatus');
+      liveIntakeStatus.dataset.state = eventRoomInactive ? 'neutral' : state.room?.is_questions_open ? 'success' : 'warning';
+      liveIntakeStatus.textContent = eventRoomInactive ? 'Не в эфире' : state.room?.is_questions_open ? 'Приём открыт' : 'Приём закрыт';
       document.getElementById('liveAccordionSummary').textContent = `Приём вопросов · ${eventRoomInactive ? 'не в эфире' : state.room?.is_questions_open ? 'открыт' : 'закрыт'}`;
       modSub.textContent = moderationPending
         ? 'Сохраняю…'
