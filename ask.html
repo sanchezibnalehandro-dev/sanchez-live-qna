@@ -255,6 +255,9 @@
     }
     .participant-clear:hover { border-color: var(--color-border-strong); color: var(--color-text); }
     .participant-clear:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
+    .char-count { font-size: 11px; color: var(--color-text-secondary); }
+    .char-count.is-warning { color: var(--color-warning-text); }
+    .char-count.is-danger { color: var(--color-danger-text); font-weight: 700; }
   </style>
 </head>
 <body class="is-booting">
@@ -302,9 +305,9 @@
         <div class="card-inner stack" style="gap:14px;">
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
             <h2 class="section-title" style="margin:0;">Ваш вопрос</h2>
-            <span id="charCount" style="font-size:11px; color:var(--muted);">0 / 200</span>
+            <span class="char-count" id="charCount" aria-live="polite">0 / 200</span>
           </div>
-          <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" maxlength="200" style="min-height:110px;"></textarea>
+          <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" maxlength="200" aria-describedby="charCount" style="min-height:110px;"></textarea>
           <div id="guestIdentityFields">
             <div class="divider"></div>
             <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:-4px;">Имя и компания (опционально)</div>
@@ -453,7 +456,7 @@
     function loadDraft(roomSlug) {
       try { questionInput.value = sessionStorage.getItem(`qna-draft:${roomSlug}`) || ''; }
       catch { questionInput.value = ''; }
-      updateCharCount();
+      updateQuestionFormState();
     }
 
     function clearDraft(roomSlug) {
@@ -470,18 +473,56 @@
     let submittingQuestion = false;
     const pendingVoteIds = new Set();
 
-    // Счётчик символов
+    // Счётчик символов и доступность отправки
     const charCount = document.getElementById('charCount');
     const LIMIT = 200;
     questionInput.setAttribute('maxlength', LIMIT);
-    function updateCharCount() {
-      const len = questionInput.value.length;
-      charCount.textContent = `${len} / ${LIMIT}`;
-      charCount.style.color = len > LIMIT * 0.9 ? (len >= LIMIT ? 'var(--danger)' : 'var(--yellow)') : 'var(--muted)';
+
+    function getParticipantName(participant) {
+      return participant?.name || participant?.fallback_label || '';
     }
-    updateCharCount();
+
+    function getParticipantPrefix(participant) {
+      const participantName = getParticipantName(participant);
+      return participantName ? `КОМУ ВОПРОС: ${participantName}\n\n` : '';
+    }
+
+    function buildQuestionText(userText, participant) {
+      return `${getParticipantPrefix(participant)}${normalizeQuestion(userText)}`;
+    }
+
+    function getAvailableUserTextLimit(participant) {
+      const prefix = getParticipantPrefix(participant);
+      if (!prefix) return LIMIT;
+      // Финальная нормализация превращает пустую строку после адресата в один разделяющий пробел.
+      const payloadOverhead = normalizeQuestion(buildQuestionText('x', participant)).length - 1;
+      return Math.max(0, LIMIT - payloadOverhead);
+    }
+
+    function isQuestionOpen() {
+      return (!state.room?.event_key || state.room?.is_current_session === true)
+        && state.room?.is_questions_open === true;
+    }
+
+    function updateQuestionFormState() {
+      const participant = state.room?.mode === 'panel' ? getSelectedParticipant() : null;
+      const availableLimit = getAvailableUserTextLimit(participant);
+      const userTextLength = normalizeQuestion(questionInput.value).length;
+      const isLimitExceeded = userTextLength > availableLimit;
+      const isWarning = !isLimitExceeded && userTextLength > availableLimit * 0.9;
+
+      charCount.textContent = `${userTextLength} / ${availableLimit}`;
+      charCount.classList.toggle('is-warning', isWarning);
+      charCount.classList.toggle('is-danger', isLimitExceeded);
+      charCount.setAttribute('aria-label', isLimitExceeded
+        ? `${userTextLength} из ${availableLimit} символов. Сократите вопрос или снимите адресата.`
+        : `${userTextLength} из ${availableLimit} символов.`);
+      questionInput.setAttribute('aria-invalid', String(isLimitExceeded));
+      submitBtn.disabled = !isQuestionOpen() || submittingQuestion || isLimitExceeded;
+    }
+    updateQuestionFormState();
     questionInput.addEventListener('input', () => {
-      updateCharCount();
+      updateQuestionFormState();
       saveDraft(activeRoomSlug);
     });
 
@@ -492,6 +533,7 @@
       const participantId = button.dataset.participantId;
       state.selectedParticipantId = state.selectedParticipantId === participantId ? null : participantId;
       renderPanelParticipants(true, true);
+      updateQuestionFormState();
     });
 
     panelParticipantTarget.addEventListener('click', (event) => {
@@ -499,6 +541,7 @@
       state.selectedParticipantId = null;
       const isCurrentEventSession = !state.room?.event_key || state.room?.is_current_session === true;
       renderPanelParticipants(state.room?.mode === 'panel', isCurrentEventSession && state.room?.is_questions_open === true);
+      updateQuestionFormState();
     });
 
     submitBtn.addEventListener('click', onSubmit);
@@ -673,10 +716,10 @@
       questionInput.disabled = !isOpen;
       nameInput.disabled = !isOpen;
       companyInput.disabled = !isOpen;
-      submitBtn.disabled = !isOpen || submittingQuestion;
       formCard.style.opacity = isOpen ? '1' : '0.65';
       formCard.setAttribute('aria-disabled', String(!isOpen));
       renderPanelParticipants(isPanel, isOpen);
+      updateQuestionFormState();
 
       // Индикатор приёма
       const indicator = document.getElementById('receptionIndicator');
@@ -812,7 +855,7 @@
       panelParticipantsList.innerHTML = state.speakers.length
         ? state.speakers.map((speaker) => {
           const participantId = String(speaker.id);
-          const label = speaker.name || speaker.fallback_label || 'Участник';
+          const label = getParticipantName(speaker) || 'Участник';
           const selected = participantId === state.selectedParticipantId;
           const ariaLabel = selected
             ? `Снять выбор участника: ${label}`
@@ -824,7 +867,7 @@
       panelParticipantTarget.hidden = !selectedParticipant;
       panelParticipantTarget.innerHTML = selectedParticipant
         ? `<div class="participant-target-label">Кому вопрос</div>
-           <div class="participant-target-name">${escapeHtml(selectedParticipant.name || selectedParticipant.fallback_label || 'Участник')}</div>
+           <div class="participant-target-name">${escapeHtml(getParticipantName(selectedParticipant) || 'Участник')}</div>
            ${selectedParticipant.regalia ? `<div class="participant-target-regalia">${escapeHtml(selectedParticipant.regalia)}</div>` : ''}
            <button class="participant-clear" type="button" data-clear-participant aria-label="Снять выбор участника">× Снять выбор</button>`
         : '';
@@ -844,8 +887,7 @@
       const userText = normalizeQuestion(questionInput.value);
       if (!userText) { showToast('Напишите вопрос.', 'error'); return; }
       const operationParticipant = operationRoom.mode === 'panel' ? getSelectedParticipant() : null;
-      const participantName = operationParticipant?.name || operationParticipant?.fallback_label || '';
-      const text = participantName ? `КОМУ ВОПРОС: ${participantName}\n\n${userText}` : userText;
+      const text = buildQuestionText(userText, operationParticipant);
       if (normalizeQuestion(text).length > LIMIT) {
         showToast('Сократите вопрос: текст вместе с адресатом должен быть не длиннее 200 символов.', 'error');
         return;
@@ -876,7 +918,7 @@
         if (stillSameRoom) {
           questionInput.value = '';
           state.selectedParticipantId = null;
-          updateCharCount();
+          updateQuestionFormState();
           nameInput.value = '';
           companyInput.value = '';
           showToast(newQ?.status === 'pending' ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
@@ -899,11 +941,9 @@
         showToast('Вопрос сохранён, но данные не удалось обновить.', 'error');
       } finally {
         submittingQuestion = false;
-        const currentIsOpen = (!state.room?.event_key || state.room?.is_current_session === true)
-          && state.room?.is_questions_open === true;
-        submitBtn.disabled = !currentIsOpen;
         submitBtn.textContent = 'Отправить вопрос';
         if (state.room) render();
+        else updateQuestionFormState();
       }
     }
 
