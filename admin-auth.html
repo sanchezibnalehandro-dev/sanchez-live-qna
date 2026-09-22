@@ -254,6 +254,28 @@
     .responsive-section-head, .responsive-section-toggle, .responsive-summary { display: none; }
     .panel-head-actions { display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; }
     .responsive-panel-body, .responsive-question-body { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+
+    /* Forest pass: live context first, denser work areas, clearer states. */
+    .control-kicker {
+      margin-bottom: 10px;
+      color: var(--color-accent-text);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .admin-live { border-color: var(--color-accent-border); }
+    .admin-console .live-statuses .btn { min-width: 44px; min-height: 44px; }
+    .admin-console .live-chip { min-height: 36px; }
+    .admin-console .live-toggle { min-height: 60px; }
+    .admin-console .filter-tab { min-height: 44px; }
+    .admin-console .speaker-row { min-height: 54px; border-color: var(--color-border-subtle); }
+    .admin-console .question-card { border-left: 3px solid transparent; }
+    .admin-console .question-card:hover { border-left-color: var(--color-border-strong); }
+    .admin-console .question-card:has(.badge.pending) { border-left-color: var(--color-warning); }
+    .admin-console .question-card:has(.badge.pinned) { border-left-color: var(--color-accent); }
+    .admin-console .questions-manual summary { min-height: 48px; }
+    .admin-console [aria-busy="true"] { cursor: progress; }
     @media (max-width: 1180px) { .admin-workspace { grid-template-columns: 330px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.left-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 280px; } .admin-workspace.right-collapsed { grid-template-columns: 330px 42px minmax(0,1fr) 42px 56px; } .admin-workspace.left-collapsed.right-collapsed { grid-template-columns: 56px 42px minmax(0,1fr) 42px 56px; } }
     @media (max-width: 1024px) {
       .admin-console .shell { min-height: 0; grid-template-rows: auto; align-content: start; }
@@ -306,6 +328,7 @@
         <div class="card-inner">
           <div class="responsive-section-head"><span class="responsive-summary" id="liveAccordionSummary">Приём вопросов · загрузка</span><button class="responsive-section-toggle" type="button" data-accordion-toggle="live" aria-expanded="true" aria-controls="liveAccordionBody" aria-label="Свернуть состояние и live controls"><span class="responsive-chevron" aria-hidden="true">⌄</span></button></div>
           <div class="responsive-section-body" id="liveAccordionBody">
+            <div class="control-kicker">CONTROL DESK · LIVE OPERATIONS</div>
             <div class="live-main">
               <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
               <div class="live-context"><div class="live-context-status-row"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><div class="live-intake-status" id="liveIntakeStatus" data-state="neutral">Загрузка…</div></div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
