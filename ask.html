@@ -241,6 +241,28 @@
     .char-count { font-size: 11px; color: var(--color-text-secondary); }
     .char-count.is-warning { color: var(--color-warning-text); }
     .char-count.is-danger { color: var(--color-danger-text); font-weight: 700; }
+
+    /* Forest pass: clearer context and comfortable controls. */
+    .surface-kicker {
+      margin-bottom: 14px;
+      color: var(--color-accent-text);
+      font: 800 10px/1.2 var(--font-display);
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    .guest-shell > .card:first-of-type .card-inner { padding-block: 22px; }
+    .guest-shell h1 { max-width: 18ch; line-height: 1.08; }
+    .guest-shell .subcopy { max-width: 58ch; line-height: 1.6; }
+    .guest-shell .question-sort-btn { min-height: 44px; padding-inline: 14px; }
+    .guest-shell .question-card { border-color: var(--color-border-subtle); }
+    .guest-shell .question-text { font-size: 17px; line-height: 1.55; }
+    .vote-btn-circle { width: 46px; height: 46px; }
+    .toast-item { border-radius: var(--radius-md); box-shadow: var(--shadow-card); }
+    @media (max-width: 520px) {
+      .guest-shell > .card:first-of-type .card-inner { padding: 18px; }
+      .question-header-actions, .question-sort { width: 100%; }
+      .question-sort-btn { flex: 1; }
+    }
   </style>
 </head>
 <body class="is-booting">
@@ -256,6 +278,7 @@
       <!-- Шапка -->
       <section class="card">
         <div class="card-inner" style="padding:24px;">
+          <div class="surface-kicker">LIVE Q&amp;A</div>
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div class="brand-logo">
               <div class="brand-logo-mark" data-brand-mark></div>

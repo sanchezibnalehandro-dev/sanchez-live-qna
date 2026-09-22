@@ -1,103 +1,173 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Source+Sans+3:wght@400;500;600;700&display=swap');
 
-/* TASIGO × РБК Татарстан — «Маршрут устойчивого развития».
-   This file only supplies the existing theme contract; production continues
-   to load brands/sanchez.css until a future brand selector is introduced. */
+/* Forest TASIGO production theme.
+   Presentation only: the shared semantic theme contract remains unchanged. */
 :root {
-  --bg:         #f5f3eb;
-  --bg2:        #eeeee4;
-  --bg3:        #e7ece0;
-
-  --surface:    rgba(255, 255, 252, 0.88);
-  --surface-2:  #f0f2ea;
-  --surface-3:  #f7f8f2;
-
-  --border:     #d6ddd0;
-  --border-2:   #e4e8df;
-
-  --text:       #20271f;
-  --muted:      #667164;
-  --muted-2:    #879083;
-
-  --blue:       #38761d;
-  --blue-light: #4b8a2f;
-  --blue-glow:  #72a75d;
-
-  --white:      #ffffff;
-  --green:      #2f7a42;
-  --yellow:     #9a6a17;
-  --danger:     #b13a35;
-
-  --shadow-card: 0 10px 28px rgba(39, 53, 32, 0.07), 0 1px 2px rgba(39, 53, 32, 0.05);
-  --shadow-btn:  0 5px 14px rgba(56, 118, 29, 0.18);
-
-  --radius-xl:  18px;
-  --radius-lg:  14px;
-  --radius-md:  10px;
-  --radius-sm:  8px;
+  color-scheme: dark;
+  --bg: #101612;
+  --bg2: #151e17;
+  --bg3: #213025;
+  --surface: rgba(26, 37, 28, 0.96);
+  --surface-2: #1a251c;
+  --surface-3: #213025;
+  --border: #405244;
+  --border-2: #304036;
+  --text: #e9e4d6;
+  --muted: #aeb6aa;
+  --muted-2: #89958a;
+  --blue: #87b972;
+  --blue-light: #98c684;
+  --blue-glow: #b7d8a8;
+  --white: #f4f0e5;
+  --green: #87b972;
+  --yellow: #c8ac6e;
+  --danger: #c87d73;
+  --shadow-card: 0 16px 44px rgba(3, 8, 5, 0.24), 0 2px 5px rgba(3, 8, 5, 0.28);
+  --shadow-btn: 0 7px 18px rgba(73, 111, 63, 0.24);
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
   --radius-pill: 999px;
 
-  --color-bg:              var(--bg);
-  --color-bg-elevated:     var(--bg2);
-  --color-bg-glow-secondary: #eff2e8;
-  --color-surface:         var(--surface);
-  --color-surface-raised:  #fffefa;
-  --color-surface-dropdown: #fffefa;
-  --color-surface-raised-hover: #f9fbf5;
-  --color-surface-raised-active: #eef3e9;
-  --color-surface-qr:      #ffffff;
-  --color-surface-subtle:  var(--surface-3);
-  --color-surface-hover:   #f3f7ed;
-
-  --color-text:            var(--text);
-  --color-text-secondary:  var(--muted);
-  --color-text-muted:      var(--muted-2);
-  --color-text-on-accent:  #ffffff;
-  --color-heading-gradient-start: #1f2c1e;
-  --color-heading-gradient-mid: #315c2b;
-  --color-heading-gradient-end: #4b7d3b;
-  --color-speaker-name:    #263523;
-
-  --color-accent:          var(--blue);
-  --color-accent-hover:    var(--blue-light);
-  --color-accent-soft:     #dff1d8;
-  --color-accent-border:   #bad0ae;
-  --color-accent-text:     #315f26;
-  --color-accent-active-text: #214d19;
-  --color-focus-ring:      rgba(56, 118, 29, 0.28);
-
-  --color-border:          var(--border);
-  --color-border-subtle:   var(--border-2);
-  --color-border-strong:   #93b786;
-
-  --color-success:         var(--green);
-  --color-success-accent:  #438958;
-  --color-success-text:    #28643a;
-  --color-success-soft:    #e4f2e4;
-  --color-warning:         var(--yellow);
-  --color-warning-text:    #76500b;
-  --color-warning-soft:    #f8efd9;
-  --color-danger:          var(--danger);
-  --color-danger-text:     #98332f;
-  --color-danger-soft:     #f9e5e3;
-  --color-info-text:       #49634a;
-  --color-info-strong:     #2e5e2b;
-  --color-neutral-text:    #697166;
-  --color-neutral-soft:    #f0f1ec;
-  --color-neutral-border:  #dfe3d9;
-  --color-pinned-text:     #486339;
-
-  --font-body:    'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg2);
+  --color-bg-glow-secondary: transparent;
+  --color-surface: var(--surface);
+  --color-surface-raised: #1a251c;
+  --color-surface-dropdown: #213025;
+  --color-surface-raised-hover: #243329;
+  --color-surface-raised-active: #2a3a2e;
+  --color-surface-qr: #f4f0e5;
+  --color-surface-subtle: var(--surface-3);
+  --color-surface-hover: rgba(135, 185, 114, 0.07);
+  --color-text: var(--text);
+  --color-text-secondary: var(--muted);
+  --color-text-muted: var(--muted-2);
+  --color-text-on-accent: #101612;
+  --color-heading-gradient-start: var(--text);
+  --color-heading-gradient-mid: var(--text);
+  --color-heading-gradient-end: var(--text);
+  --color-speaker-name: #f0ebde;
+  --color-accent: var(--blue);
+  --color-accent-hover: var(--blue-light);
+  --color-accent-soft: rgba(135, 185, 114, 0.14);
+  --color-accent-border: rgba(135, 185, 114, 0.46);
+  --color-accent-text: #d6edc9;
+  --color-accent-active-text: #e1f3d8;
+  --color-focus-ring: rgba(152, 198, 132, 0.34);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-2);
+  --color-border-strong: #627763;
+  --color-success: var(--green);
+  --color-success-accent: #a4cf91;
+  --color-success-text: #d6edc9;
+  --color-success-soft: rgba(135, 185, 114, 0.14);
+  --color-warning: var(--yellow);
+  --color-warning-text: #e5ce98;
+  --color-warning-soft: rgba(200, 172, 110, 0.1);
+  --color-danger: var(--danger);
+  --color-danger-text: #e7aaa1;
+  --color-danger-soft: rgba(200, 125, 115, 0.1);
+  --color-info-text: #b8c9c0;
+  --color-info-strong: #d2ded7;
+  --color-neutral-text: #aeb6aa;
+  --color-neutral-soft: #213025;
+  --color-neutral-border: #405244;
+  --color-pinned-text: #d6edc9;
+  --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-console: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Theme-local neutralization of the inherited dark-control-room treatments. */
-body { background-image: radial-gradient(ellipse 75% 48% at 16% -8%, rgba(179, 247, 155, 0.22) 0%, transparent 58%), radial-gradient(ellipse 52% 44% at 88% 100%, rgba(56, 118, 29, 0.08) 0%, transparent 62%); }
-body::before { background-image: none; }
-.input, .textarea, .select { background: #fffefa; }
-.input:focus, .textarea:focus, .select:focus { background: #ffffff; }
-.btn.ghost { background: #f8faf5; border-color: var(--color-border); color: var(--color-text); }
-.btn.ghost:hover { background: #eff5e9; border-color: #b8cfad; }
-.empty { background: #fafbf7; border-color: #d7ded2; }
-.filter-tab:hover { background: #edf4e7; }
+html body {
+  background-color: var(--color-bg);
+  background-image: none;
+}
+html body::before { background-image: none; opacity: 0; }
+body .card::before, body .card::after { display: none; }
+body .card, body .bootstrap-card {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+body .input,
+body .textarea,
+body .select,
+body .custom-select-btn,
+body .event-session-select {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+body .input:focus,
+body .textarea:focus,
+body .select:focus,
+body .custom-select-btn:focus-visible,
+body .event-session-select:focus-visible {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-accent-hover);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+body .btn { min-height: 44px; }
+body .btn.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent-hover);
+  color: var(--color-text-on-accent);
+  box-shadow: var(--shadow-btn);
+}
+body .btn.primary:hover { background: var(--color-accent-hover); }
+body .btn.ghost {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+body .btn.ghost:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+body .question-sort { background: var(--color-bg-elevated); }
+body .question-sort-btn.active,
+body .filter-tab.active {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent-active-text);
+}
+body .question-card { background: var(--color-bg-elevated); }
+body .question-card:hover { background: var(--color-surface-hover); }
+body .question-card.is-pinned,
+body .speaker-row.active { box-shadow: inset 3px 0 0 var(--color-accent); }
+body .badge.open,
+body .badge.pinned {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent-active-text);
+}
+body .badge.pending {
+  background: var(--color-warning-soft);
+  border-color: rgba(200, 172, 110, 0.38);
+  color: var(--color-warning-text);
+}
+body .badge.asked {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+body .badge.hidden {
+  border-style: dashed;
+  color: var(--color-neutral-text);
+}
+body .empty {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-subtle);
+}
+body :focus-visible { outline-color: var(--color-accent-hover); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
