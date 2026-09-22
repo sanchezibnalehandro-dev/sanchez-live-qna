@@ -258,7 +258,7 @@
         display: flex;
         align-items: flex-start;
         gap: 10px;
-        padding: 14px 16px;
+        padding: 12px 14px;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         background: var(--color-surface-raised);
@@ -290,6 +290,7 @@
       }
 
       .closed-banner { display: none !important; }
+      #formCard.is-mobile-intake-hidden { display: none !important; }
       .mobile-panel-participants:not([hidden]) { display: block; }
       .mobile-panel-participants .card-inner { padding: 12px 16px 11px; }
       .mobile-participant-accordion {
@@ -313,6 +314,11 @@
         min-width: 0;
         align-items: center;
         gap: 8px;
+      }
+      .mobile-participant-accordion-icon {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
       }
       .mobile-participant-accordion-count { color: var(--color-text-secondary); }
       .mobile-participant-accordion-chevron { flex: 0 0 auto; font-size: 20px; line-height: 1; }
@@ -411,7 +417,7 @@
         <section class="card mobile-panel-participants" id="mobilePanelParticipants" hidden>
           <div class="card-inner">
             <button class="mobile-participant-accordion" id="mobileParticipantsToggle" type="button" aria-expanded="false" aria-controls="mobilePanelParticipantsContent">
-              <span class="mobile-participant-accordion-copy"><span aria-hidden="true">👥</span><span>Участники сессии <span class="mobile-participant-accordion-count" id="mobileParticipantsCount">0</span></span></span>
+              <span class="mobile-participant-accordion-copy"><svg class="mobile-participant-accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7.5a4 4 0 0 0-4 4V20"/><circle cx="9.75" cy="7" r="3.25"/><path d="M16.5 4.25a3.25 3.25 0 0 1 0 6.5M20.5 20v-1.5a4 4 0 0 0-2.75-3.8"/></svg><span>Участники сессии (<span class="mobile-participant-accordion-count" id="mobileParticipantsCount">0</span>)</span></span>
               <span class="mobile-participant-accordion-chevron" aria-hidden="true">⌄</span>
             </button>
             <p class="mobile-participant-hint" id="mobileParticipantsHint">Нажмите, чтобы посмотреть участников</p>
@@ -810,12 +816,13 @@
       questionInput.placeholder = isPanel ? 'Напишите вопрос модератору…' : 'Напишите вопрос спикеру…';
 
       const isCurrentEventSession = !state.room?.event_key || state.room?.is_current_session === true;
-      const isOpen = isCurrentEventSession && state.room?.is_questions_open;
+      const isOpen = isCurrentEventSession && state.room?.is_questions_open === true;
       closedBanner.style.display = isOpen ? 'none' : 'flex';
       renderMobileIntakeStatus(!isCurrentEventSession ? 'offline' : isOpen ? 'open' : 'closed');
       questionInput.disabled = !isOpen;
       nameInput.disabled = !isOpen;
       companyInput.disabled = !isOpen;
+      formCard.classList.toggle('is-mobile-intake-hidden', !isOpen);
       formCard.style.opacity = isOpen ? '1' : '0.65';
       formCard.setAttribute('aria-disabled', String(!isOpen));
       renderPanelParticipants(isPanel);
