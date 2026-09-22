@@ -241,6 +241,110 @@
     .char-count { font-size: 11px; color: var(--color-text-secondary); }
     .char-count.is-warning { color: var(--color-warning-text); }
     .char-count.is-danger { color: var(--color-danger-text); font-weight: 700; }
+
+    .mobile-intake-status,
+    .mobile-panel-participants { display: none; }
+
+    @media (max-width: 767px) {
+      #receptionIndicator,
+      #panelParticipants { display: none !important; }
+
+      #speakerName {
+        font-size: clamp(25px, 6.4vw, 28px);
+        line-height: 1.02;
+      }
+
+      .mobile-intake-status:not([hidden]) {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface-raised);
+        box-shadow: var(--shadow-card);
+      }
+      .mobile-intake-status[data-intake-state="open"] {
+        border-color: color-mix(in srgb, var(--color-success) 32%, var(--color-border));
+      }
+      .mobile-intake-status[data-intake-state="closed"],
+      .mobile-intake-status[data-intake-state="offline"] {
+        border-color: color-mix(in srgb, var(--color-warning) 32%, var(--color-border));
+      }
+      .mobile-intake-status-icon {
+        flex: 0 0 auto;
+        margin-top: 3px;
+        color: var(--color-success-accent);
+        font-size: 12px;
+        line-height: 1;
+      }
+      .mobile-intake-status[data-intake-state="closed"] .mobile-intake-status-icon,
+      .mobile-intake-status[data-intake-state="offline"] .mobile-intake-status-icon { color: var(--color-warning); }
+      .mobile-intake-status-copy { min-width: 0; }
+      .mobile-intake-status-title { font-weight: 700; }
+      .mobile-intake-status-detail {
+        margin: 3px 0 0;
+        color: var(--color-text-secondary);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .closed-banner { display: none !important; }
+      #formCard.is-mobile-intake-hidden { display: none !important; }
+      .mobile-panel-participants:not([hidden]) { display: block; }
+      .mobile-panel-participants .card-inner { padding: 12px 16px 11px; }
+      .mobile-participant-accordion {
+        display: flex;
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        border: 0;
+        background: transparent;
+        color: var(--color-text);
+        font: 800 14px/1.2 var(--font-body);
+        text-align: left;
+        cursor: pointer;
+      }
+      .mobile-participant-accordion-copy {
+        display: inline-flex;
+        min-width: 0;
+        align-items: center;
+        gap: 8px;
+      }
+      .mobile-participant-accordion-icon {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+      }
+      .mobile-participant-accordion-count { color: var(--color-text-secondary); }
+      .mobile-participant-accordion-chevron { flex: 0 0 auto; font-size: 20px; line-height: 1; }
+      .mobile-participant-accordion:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 3px; }
+      .mobile-participant-hint {
+        margin: 1px 0 0;
+        color: var(--color-text-secondary);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .mobile-panel-participants-content { margin-top: 12px; }
+      .mobile-panel-participants .participant-list {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+      }
+      .mobile-panel-participants .participant-item { display: block; max-width: none; }
+      .mobile-panel-participants .participant-chip {
+        display: flex;
+        width: 100%;
+        max-width: none;
+        justify-content: space-between;
+        border-radius: var(--radius-md);
+      }
+      .mobile-panel-participants .participant-inline-regalia { padding: 0 2px; }
+    }
   </style>
 </head>
 <body class="is-booting">
@@ -277,13 +381,21 @@
       </section>
 
       <!-- Баннер закрытия (скрыт по умолчанию) -->
-      <div class="closed-banner" id="closedBanner" style="display:none;">
-        <span>⏸</span>
-        <span>Приём вопросов временно приостановлен.</span>
-      </div>
+        <div class="closed-banner" id="closedBanner" style="display:none;">
+          <span>⏸</span>
+          <span>Приём вопросов временно приостановлен.</span>
+        </div>
 
-      <!-- Форма вопроса -->
-      <section class="card" id="formCard">
+        <section class="mobile-intake-status" id="mobileIntakeStatus" role="status" aria-live="polite" data-intake-state="closed" hidden>
+          <span class="mobile-intake-status-icon" aria-hidden="true">●</span>
+          <div class="mobile-intake-status-copy">
+            <div class="mobile-intake-status-title" id="mobileIntakeStatusTitle">Приём вопросов закрыт</div>
+            <p class="mobile-intake-status-detail" id="mobileIntakeStatusDetail">Вопросы можно будет задать, когда приём откроется.</p>
+          </div>
+        </section>
+
+        <!-- Форма вопроса -->
+        <section class="card" id="formCard">
         <div class="card-inner stack" style="gap:14px;">
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
             <h2 class="section-title" style="margin:0;">Ваш вопрос</h2>
@@ -299,10 +411,23 @@
             </div>
           </div>
           <button class="btn primary" id="submitBtn">Отправить вопрос</button>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      <!-- Лента вопросов -->
+        <section class="card mobile-panel-participants" id="mobilePanelParticipants" hidden>
+          <div class="card-inner">
+            <button class="mobile-participant-accordion" id="mobileParticipantsToggle" type="button" aria-expanded="false" aria-controls="mobilePanelParticipantsContent">
+              <span class="mobile-participant-accordion-copy"><svg class="mobile-participant-accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7.5a4 4 0 0 0-4 4V20"/><circle cx="9.75" cy="7" r="3.25"/><path d="M16.5 4.25a3.25 3.25 0 0 1 0 6.5M20.5 20v-1.5a4 4 0 0 0-2.75-3.8"/></svg><span>Участники сессии (<span class="mobile-participant-accordion-count" id="mobileParticipantsCount">0</span>)</span></span>
+              <span class="mobile-participant-accordion-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <p class="mobile-participant-hint" id="mobileParticipantsHint">Нажмите, чтобы посмотреть участников</p>
+            <div class="mobile-panel-participants-content" id="mobilePanelParticipantsContent" hidden>
+              <div id="mobilePanelParticipantsList" class="participant-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Лента вопросов -->
       <section class="card">
         <div class="card-inner">
           <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
@@ -386,6 +511,15 @@
     const speakerMetaEl = document.getElementById('speakerMeta');
     const panelParticipants = document.getElementById('panelParticipants');
     const panelParticipantsList = document.getElementById('panelParticipantsList');
+    const mobileIntakeStatus = document.getElementById('mobileIntakeStatus');
+    const mobileIntakeStatusTitle = document.getElementById('mobileIntakeStatusTitle');
+    const mobileIntakeStatusDetail = document.getElementById('mobileIntakeStatusDetail');
+    const mobilePanelParticipants = document.getElementById('mobilePanelParticipants');
+    const mobileParticipantsToggle = document.getElementById('mobileParticipantsToggle');
+    const mobileParticipantsCount = document.getElementById('mobileParticipantsCount');
+    const mobileParticipantsHint = document.getElementById('mobileParticipantsHint');
+    const mobilePanelParticipantsContent = document.getElementById('mobilePanelParticipantsContent');
+    const mobilePanelParticipantsList = document.getElementById('mobilePanelParticipantsList');
     const questionInput  = document.getElementById('questionInput');
     const nameInput      = document.getElementById('nameInput');
     const companyInput   = document.getElementById('companyInput');
@@ -444,7 +578,7 @@
       try { sessionStorage.removeItem(`qna-draft:${roomSlug}`); } catch {}
     }
 
-    const state = { room: null, speaker: null, speakers: [], questions: [], expandedParticipantId: null, sortMode: loadSortMode() };
+    const state = { room: null, speaker: null, speakers: [], questions: [], expandedParticipantId: null, mobileParticipantsExpanded: false, sortMode: loadSortMode() };
     let unsubscribeRoom = null;
     let unsubscribeEvent = null;
     let subscribedRoomId = null;
@@ -488,11 +622,20 @@
       saveDraft(activeRoomSlug);
     });
 
-    panelParticipantsList.addEventListener('click', (event) => {
+    function onParticipantClick(event) {
       const button = event.target.closest('[data-participant-id]');
       if (!button || state.room?.mode !== 'panel') return;
       const participantId = button.dataset.participantId;
       state.expandedParticipantId = state.expandedParticipantId === participantId ? null : participantId;
+      renderPanelParticipants(true);
+    }
+
+    panelParticipantsList.addEventListener('click', onParticipantClick);
+    mobilePanelParticipantsList.addEventListener('click', onParticipantClick);
+    mobileParticipantsToggle.addEventListener('click', () => {
+      if (state.room?.mode !== 'panel') return;
+      state.mobileParticipantsExpanded = !state.mobileParticipantsExpanded;
+      if (!state.mobileParticipantsExpanded) state.expandedParticipantId = null;
       renderPanelParticipants(true);
     });
 
@@ -547,6 +690,7 @@
       state.speakers = [];
       state.questions = [];
       state.expandedParticipantId = null;
+      state.mobileParticipantsExpanded = false;
 
       speakerNameEl.textContent = invalidEvent
         ? 'Мероприятие не найдено'
@@ -558,6 +702,11 @@
           : `Комната «${requestedRoomSlug}» не существует. Проверьте QR-код или ссылку.`;
 
       panelParticipants.style.display = 'none';
+      mobilePanelParticipants.hidden = true;
+      mobilePanelParticipantsList.innerHTML = '';
+      mobilePanelParticipantsContent.hidden = true;
+      mobileParticipantsToggle.setAttribute('aria-expanded', 'false');
+      renderMobileIntakeStatus('offline');
       formCard.style.display = 'none';
       closedBanner.style.display = 'none';
       countBadge.textContent = '0';
@@ -611,7 +760,10 @@
         const roomModeChanged = state.room?.mode !== nextRoom.mode;
         const previousRoomSlug = activeRoomSlug;
         if (roomChanged && previousRoomSlug) saveDraft(previousRoomSlug);
-        if (roomChanged || roomModeChanged || nextRoom.mode !== 'panel') state.expandedParticipantId = null;
+        if (roomChanged || roomModeChanged || nextRoom.mode !== 'panel') {
+          state.expandedParticipantId = null;
+          state.mobileParticipantsExpanded = false;
+        }
         state.room = nextRoom;
         if (roomChanged || activeRoomSlug !== state.room.slug) {
           syncLocalQuestionState(state.room.slug);
@@ -664,11 +816,13 @@
       questionInput.placeholder = isPanel ? 'Напишите вопрос модератору…' : 'Напишите вопрос спикеру…';
 
       const isCurrentEventSession = !state.room?.event_key || state.room?.is_current_session === true;
-      const isOpen = isCurrentEventSession && state.room?.is_questions_open;
+      const isOpen = isCurrentEventSession && state.room?.is_questions_open === true;
       closedBanner.style.display = isOpen ? 'none' : 'flex';
+      renderMobileIntakeStatus(!isCurrentEventSession ? 'offline' : isOpen ? 'open' : 'closed');
       questionInput.disabled = !isOpen;
       nameInput.disabled = !isOpen;
       companyInput.disabled = !isOpen;
+      formCard.classList.toggle('is-mobile-intake-hidden', !isOpen);
       formCard.style.opacity = isOpen ? '1' : '0.65';
       formCard.setAttribute('aria-disabled', String(!isOpen));
       renderPanelParticipants(isPanel);
@@ -789,11 +943,46 @@
       return state.speakers.find((speaker) => String(speaker.id) === state.expandedParticipantId) || null;
     }
 
+    function renderMobileIntakeStatus(status) {
+      const content = status === 'open'
+        ? ['Приём вопросов открыт', 'Задайте вопрос — он поступит модератору.']
+        : status === 'offline'
+          ? ['Не в эфире', 'Сейчас эта сессия недоступна для вопросов.']
+          : ['Приём вопросов закрыт', 'Вопросы можно будет задать, когда приём откроется.'];
+      mobileIntakeStatus.hidden = false;
+      mobileIntakeStatus.dataset.intakeState = status;
+      mobileIntakeStatusTitle.textContent = content[0];
+      mobileIntakeStatusDetail.textContent = content[1];
+    }
+
+    function renderParticipantList(target, detailsPrefix) {
+      target.innerHTML = state.speakers.length
+        ? state.speakers.map((speaker) => {
+          const participantId = String(speaker.id);
+          const label = getParticipantName(speaker) || 'Участник';
+          const expanded = participantId === state.expandedParticipantId;
+          const regalia = String(speaker.regalia || '').trim();
+          const detailsId = `${detailsPrefix}-${participantId}`;
+          const ariaLabel = `${expanded ? 'Скрыть' : 'Показать'} информацию об участнике: ${label}`;
+          const ariaControls = regalia ? ` aria-controls="${escapeHtml(detailsId)}"` : '';
+          const inlineRegalia = expanded && regalia
+            ? `<div class="participant-inline-regalia" id="${escapeHtml(detailsId)}">${escapeHtml(regalia)}</div>`
+            : '';
+          return `<div class="participant-item"><button class="participant-chip" type="button" data-participant-id="${escapeHtml(participantId)}" aria-expanded="${expanded}"${ariaControls} aria-label="${escapeHtml(ariaLabel)}"><span>${escapeHtml(label)}</span><span class="participant-chip-chevron" aria-hidden="true">${expanded ? '⌄' : '›'}</span></button>${inlineRegalia}</div>`;
+        }).join('')
+        : '<span style="font-size:12px; color:var(--muted);">Список участников уточняется.</span>';
+    }
+
     function renderPanelParticipants(isPanel) {
       panelParticipants.style.display = isPanel ? 'block' : 'none';
+      mobilePanelParticipants.hidden = !isPanel;
       if (!isPanel) {
         state.expandedParticipantId = null;
+        state.mobileParticipantsExpanded = false;
         panelParticipantsList.innerHTML = '';
+        mobilePanelParticipantsList.innerHTML = '';
+        mobilePanelParticipantsContent.hidden = true;
+        mobileParticipantsToggle.setAttribute('aria-expanded', 'false');
         return;
       }
 
@@ -803,21 +992,16 @@
         expandedParticipant = null;
       }
 
-      panelParticipantsList.innerHTML = state.speakers.length
-        ? state.speakers.map((speaker) => {
-          const participantId = String(speaker.id);
-          const label = getParticipantName(speaker) || 'Участник';
-          const expanded = participantId === state.expandedParticipantId;
-          const regalia = String(speaker.regalia || '').trim();
-          const detailsId = `panel-participant-regalia-${participantId}`;
-          const ariaLabel = `${expanded ? 'Скрыть' : 'Показать'} информацию об участнике: ${label}`;
-          const ariaControls = regalia ? ` aria-controls="${escapeHtml(detailsId)}"` : '';
-          const inlineRegalia = expanded && regalia
-            ? `<div class="participant-inline-regalia" id="${escapeHtml(detailsId)}">${escapeHtml(regalia)}</div>`
-            : '';
-          return `<div class="participant-item"><button class="participant-chip" type="button" data-participant-id="${escapeHtml(participantId)}" aria-expanded="${expanded}"${ariaControls} aria-label="${escapeHtml(ariaLabel)}"><span>${escapeHtml(label)}</span><span class="participant-chip-chevron" aria-hidden="true">${expanded ? '⌄' : '›'}</span></button>${inlineRegalia}</div>`;
-        }).join('')
-        : '<span style="font-size:12px; color:var(--muted);">Список участников уточняется.</span>';
+      mobileParticipantsCount.textContent = String(state.speakers.length);
+      mobileParticipantsToggle.setAttribute('aria-expanded', String(state.mobileParticipantsExpanded));
+      mobileParticipantsToggle.querySelector('.mobile-participant-accordion-chevron').textContent = state.mobileParticipantsExpanded ? '⌃' : '⌄';
+      mobileParticipantsHint.textContent = state.mobileParticipantsExpanded
+        ? 'Нажмите на имя, чтобы посмотреть регалии'
+        : 'Нажмите, чтобы посмотреть участников';
+      mobilePanelParticipantsContent.hidden = !state.mobileParticipantsExpanded;
+      renderParticipantList(panelParticipantsList, 'panel-participant-regalia');
+      if (state.mobileParticipantsExpanded) renderParticipantList(mobilePanelParticipantsList, 'mobile-panel-participant-regalia');
+      else mobilePanelParticipantsList.innerHTML = '';
     }
 
     async function onSubmit() {
