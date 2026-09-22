@@ -215,14 +215,13 @@
     }
     .participant-chip:hover { border-color: var(--color-border-strong); color: var(--color-text); }
     .participant-chip:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
-    .participant-chip[aria-pressed="true"] {
-      border-color: var(--color-border-strong);
+    .participant-chip[aria-expanded="true"] {
+      border-color: var(--color-accent-border);
       background: var(--color-accent-soft);
       color: var(--color-accent-active-text);
     }
-    .participant-chip:disabled { opacity: 0.5; cursor: not-allowed; }
-    .participant-chip-check { flex: 0 0 auto; }
-    .participant-target {
+    .participant-chip-chevron { flex: 0 0 auto; font-size: 16px; line-height: 1; }
+    .participant-details {
       min-width: 0;
       margin-top: 12px;
       padding: 12px 14px;
@@ -230,31 +229,10 @@
       border-radius: var(--radius-md);
       background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface-raised));
     }
-    .participant-target-label {
-      margin-bottom: 5px;
-      color: var(--color-text-secondary);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-    .participant-target-name,
-    .participant-target-regalia { overflow-wrap: anywhere; }
-    .participant-target-name { color: var(--color-text); font-size: 14px; font-weight: 700; line-height: 1.4; }
-    .participant-target-regalia { margin-top: 3px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.45; }
-    .participant-clear {
-      min-height: 36px;
-      margin-top: 10px;
-      padding: 7px 10px;
-      border: 1px solid var(--color-border-subtle);
-      border-radius: var(--radius-md);
-      background: transparent;
-      color: var(--color-text-secondary);
-      font: 700 12px/1 var(--font-body);
-      cursor: pointer;
-    }
-    .participant-clear:hover { border-color: var(--color-border-strong); color: var(--color-text); }
-    .participant-clear:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
+    .participant-details-name,
+    .participant-details-regalia { overflow-wrap: anywhere; }
+    .participant-details-name { color: var(--color-text); font-size: 14px; font-weight: 700; line-height: 1.4; }
+    .participant-details-regalia { margin-top: 3px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.45; }
     .char-count { font-size: 11px; color: var(--color-text-secondary); }
     .char-count.is-warning { color: var(--color-warning-text); }
     .char-count.is-danger { color: var(--color-danger-text); font-weight: 700; }
@@ -287,9 +265,9 @@
           <p class="subcopy" id="speakerMeta">Загрузка данных спикера…</p>
           <div id="panelParticipants" style="display:none; margin-top:16px;">
             <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:8px;">Участники сессии</div>
-            <p class="participant-hint">Выберите участника, если хотите адресовать вопрос лично</p>
+            <p class="participant-hint">Нажмите на участника, чтобы посмотреть должность и регалии</p>
             <div id="panelParticipantsList" class="participant-list"></div>
-            <div id="panelParticipantTarget" class="participant-target" hidden aria-live="polite"></div>
+            <div id="panelParticipantDetails" class="participant-details" hidden aria-live="polite"></div>
           </div>
         </div>
       </section>
@@ -404,7 +382,7 @@
     const speakerMetaEl = document.getElementById('speakerMeta');
     const panelParticipants = document.getElementById('panelParticipants');
     const panelParticipantsList = document.getElementById('panelParticipantsList');
-    const panelParticipantTarget = document.getElementById('panelParticipantTarget');
+    const panelParticipantDetails = document.getElementById('panelParticipantDetails');
     const questionInput  = document.getElementById('questionInput');
     const nameInput      = document.getElementById('nameInput');
     const companyInput   = document.getElementById('companyInput');
@@ -463,7 +441,7 @@
       try { sessionStorage.removeItem(`qna-draft:${roomSlug}`); } catch {}
     }
 
-    const state = { room: null, speaker: null, speakers: [], questions: [], selectedParticipantId: null, sortMode: loadSortMode() };
+    const state = { room: null, speaker: null, speakers: [], questions: [], expandedParticipantId: null, sortMode: loadSortMode() };
     let unsubscribeRoom = null;
     let unsubscribeEvent = null;
     let subscribedRoomId = null;
@@ -482,41 +460,22 @@
       return participant?.name || participant?.fallback_label || '';
     }
 
-    function getParticipantPrefix(participant) {
-      const participantName = getParticipantName(participant);
-      return participantName ? `КОМУ ВОПРОС: ${participantName}\n\n` : '';
-    }
-
-    function buildQuestionText(userText, participant) {
-      return `${getParticipantPrefix(participant)}${normalizeQuestion(userText)}`;
-    }
-
-    function getAvailableUserTextLimit(participant) {
-      const prefix = getParticipantPrefix(participant);
-      if (!prefix) return LIMIT;
-      // Финальная нормализация превращает пустую строку после адресата в один разделяющий пробел.
-      const payloadOverhead = normalizeQuestion(buildQuestionText('x', participant)).length - 1;
-      return Math.max(0, LIMIT - payloadOverhead);
-    }
-
     function isQuestionOpen() {
       return (!state.room?.event_key || state.room?.is_current_session === true)
         && state.room?.is_questions_open === true;
     }
 
     function updateQuestionFormState() {
-      const participant = state.room?.mode === 'panel' ? getSelectedParticipant() : null;
-      const availableLimit = getAvailableUserTextLimit(participant);
       const userTextLength = normalizeQuestion(questionInput.value).length;
-      const isLimitExceeded = userTextLength > availableLimit;
-      const isWarning = !isLimitExceeded && userTextLength > availableLimit * 0.9;
+      const isLimitExceeded = userTextLength > LIMIT;
+      const isWarning = !isLimitExceeded && userTextLength > LIMIT * 0.9;
 
-      charCount.textContent = `${userTextLength} / ${availableLimit}`;
+      charCount.textContent = `${userTextLength} / ${LIMIT}`;
       charCount.classList.toggle('is-warning', isWarning);
       charCount.classList.toggle('is-danger', isLimitExceeded);
       charCount.setAttribute('aria-label', isLimitExceeded
-        ? `${userTextLength} из ${availableLimit} символов. Сократите вопрос или снимите адресата.`
-        : `${userTextLength} из ${availableLimit} символов.`);
+        ? `${userTextLength} из ${LIMIT} символов. Сократите вопрос.`
+        : `${userTextLength} из ${LIMIT} символов.`);
       questionInput.setAttribute('aria-invalid', String(isLimitExceeded));
       submitBtn.disabled = !isQuestionOpen() || submittingQuestion || isLimitExceeded;
     }
@@ -528,20 +487,10 @@
 
     panelParticipantsList.addEventListener('click', (event) => {
       const button = event.target.closest('[data-participant-id]');
-      const isCurrentEventSession = !state.room?.event_key || state.room?.is_current_session === true;
-      if (!button || state.room?.mode !== 'panel' || !isCurrentEventSession || state.room?.is_questions_open !== true) return;
+      if (!button || state.room?.mode !== 'panel') return;
       const participantId = button.dataset.participantId;
-      state.selectedParticipantId = state.selectedParticipantId === participantId ? null : participantId;
-      renderPanelParticipants(true, true);
-      updateQuestionFormState();
-    });
-
-    panelParticipantTarget.addEventListener('click', (event) => {
-      if (!event.target.closest('[data-clear-participant]')) return;
-      state.selectedParticipantId = null;
-      const isCurrentEventSession = !state.room?.event_key || state.room?.is_current_session === true;
-      renderPanelParticipants(state.room?.mode === 'panel', isCurrentEventSession && state.room?.is_questions_open === true);
-      updateQuestionFormState();
+      state.expandedParticipantId = state.expandedParticipantId === participantId ? null : participantId;
+      renderPanelParticipants(true);
     });
 
     submitBtn.addEventListener('click', onSubmit);
@@ -594,7 +543,7 @@
       state.speaker = null;
       state.speakers = [];
       state.questions = [];
-      state.selectedParticipantId = null;
+      state.expandedParticipantId = null;
 
       speakerNameEl.textContent = invalidEvent
         ? 'Мероприятие не найдено'
@@ -656,9 +605,10 @@
       try {
         const nextRoom = await resolveRoom();
         const roomChanged = state.room?.id !== nextRoom.id;
+        const roomModeChanged = state.room?.mode !== nextRoom.mode;
         const previousRoomSlug = activeRoomSlug;
         if (roomChanged && previousRoomSlug) saveDraft(previousRoomSlug);
-        if (roomChanged) state.selectedParticipantId = null;
+        if (roomChanged || roomModeChanged || nextRoom.mode !== 'panel') state.expandedParticipantId = null;
         state.room = nextRoom;
         if (roomChanged || activeRoomSlug !== state.room.slug) {
           syncLocalQuestionState(state.room.slug);
@@ -718,7 +668,7 @@
       companyInput.disabled = !isOpen;
       formCard.style.opacity = isOpen ? '1' : '0.65';
       formCard.setAttribute('aria-disabled', String(!isOpen));
-      renderPanelParticipants(isPanel, isOpen);
+      renderPanelParticipants(isPanel);
       updateQuestionFormState();
 
       // Индикатор приёма
@@ -831,45 +781,41 @@
       });
     }
 
-    function getSelectedParticipant() {
-      if (state.selectedParticipantId === null) return null;
-      return state.speakers.find((speaker) => String(speaker.id) === state.selectedParticipantId) || null;
+    function getExpandedParticipant() {
+      if (state.expandedParticipantId === null) return null;
+      return state.speakers.find((speaker) => String(speaker.id) === state.expandedParticipantId) || null;
     }
 
-    function renderPanelParticipants(isPanel, isOpen) {
+    function renderPanelParticipants(isPanel) {
       panelParticipants.style.display = isPanel ? 'block' : 'none';
       if (!isPanel) {
-        state.selectedParticipantId = null;
+        state.expandedParticipantId = null;
         panelParticipantsList.innerHTML = '';
-        panelParticipantTarget.hidden = true;
-        panelParticipantTarget.innerHTML = '';
+        panelParticipantDetails.hidden = true;
+        panelParticipantDetails.innerHTML = '';
         return;
       }
 
-      let selectedParticipant = getSelectedParticipant();
-      if (state.selectedParticipantId !== null && !selectedParticipant) {
-        state.selectedParticipantId = null;
-        selectedParticipant = null;
+      let expandedParticipant = getExpandedParticipant();
+      if (state.expandedParticipantId !== null && !expandedParticipant) {
+        state.expandedParticipantId = null;
+        expandedParticipant = null;
       }
 
       panelParticipantsList.innerHTML = state.speakers.length
         ? state.speakers.map((speaker) => {
           const participantId = String(speaker.id);
           const label = getParticipantName(speaker) || 'Участник';
-          const selected = participantId === state.selectedParticipantId;
-          const ariaLabel = selected
-            ? `Снять выбор участника: ${label}`
-            : `Адресовать вопрос участнику: ${label}`;
-          return `<button class="participant-chip" type="button" data-participant-id="${escapeHtml(participantId)}" aria-pressed="${selected}" aria-label="${escapeHtml(ariaLabel)}" ${isOpen ? '' : 'disabled'}>${selected ? '<span class="participant-chip-check" aria-hidden="true">✓</span>' : ''}<span>${escapeHtml(label)}</span></button>`;
+          const expanded = participantId === state.expandedParticipantId;
+          const ariaLabel = `${expanded ? 'Скрыть' : 'Показать'} информацию об участнике: ${label}`;
+          return `<button class="participant-chip" type="button" data-participant-id="${escapeHtml(participantId)}" aria-expanded="${expanded}" aria-controls="panelParticipantDetails" aria-label="${escapeHtml(ariaLabel)}"><span>${escapeHtml(label)}</span><span class="participant-chip-chevron" aria-hidden="true">${expanded ? '⌄' : '›'}</span></button>`;
         }).join('')
         : '<span style="font-size:12px; color:var(--muted);">Список участников уточняется.</span>';
 
-      panelParticipantTarget.hidden = !selectedParticipant;
-      panelParticipantTarget.innerHTML = selectedParticipant
-        ? `<div class="participant-target-label">Кому вопрос</div>
-           <div class="participant-target-name">${escapeHtml(getParticipantName(selectedParticipant) || 'Участник')}</div>
-           ${selectedParticipant.regalia ? `<div class="participant-target-regalia">${escapeHtml(selectedParticipant.regalia)}</div>` : ''}
-           <button class="participant-clear" type="button" data-clear-participant aria-label="Снять выбор участника">× Снять выбор</button>`
+      panelParticipantDetails.hidden = !expandedParticipant;
+      panelParticipantDetails.innerHTML = expandedParticipant
+        ? `<div class="participant-details-name">${escapeHtml(getParticipantName(expandedParticipant) || 'Участник')}</div>
+           ${expandedParticipant.regalia ? `<div class="participant-details-regalia">${escapeHtml(expandedParticipant.regalia)}</div>` : ''}`
         : '';
     }
 
@@ -886,10 +832,9 @@
       if (submittingQuestion) return;
       const userText = normalizeQuestion(questionInput.value);
       if (!userText) { showToast('Напишите вопрос.', 'error'); return; }
-      const operationParticipant = operationRoom.mode === 'panel' ? getSelectedParticipant() : null;
-      const text = buildQuestionText(userText, operationParticipant);
-      if (normalizeQuestion(text).length > LIMIT) {
-        showToast('Сократите вопрос: текст вместе с адресатом должен быть не длиннее 200 символов.', 'error');
+      const text = userText;
+      if (text.length > LIMIT) {
+        showToast('Сократите вопрос: текст должен быть не длиннее 200 символов.', 'error');
         return;
       }
       const authorName = operationRoom.mode === 'panel' ? '' : nameInput.value;
@@ -917,7 +862,6 @@
         const stillSameRoom = state.room?.id === operationRoom.id && activeRoomSlug === operationRoomSlug;
         if (stillSameRoom) {
           questionInput.value = '';
-          state.selectedParticipantId = null;
           updateQuestionFormState();
           nameInput.value = '';
           companyInput.value = '';
