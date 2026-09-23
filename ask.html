@@ -43,13 +43,12 @@
       line-height: 1;
     }
     .vote-btn-circle {
-      width: 40px;
-      height: 40px;
+      width: var(--control-height-touch);
+      height: var(--control-height-touch);
       border-radius: 50%;
       border: 1px solid color-mix(in srgb, var(--color-accent-hover) 28%, transparent);
       background: color-mix(in srgb, var(--color-accent-hover) 10%, transparent);
       color: var(--color-accent-text);
-      font-size: 16px;
       font-weight: 700;
       cursor: pointer;
       display: flex;
@@ -58,7 +57,6 @@
       transition: background 0.15s, transform 0.15s, box-shadow 0.15s, border-color 0.15s;
       font-family: inherit;
     }
-    .vote-btn-circle:hover { background: color-mix(in srgb, var(--color-accent-hover) 22%, transparent); transform: scale(1.08); }
     .vote-btn-circle:active { transform: scale(0.95); }
     .vote-btn-circle.voted {
       background: color-mix(in srgb, var(--color-accent-hover) 35%, transparent);
@@ -76,7 +74,7 @@
       100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent-hover) 0%, transparent); }
     }
 
-    #nameInput, #companyInput { font-size: 13px; }
+    #questionInput, #nameInput, #companyInput { font-size: 16px; }
 
     .live-tag {
       display: inline-flex;
@@ -221,14 +219,14 @@
       overflow-wrap: anywhere;
       cursor: pointer;
     }
-    .participant-chip:hover { border-color: var(--color-border-strong); color: var(--color-text); }
     .participant-chip:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
     .participant-chip[aria-expanded="true"] {
-      border-color: var(--color-accent-border);
-      background: var(--color-accent-soft);
-      color: var(--color-accent-active-text);
+      border-color: var(--color-border-strong);
+      background: var(--color-surface-raised);
+      color: var(--color-text);
     }
-    .participant-chip-chevron { flex: 0 0 auto; font-size: 16px; line-height: 1; }
+    .participant-chip-chevron { display: inline-flex; width: 16px; height: 16px; flex: 0 0 auto; transition: transform .16s ease; }
+    .participant-chip[aria-expanded="true"] .participant-chip-chevron { transform: rotate(180deg); }
     .participant-inline-regalia {
       min-width: 0;
       max-width: 100%;
@@ -321,7 +319,8 @@
         flex: 0 0 auto;
       }
       .mobile-participant-accordion-count { color: var(--color-text-secondary); }
-      .mobile-participant-accordion-chevron { flex: 0 0 auto; font-size: 20px; line-height: 1; }
+      .mobile-participant-accordion-chevron { display: inline-flex; width: 20px; height: 20px; flex: 0 0 auto; transition: transform .16s ease; }
+      .mobile-participant-accordion[aria-expanded="true"] .mobile-participant-accordion-chevron { transform: rotate(180deg); }
       .mobile-participant-accordion:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 3px; }
       .mobile-participant-hint {
         margin: 1px 0 0;
@@ -360,12 +359,16 @@
     .guest-shell .question-sort-btn { min-height: 44px; padding-inline: 14px; }
     .guest-shell .question-card { border-color: var(--color-border-subtle); }
     .guest-shell .question-text { font-size: 17px; line-height: 1.55; }
-    .vote-btn-circle { width: 46px; height: 46px; }
+    .vote-btn-circle { width: var(--control-height-touch); height: var(--control-height-touch); }
     .toast-item { border-radius: var(--radius-md); box-shadow: var(--shadow-card); }
     @media (max-width: 520px) {
       .guest-shell > .card:first-of-type .card-inner { padding: 18px; }
       .question-header-actions, .question-sort { width: 100%; }
       .question-sort-btn { flex: 1; }
+    }
+    @media (hover: hover) {
+      .participant-chip:hover { border-color: var(--color-border-strong); color: var(--color-text); }
+      .vote-btn-circle:hover { background: color-mix(in srgb, var(--color-accent-hover) 22%, transparent); transform: scale(1.08); }
     }
   </style>
 </head>
@@ -424,13 +427,14 @@
             <h2 class="section-title" style="margin:0;">Ваш вопрос</h2>
             <span class="char-count" id="charCount" aria-live="polite">0 / 200</span>
           </div>
+          <label class="field-label" for="questionInput">Текст вопроса</label>
           <textarea class="textarea" id="questionInput" placeholder="Напишите вопрос спикеру…" maxlength="200" aria-describedby="charCount" style="min-height:110px;"></textarea>
           <div id="guestIdentityFields">
             <div class="divider"></div>
             <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:-4px;">Имя и компания (опционально)</div>
             <div class="meta-grid" style="margin-top:14px;">
-              <input class="input" id="nameInput" placeholder="Ваше имя (опционально)" maxlength="120" />
-              <input class="input" id="companyInput" placeholder="Компания (опционально)" maxlength="120" />
+              <div><label class="field-label" for="nameInput">Ваше имя</label><input class="input" id="nameInput" placeholder="Например, Анна" maxlength="120" /></div>
+              <div><label class="field-label" for="companyInput">Компания</label><input class="input" id="companyInput" placeholder="Например, SANCHEZ" maxlength="120" /></div>
             </div>
           </div>
           <button class="btn primary" id="submitBtn">Отправить вопрос</button>
@@ -441,7 +445,7 @@
           <div class="card-inner">
             <button class="mobile-participant-accordion" id="mobileParticipantsToggle" type="button" aria-expanded="false" aria-controls="mobilePanelParticipantsContent">
               <span class="mobile-participant-accordion-copy"><svg class="mobile-participant-accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7.5a4 4 0 0 0-4 4V20"/><circle cx="9.75" cy="7" r="3.25"/><path d="M16.5 4.25a3.25 3.25 0 0 1 0 6.5M20.5 20v-1.5a4 4 0 0 0-2.75-3.8"/></svg><span>Участники сессии (<span class="mobile-participant-accordion-count" id="mobileParticipantsCount">0</span>)</span></span>
-              <span class="mobile-participant-accordion-chevron" aria-hidden="true">⌄</span>
+              <span class="mobile-participant-accordion-chevron" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
             </button>
             <p class="mobile-participant-hint" id="mobileParticipantsHint">Нажмите, чтобы посмотреть участников</p>
             <div class="mobile-panel-participants-content" id="mobilePanelParticipantsContent" hidden>
@@ -884,6 +888,12 @@
         const isAsked  = item.status === 'asked';
         const votePending = pendingVoteIds.has(item.id);
         const blocked  = isAsked || isOwn || votePending || !isCurrentEventSession;
+        const voteIcon = isOwn
+          ? '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>'
+          : voted
+            ? '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>'
+            : '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19V5m0 0-5 5m5-5 5 5"/></svg>';
+        const voteLabel = isOwn ? 'Нельзя голосовать за свой вопрос' : isAsked ? 'Вопрос уже задан' : voted ? 'Снять голос' : 'Поддержать вопрос';
         return `
           <div class="question-card" style="${isAsked ? 'opacity:0.6;' : ''}">
             <div class="q-row">
@@ -900,8 +910,9 @@
                   class="vote-btn-circle ${voted ? 'voted' : ''}"
                   data-id="${item.id}"
                   ${blocked ? `disabled${votePending ? ' aria-busy="true"' : ''} style="opacity:0.35;cursor:default;transform:none;"` : ''}
-                  title="${isOwn ? 'Нельзя голосовать за свой вопрос' : isAsked ? 'Вопрос уже задан' : voted ? 'Нажмите чтобы снять голос' : 'Поддержать вопрос'}"
-                >${isOwn ? '—' : voted ? '✓' : '▲'}</button>
+                  title="${voteLabel}"
+                  aria-label="${voteLabel}"
+                >${voteIcon}</button>
                 <span class="vote-count">${item.votes_count || 0}</span>
               </div>
             </div>
@@ -991,7 +1002,7 @@
           const inlineRegalia = expanded && regalia
             ? `<div class="participant-inline-regalia" id="${escapeHtml(detailsId)}">${escapeHtml(regalia)}</div>`
             : '';
-          return `<div class="participant-item"><button class="participant-chip" type="button" data-participant-id="${escapeHtml(participantId)}" aria-expanded="${expanded}"${ariaControls} aria-label="${escapeHtml(ariaLabel)}"><span>${escapeHtml(label)}</span><span class="participant-chip-chevron" aria-hidden="true">${expanded ? '⌄' : '›'}</span></button>${inlineRegalia}</div>`;
+          return `<div class="participant-item"><button class="participant-chip" type="button" data-participant-id="${escapeHtml(participantId)}" aria-expanded="${expanded}"${ariaControls} aria-label="${escapeHtml(ariaLabel)}"><span>${escapeHtml(label)}</span><span class="participant-chip-chevron" aria-hidden="true"><svg class="icon inline" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span></button>${inlineRegalia}</div>`;
         }).join('')
         : '<span style="font-size:12px; color:var(--muted);">Список участников уточняется.</span>';
     }
@@ -1017,7 +1028,6 @@
 
       mobileParticipantsCount.textContent = String(state.speakers.length);
       mobileParticipantsToggle.setAttribute('aria-expanded', String(state.mobileParticipantsExpanded));
-      mobileParticipantsToggle.querySelector('.mobile-participant-accordion-chevron').textContent = state.mobileParticipantsExpanded ? '⌃' : '⌄';
       mobileParticipantsHint.textContent = state.mobileParticipantsExpanded
         ? 'Нажмите на имя, чтобы посмотреть регалии'
         : 'Нажмите, чтобы посмотреть участников';
