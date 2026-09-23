@@ -47,12 +47,11 @@
     .focus-mode-btn { min-height: 38px; padding: 0 11px; border-radius: 10px; font-size: 11px; }
     .filter-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
     .filter-tab { display: grid; justify-items: start; align-content: center; min-height: 76px; padding: 10px 12px; border: 1px solid var(--border-2); border-radius: 13px; background: var(--surface-2); color: var(--muted); font-family: inherit; cursor: pointer; text-align: left; transition: border-color .15s, background .15s, transform .15s; }
-    .filter-tab:hover { border-color: var(--color-focus-ring); background: color-mix(in srgb, var(--color-accent-hover) 9%, transparent); }
     .filter-tab:focus-visible, .focus-mode-btn:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
     .filter-tab.active { border-color: color-mix(in srgb, var(--color-accent-hover) 58%, transparent); background: color-mix(in srgb, var(--color-accent) 22%, transparent); box-shadow: inset 3px 0 0 var(--color-accent-hover); color: var(--color-accent-active-text); }
     .filter-count { color: var(--text); font-size: 27px; font-weight: 900; letter-spacing: -.065em; line-height: .95; }
     .filter-tab.active .filter-count { color: var(--color-text-on-accent); }
-    .filter-label { margin-top: 7px; font-size: 10px; font-weight: 800; letter-spacing: .07em; line-height: 1.2; text-transform: uppercase; }
+    .filter-label { margin-top: 7px; font-size: 12px; font-weight: 800; letter-spacing: .06em; line-height: 1.2; text-transform: uppercase; }
     .filter-tab.pending .filter-count { color: var(--color-warning-text); }
     .moderator-status { margin: 10px 1px 0; min-height: 0; }
     .question-list { margin-top: 14px; border-top: 1px solid var(--border-2); }
@@ -60,11 +59,11 @@
     .moderator-console .question-card { padding: 17px 2px; border: 0; border-bottom: 1px solid var(--border-2); border-radius: 0; background: transparent; }
     .moderator-console .question-card:last-child { border-bottom: 0; }
     .moderator-console .question-card.is-pinned { background: linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 42%); }
-    .moderator-console .question-card.is-asked { opacity: .62; }
+    .moderator-console .question-card.is-asked { opacity: .78; }
     .moderator-console .question-card.is-pending { background: linear-gradient(90deg, color-mix(in srgb, var(--color-warning) 6%, transparent), transparent 42%); }
     .question-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
     .question-main { min-width: 0; flex: 1; }
-    .moderator-console .question-text { font-size: clamp(17px, 2.35vw, 19px); font-weight: 600; line-height: 1.45; letter-spacing: -.015em; }
+    .moderator-console .question-text { font-size: clamp(18px, 2.35vw, 22px); font-weight: 600; line-height: 1.45; letter-spacing: -.015em; }
     .moderator-console .question-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; font-size: 11px; line-height: 1.4; }
     .question-meta-speaker { color: var(--color-accent-text); font-weight: 700; }
     .question-state { display: grid; justify-items: end; gap: 5px; flex: 0 0 auto; }
@@ -89,8 +88,9 @@
       text-transform: uppercase;
     }
     .moderator-live { border-color: var(--color-accent-border); }
+    .moderator-console { --role-density: 1; }
     .room-chip, .live-chip { min-height: 34px; }
-    .moderator-console #questionsList { gap: 10px; }
+    .moderator-console #questionsList { gap: 12px; }
     .moderator-console .question-list { border-top: 0; }
     .moderator-console .question-card {
       padding: 16px;
@@ -102,6 +102,9 @@
     .moderator-console .question-card.is-pinned { border-color: var(--color-accent-border); }
     .moderator-console .question-card.is-pending { border-color: color-mix(in srgb, var(--color-warning) 38%, transparent); }
     .moderator-console .question-actions .btn { min-height: 46px; }
+    @media (hover: hover) {
+      .filter-tab:hover { border-color: var(--color-focus-ring); background: color-mix(in srgb, var(--color-accent-hover) 9%, transparent); }
+    }
     @media (max-width: 680px) {
       .moderator-console .question-card { padding: 14px; }
       .live-statuses { width: 100%; }
@@ -495,8 +498,8 @@
               </div>
             </div>
             <div class="question-actions">
-              ${isPending ? questionActionButton(item, 'approve', '✓ Одобрить', 'primary') : ''}
-              ${!isAsked && !isPending ? questionActionButton(item, 'ask', '✓ Задал', 'primary') : ''}
+              ${isPending ? questionActionButton(item, 'approve', 'Одобрить', 'primary') : ''}
+              ${!isAsked && !isPending ? questionActionButton(item, 'ask', 'Задал', 'primary') : ''}
               ${!isHidden ? questionActionButton(item, 'hide', 'Скрыть', 'warn') : ''}
               ${isHidden || isAsked ? questionActionButton(item, 'open', 'Вернуть', 'primary') : ''}
               ${!isPending ? questionActionButton(item, 'pin', isPinned ? 'Открепить' : 'Закрепить', 'ghost') : ''}
