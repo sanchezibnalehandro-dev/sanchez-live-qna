@@ -138,6 +138,40 @@ body .bootstrap-screen:not(.is-error) .bootstrap-message::after {
   0%, 100% { opacity: 0.32; transform: scaleX(0.35); }
   50% { opacity: 0.88; transform: scaleX(1); }
 }
+
+/* Keep the TASIGO loading identity balanced when the viewport is narrow. */
+@media (max-width: 767px) {
+  body .bootstrap-screen:not(.is-error) .bootstrap-card {
+    width: min(100%, 288px);
+    gap: 14px;
+  }
+
+  body .bootstrap-screen:not(.is-error) .bootstrap-brand {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+    gap: 10px;
+  }
+
+  body .bootstrap-screen:not(.is-error) .bootstrap-brand-copy {
+    justify-items: center;
+    width: 100%;
+  }
+
+  body .bootstrap-screen:not(.is-error) .bootstrap-brand-copy strong {
+    max-width: 18ch;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.18;
+  }
+
+  body .bootstrap-screen:not(.is-error) .bootstrap-brand-copy span {
+    display: block;
+    margin-top: 5px;
+    text-align: center;
+  }
+}
+
 body .input,
 body .textarea,
 body .select,
@@ -202,6 +236,22 @@ body .empty {
   border-color: var(--color-border-subtle);
 }
 body :focus-visible { outline-color: var(--color-accent-hover); }
+
+/* On guest mobile, keep the event identity on its own reading line below the mark. */
+@media (max-width: 767px) {
+  body .guest-shell > .card:first-of-type .brand-logo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+  }
+  body .guest-shell > .card:first-of-type .brand-logo-text {
+    display: block;
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.35;
+  }
+}
 
 @media (hover: hover) {
   body .btn.primary:hover { background: var(--color-accent-hover); }
