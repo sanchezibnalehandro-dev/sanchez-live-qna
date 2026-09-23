@@ -92,6 +92,43 @@ body .card, body .bootstrap-card {
   border-color: var(--color-border);
   box-shadow: var(--shadow-card);
 }
+
+/* TASIGO opens directly into the forest identity, not a generic loading card. */
+body .bootstrap-screen {
+  background: var(--color-bg);
+}
+body .bootstrap-card {
+  position: relative;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+body .bootstrap-screen:not(.is-error) .bootstrap-message {
+  position: absolute;
+  top: calc(100% + 18px);
+  left: 50%;
+  width: 42px;
+  height: 1px;
+  overflow: hidden;
+  background: rgba(233, 228, 214, 0.22);
+  color: transparent;
+  font-size: 0;
+  transform: translateX(-50%);
+}
+body .bootstrap-screen:not(.is-error) .bootstrap-message::after {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--color-accent);
+  content: '';
+  transform-origin: left center;
+  animation: tasigo-bootstrap-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes tasigo-bootstrap-pulse {
+  0%, 100% { opacity: 0.32; transform: scaleX(0.35); }
+  50% { opacity: 0.88; transform: scaleX(1); }
+}
 body .input,
 body .textarea,
 body .select,
