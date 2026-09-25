@@ -1252,7 +1252,7 @@
           if (!ctx) throw new Error('Canvas недоступен');
 
           const styles = getComputedStyle(document.documentElement);
-          const bg = styles.getPropertyValue('--color-bg').trim() || '#07110d';
+          const bg = styles.getPropertyValue('--bg').trim() || '#07110d';
           const text = styles.getPropertyValue('--text').trim() || '#f3f7f4';
           const muted = styles.getPropertyValue('--muted').trim() || '#9aa8a0';
           const accent = styles.getPropertyValue('--color-accent-text').trim() || '#9ed9bd';
