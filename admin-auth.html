@@ -145,6 +145,50 @@
     .live-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--bg3); color: var(--color-accent-text); font-size: 11px; font-weight: 700; white-space: nowrap; }
     .live-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
     .live-chip.warn .dot { background: var(--yellow); }
+    .qr-menu { position: relative; display: inline-flex; }
+    .qr-panel[hidden] { display: none; }
+    .qr-panel {
+      position: absolute; top: calc(100% + 10px); right: 0; z-index: 160;
+      width: min(360px, calc(100vw - 32px)); padding: 14px;
+      border: 1px solid var(--color-border); border-radius: 16px;
+      background: var(--color-surface-raised); box-shadow: 0 18px 48px rgba(0,0,0,.34);
+      color: var(--text);
+    }
+    .qr-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .qr-panel-title { display: grid; gap: 3px; }
+    .qr-panel-title strong { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .qr-panel-title span { color: var(--muted); font-size: 10px; line-height: 1.35; }
+    .qr-close {
+      width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 32px;
+      border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface-subtle);
+      color: var(--muted); font: inherit; font-size: 18px; line-height: 1; cursor: pointer;
+    }
+    .qr-code-frame {
+      display: grid; place-items: center; padding: 12px; border-radius: 14px;
+      background: #fff; border: 1px solid color-mix(in srgb, var(--color-border-strong) 45%, transparent);
+    }
+    .qr-code-frame img { display: block; width: min(260px, 100%); height: auto; aspect-ratio: 1; }
+    .qr-url-row { display: grid; grid-template-columns: minmax(0, 1fr) 36px; gap: 8px; align-items: center; margin-top: 10px; }
+    .qr-url {
+      min-width: 0; padding: 9px 10px; border: 1px solid var(--color-border-subtle); border-radius: 10px;
+      background: var(--color-surface-subtle); color: var(--muted); font-size: 10px; line-height: 1.25;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .qr-copy {
+      width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-subtle);
+      color: var(--color-accent-text); cursor: pointer;
+    }
+    .qr-actions { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
+    .qr-actions .btn { width: 100%; justify-content: center; min-height: 42px; }
+    .qr-hint { min-height: 14px; margin-top: 8px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+    @media (max-width: 720px) {
+      .qr-panel {
+        position: fixed; top: calc(env(safe-area-inset-top) + 72px); left: 16px; right: 16px;
+        width: auto; max-height: calc(100vh - env(safe-area-inset-top) - 88px); overflow: auto;
+      }
+      .qr-code-frame img { width: min(300px, 100%); }
+    }
     .live-controls { display: grid; gap: 8px; margin-top: 12px; padding: 11px; border: 1px solid var(--border-2); border-radius: 14px; background: color-mix(in srgb, var(--color-surface-subtle) 70%, transparent); }
     .live-controls-label { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
     .live-control-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -346,7 +390,7 @@
             <div class="live-main">
               <div class="live-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="live-brand-copy"><strong data-brand-name></strong><span><span data-brand-product></span> · CONTROL DESK</span></div></div>
               <div class="live-context"><div class="live-context-status-row"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><div class="live-intake-status" id="liveIntakeStatus" data-state="neutral">Загрузка…</div></div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
-              <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;" aria-label="Обновить данные" title="Обновить данные"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5.5"/><path d="M20 4v7h-7"/></svg></button><button class="btn ghost" id="qrBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 15h2v2h-2zM19 15h1v5h-5v-2h2v-2h2z"/></svg>QR</button><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Модератор</button></div>
+              <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;" aria-label="Обновить данные" title="Обновить данные"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5.5"/><path d="M20 4v7h-7"/></svg></button><div class="qr-menu" id="qrMenu"><button class="btn ghost" id="qrBtn" style="padding:8px 10px;" type="button" aria-expanded="false" aria-controls="qrPanel"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 15h2v2h-2zM19 15h1v5h-5v-2h2v-2h2z"/></svg>QR</button><div class="qr-panel" id="qrPanel" hidden><div class="qr-panel-head"><div class="qr-panel-title"><strong>Гостевой QR</strong><span>Ссылка для гостей и готовые файлы для технической службы</span></div><button class="qr-close" id="qrCloseBtn" type="button" aria-label="Закрыть QR">×</button></div><div class="qr-code-frame"><img id="qrImg" src="" width="640" height="640" alt="QR-код гостевой страницы"></div><div class="qr-url-row"><div class="qr-url" id="qrUrl"></div><button class="qr-copy" id="qrCopyBtn" type="button" aria-label="Скопировать гостевую ссылку" title="Скопировать ссылку"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></button></div><div class="qr-actions"><button class="btn primary" id="qrDownloadBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>Скачать QR · PNG 1000</button><button class="btn ghost" id="qrScreenBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Экран 16:9 · PNG</button></div><div class="qr-hint" id="qrHint">QR ведёт на production-гостевую страницу.</div></div></div><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Модератор</button></div>
             </div>
             <div class="event-session-control" id="eventSessionControl" hidden>
               <div class="event-session-label"><strong>Просматриваемая сессия</strong><span>Навигация / эфир</span></div>
@@ -354,7 +398,7 @@
               <span class="event-session-state" id="eventSessionState"></span>
               <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
             </div>
-            <div id="qrPanel" style="display:none; margin-top:10px; text-align:right;"><img id="qrImg" src="" width="150" height="150" style="border-radius:8px; background:var(--color-surface-qr); padding:6px;"><div style="font-size:11px; color:var(--muted); margin-top:6px;" id="qrUrl"></div></div>
+            
             <div class="live-controls">
               <div class="live-controls-label">Управление эфиром</div>
               <div class="live-control-list">
@@ -1055,24 +1099,204 @@
         return;
       }
 
-      // QR toggle
-      const qrBtn   = document.getElementById('qrBtn');
+      // QR delivery panel
+      const qrMenu = document.getElementById('qrMenu');
+      const qrBtn = document.getElementById('qrBtn');
       const qrPanel = document.getElementById('qrPanel');
-      const qrImg   = document.getElementById('qrImg');
+      const qrImg = document.getElementById('qrImg');
       const qrUrlEl = document.getElementById('qrUrl');
-      let qrReady = false;
+      const qrCloseBtn = document.getElementById('qrCloseBtn');
+      const qrCopyBtn = document.getElementById('qrCopyBtn');
+      const qrDownloadBtn = document.getElementById('qrDownloadBtn');
+      const qrScreenBtn = document.getElementById('qrScreenBtn');
+      const qrHint = document.getElementById('qrHint');
+      const QR_PRODUCTION_ORIGIN = 'https://sanchez-live-qna.vercel.app';
+
+      function qrGuestUrl() {
+        const host = location.hostname;
+        const isLocal = host === 'localhost' || host === '127.0.0.1';
+        const isVercelPreview = host.endsWith('.vercel.app') && host !== 'sanchez-live-qna.vercel.app';
+        const origin = isLocal || isVercelPreview ? QR_PRODUCTION_ORIGIN : location.origin;
+        const path = state.room?.event_key
+          ? '/ask.html?event=' + encodeURIComponent(state.room.event_key)
+          : '/ask.html?room=' + encodeURIComponent(roomSlug);
+        return origin + path;
+      }
+
+      function qrImageUrl(url, size = 640) {
+        return 'https://api.qrserver.com/v1/create-qr-code/?format=png&size=' + size + 'x' + size
+          + '&qzone=4&data=' + encodeURIComponent(url);
+      }
+
+      function qrFilePrefix() {
+        return (roomBrand.name || roomSlug || 'QNA')
+          .replace(/[^A-Za-z0-9А-Яа-яЁё_-]+/g, '_')
+          .replace(/^_+|_+$/g, '') || 'QNA';
+      }
+
+      function setQrHint(message, tone = 'neutral') {
+        qrHint.textContent = message;
+        qrHint.style.color = tone === 'error'
+          ? 'var(--color-danger-text)'
+          : tone === 'success'
+            ? 'var(--color-success-text)'
+            : 'var(--muted)';
+      }
+
+      function openQrPanel() {
+        const url = qrGuestUrl();
+        qrImg.src = qrImageUrl(url, 640);
+        qrUrlEl.textContent = url;
+        qrUrlEl.title = url;
+        qrPanel.hidden = false;
+        qrBtn.setAttribute('aria-expanded', 'true');
+        setQrHint('QR ведёт на production-гостевую страницу.');
+      }
+
+      function closeQrPanel() {
+        qrPanel.hidden = true;
+        qrBtn.setAttribute('aria-expanded', 'false');
+      }
+
+      async function fetchQrBlob(url, size = 1000) {
+        const response = await fetch(qrImageUrl(url, size), { mode: 'cors' });
+        if (!response.ok) throw new Error('QR service returned ' + response.status);
+        return response.blob();
+      }
+
+      function downloadBlob(blob, filename) {
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = href;
+        a.download = filename;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(href), 1000);
+      }
+
+      function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error || new Error('Не удалось прочитать QR'));
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error('Не удалось загрузить QR'));
+          image.src = src;
+        });
+      }
+
       qrBtn.addEventListener('click', () => {
-        const open = qrPanel.style.display !== 'none';
-        if (!open && !qrReady) {
-          const url = location.origin + (state.room?.event_key
-            ? '/ask.html?event=' + encodeURIComponent(state.room.event_key)
-            : '/ask.html?room=' + encodeURIComponent(roomSlug));
-          qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(url);
-          qrUrlEl.textContent = url;
-          qrReady = true;
-        }
-        qrPanel.style.display = open ? 'none' : 'block';
+        if (qrPanel.hidden) openQrPanel();
+        else closeQrPanel();
       });
+      qrCloseBtn.addEventListener('click', closeQrPanel);
+
+      document.addEventListener('click', (event) => {
+        if (!qrPanel.hidden && !qrMenu.contains(event.target)) closeQrPanel();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !qrPanel.hidden) {
+          closeQrPanel();
+          qrBtn.focus();
+        }
+      });
+
+      qrCopyBtn.addEventListener('click', async () => {
+        const url = qrGuestUrl();
+        try {
+          await navigator.clipboard.writeText(url);
+          setQrHint('Ссылка скопирована.', 'success');
+        } catch {
+          setQrHint('Не удалось скопировать автоматически. Ссылка показана выше.', 'error');
+        }
+      });
+
+      qrDownloadBtn.addEventListener('click', async () => {
+        qrDownloadBtn.disabled = true;
+        qrDownloadBtn.setAttribute('aria-busy', 'true');
+        setQrHint('Готовим PNG 1000×1000…');
+        try {
+          const blob = await fetchQrBlob(qrGuestUrl(), 1000);
+          downloadBlob(blob, qrFilePrefix() + '_QR_1000.png');
+          setQrHint('QR 1000×1000 скачан.', 'success');
+        } catch (error) {
+          console.error('QR download failed', error);
+          window.open(qrImageUrl(qrGuestUrl(), 1000), '_blank', 'noopener');
+          setQrHint('Открыли QR 1000×1000 в новой вкладке для сохранения.', 'error');
+        } finally {
+          qrDownloadBtn.disabled = false;
+          qrDownloadBtn.removeAttribute('aria-busy');
+        }
+      });
+
+      qrScreenBtn.addEventListener('click', async () => {
+        qrScreenBtn.disabled = true;
+        qrScreenBtn.setAttribute('aria-busy', 'true');
+        setQrHint('Готовим экран 1920×1080…');
+        try {
+          const qrBlob = await fetchQrBlob(qrGuestUrl(), 1000);
+          const qrDataUrl = await blobToDataUrl(qrBlob);
+          const qrImage = await loadImage(qrDataUrl);
+          const canvas = document.createElement('canvas');
+          canvas.width = 1920;
+          canvas.height = 1080;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Canvas недоступен');
+
+          const styles = getComputedStyle(document.documentElement);
+          const bg = styles.getPropertyValue('--color-bg').trim() || '#07110d';
+          const text = styles.getPropertyValue('--text').trim() || '#f3f7f4';
+          const muted = styles.getPropertyValue('--muted').trim() || '#9aa8a0';
+          const accent = styles.getPropertyValue('--color-accent-text').trim() || '#9ed9bd';
+
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, 1920, 1080);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = accent;
+          ctx.font = '700 28px Montserrat, Arial, sans-serif';
+          ctx.fillText((roomBrand.name || 'SANCHEZ').toUpperCase(), 960, 90);
+
+          ctx.fillStyle = text;
+          ctx.font = '800 72px Montserrat, Arial, sans-serif';
+          ctx.fillText('ЗАДАЙТЕ ВОПРОС', 960, 175);
+
+          const qrSize = 560;
+          const qrX = (1920 - qrSize) / 2;
+          const qrY = 260;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(qrX - 12, qrY - 12, qrSize + 24, qrSize + 24);
+          ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+
+          ctx.fillStyle = text;
+          ctx.font = '600 30px Montserrat, Arial, sans-serif';
+          ctx.fillText('Наведите камеру телефона на QR-код', 960, 890);
+          ctx.fillStyle = muted;
+          ctx.font = '500 22px Montserrat, Arial, sans-serif';
+          ctx.fillText(qrGuestUrl(), 960, 945);
+
+          const output = await new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Не удалось создать PNG')), 'image/png');
+          });
+          downloadBlob(output, qrFilePrefix() + '_SCREEN_1920x1080.png');
+          setQrHint('Экран 1920×1080 скачан.', 'success');
+        } catch (error) {
+          console.error('QR screen export failed', error);
+          setQrHint('Не удалось собрать экран 16:9. QR-файл остаётся доступен.', 'error');
+        } finally {
+          qrScreenBtn.disabled = false;
+          qrScreenBtn.removeAttribute('aria-busy');
+        }
+      });
+
       finishBootstrap();
     }
 
