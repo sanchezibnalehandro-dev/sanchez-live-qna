@@ -1071,10 +1071,14 @@
                 <div class="question-meta">${reportEscape(author)} · ${reportEscape(time)}</div>
               </div>
             </article>`;
-          }).join('');
+          });
+          const firstItem = items.shift() || '';
           return `<section class="speaker-section">
-            <div class="speaker-head"><div><div class="speaker-kicker">${state.room?.mode === 'panel' ? 'Панель' : 'Спикер'}</div><h2>${reportEscape(title)}</h2>${subtitle ? `<p>${reportEscape(subtitle)}</p>` : ''}</div><div class="speaker-count">${groups.get(key).length}</div></div>
-            ${items}
+            <div class="speaker-start">
+              <div class="speaker-head"><div><div class="speaker-kicker">${state.room?.mode === 'panel' ? 'Панель' : 'Спикер'}</div><h2>${reportEscape(title)}</h2>${subtitle ? `<p>${reportEscape(subtitle)}</p>` : ''}</div><div class="speaker-count">${groups.get(key).length}</div></div>
+              ${firstItem}
+            </div>
+            ${items.join('')}
           </section>`;
         }).join('');
 
@@ -1086,9 +1090,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${reportEscape(title)} · Q&A отчёт</title>
 <style>
-  *{box-sizing:border-box} body{margin:0;background:#eef2f7;color:#101827;font-family:Inter,Arial,sans-serif}
-  .toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:flex-end;padding:12px 20px;background:rgba(238,242,247,.96);border-bottom:1px solid #dce3ec}
-  .toolbar button{border:0;border-radius:10px;background:#155eef;color:#fff;font:700 14px/1 Arial,sans-serif;padding:12px 16px;cursor:pointer}
+  *{box-sizing:border-box} body{margin:0;background:#eef2f7;color:#101827;font-family:"Segoe UI Variable","Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  .toolbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px;background:rgba(238,242,247,.96);border-bottom:1px solid #dce3ec}
+  .toolbar-note{color:#667085;font-size:12px;line-height:1.35}
+  .toolbar button{border:0;border-radius:10px;background:#155eef;color:#fff;font:700 14px/1 "Segoe UI Variable","Segoe UI",Arial,sans-serif;padding:12px 16px;cursor:pointer}
   .report{width:min(980px,calc(100% - 32px));margin:28px auto;background:#fff;box-shadow:0 18px 60px rgba(16,24,39,.12)}
   .cover{padding:54px 58px 44px;background:#081525;color:#fff}
   .brand{font-size:12px;font-weight:800;letter-spacing:.14em;color:#76a9ff;text-transform:uppercase}
@@ -1099,7 +1104,8 @@
   .content{padding:36px 58px 58px}.speaker-section+.speaker-section{margin-top:42px;padding-top:36px;border-top:2px solid #edf1f5}
   .speaker-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:18px}.speaker-kicker{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#155eef}
   h2{font-size:24px;line-height:1.2;margin:6px 0 0}.speaker-head p{margin:7px 0 0;color:#667085;font-size:12px;line-height:1.45}.speaker-count{min-width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#eef4ff;color:#155eef;font-size:13px;font-weight:800}
-  .question{display:grid;grid-template-columns:42px 1fr;gap:14px;padding:18px 0;border-top:1px solid #edf1f5;break-inside:avoid}.question-no{font-size:12px;font-weight:800;color:#98a2b3;padding-top:4px}
+  .speaker-start{break-inside:avoid;page-break-inside:avoid}.speaker-head{break-after:avoid-page;page-break-after:avoid}
+  .question{display:grid;grid-template-columns:42px 1fr;gap:14px;padding:18px 0;border-top:1px solid #edf1f5;break-inside:avoid;page-break-inside:avoid}.question-no{font-size:12px;font-weight:800;color:#98a2b3;padding-top:4px}
   .question-top{display:flex;gap:9px;align-items:center;margin-bottom:9px}.status{display:inline-flex;padding:5px 8px;border-radius:999px;background:#eef2f6;color:#475467;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.status-asked{background:#e8f7ef;color:#087443}.status-open{background:#eef4ff;color:#155eef}.status-pending{background:#fff5df;color:#a15c00}.status-hidden{background:#f2f4f7;color:#667085}.votes{color:#667085;font-size:10px;font-weight:700}
   .question-text{font-size:17px;line-height:1.48;font-weight:650}.question-meta{margin-top:9px;color:#7b8798;font-size:10px;line-height:1.4}
   .empty{padding:80px 20px;text-align:center;color:#667085}
@@ -1110,12 +1116,13 @@
     .toolbar{display:none}.report{width:auto;margin:0;box-shadow:none}.cover{padding:14mm 12mm 10mm}
     h1{font-size:30pt}.room{font-size:12pt}.stats{grid-template-columns:repeat(5,1fr)}.stat{padding:10mm 4mm}.stat strong{font-size:19pt}
     .content{padding:10mm 12mm}.speaker-section{break-before:auto}.speaker-section+.speaker-section{margin-top:10mm;padding-top:8mm}
-    .question-text{font-size:11pt}.question{padding:5mm 0}
+    .speaker-start{break-inside:avoid;page-break-inside:avoid}.speaker-head{break-after:avoid-page;page-break-after:avoid}
+    .question-text{font-size:11pt;line-height:1.42}.question{padding:5mm 0;break-inside:avoid;page-break-inside:avoid}
   }
 </style>
 </head>
 <body>
-<div class="toolbar"><button onclick="window.print()">Сохранить PDF / Печать</button></div>
+<div class="toolbar"><div class="toolbar-note">Для чистого PDF отключите «Колонтитулы» в настройках печати.</div><button onclick="window.print()">Сохранить PDF / Печать</button></div>
 <main class="report">
   <header class="cover">
     <div class="brand">${reportEscape(roomBrand.name || 'SANCHEZ')} · ${reportEscape(roomBrand.productName || 'Live Q&A')}</div>
