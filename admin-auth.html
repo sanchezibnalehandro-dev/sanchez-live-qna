@@ -100,7 +100,7 @@
     .admin-console { font-family: var(--font-console); font-variant-numeric: tabular-nums lining-nums; }
     .admin-console h1, .admin-console h2, .admin-console .section-title, .admin-console .stat-value { font-family: inherit; }
     .admin-console .shell { max-width: 1480px; min-height: calc(100vh - 60px); grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
-    .admin-live { overflow: hidden; }
+    .admin-live { position: relative; z-index: 20; overflow: visible; }
     .admin-live .card-inner { padding: 16px; }
     .live-main { display: grid; grid-template-columns: auto minmax(260px, 1fr) auto; gap: 18px; align-items: center; }
     .live-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
