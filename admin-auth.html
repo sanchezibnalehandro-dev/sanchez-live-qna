@@ -145,6 +145,37 @@
     .live-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--bg3); color: var(--color-accent-text); font-size: 11px; font-weight: 700; white-space: nowrap; }
     .live-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
     .live-chip.warn .dot { background: var(--yellow); }
+    .export-menu { position: relative; display: inline-flex; }
+    .export-menu-panel[hidden] { display: none; }
+    .export-menu-panel {
+      position: absolute; top: calc(100% + 8px); right: 0; z-index: 170;
+      width: 250px; padding: 7px;
+      border: 1px solid var(--color-border); border-radius: 12px;
+      background: var(--color-surface-raised); box-shadow: 0 16px 40px rgba(0,0,0,.34);
+    }
+    .export-menu-head {
+      padding: 7px 8px 8px; border-bottom: 1px solid var(--color-border-subtle); margin-bottom: 5px;
+    }
+    .export-menu-head strong { display: block; color: var(--text); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .export-menu-head span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+    .export-option {
+      width: 100%; display: grid; grid-template-columns: 32px minmax(0,1fr); gap: 9px; align-items: center;
+      padding: 9px; border: 0; border-radius: 9px; background: transparent; color: var(--text);
+      font: inherit; text-align: left; cursor: pointer;
+    }
+    .export-option:hover, .export-option:focus-visible { background: var(--color-surface-hover); outline: none; }
+    .export-option-icon {
+      width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--color-border-subtle); border-radius: 9px; background: var(--color-surface-subtle);
+      color: var(--color-accent-text); font-size: 9px; font-weight: 800;
+    }
+    .export-option-copy { min-width: 0; display: grid; gap: 2px; }
+    .export-option-copy strong { font-size: 11px; font-weight: 800; }
+    .export-option-copy span { color: var(--muted); font-size: 9px; line-height: 1.3; }
+    @media (max-width: 720px) {
+      .export-menu-panel { position: fixed; top: auto; left: 16px; right: 16px; bottom: 16px; width: auto; }
+    }
+
     .qr-menu { position: relative; display: inline-flex; }
     .qr-panel[hidden] { display: none; }
     .qr-panel {
@@ -420,7 +451,7 @@
 
         <section class="card console-panel questions-panel" data-responsive-section="questions" data-accordion-collapsed="false">
           <div class="questions-toolbar">
-            <div class="questions-toolbar-top"><div><h2 class="questions-title">Очередь вопросов <span id="speakerFilterLabel" style="font-size:11px;color:var(--muted);font-weight:500;"></span></h2><p class="questions-summary">Все вопросы и новые поступления в реальном времени</p><span class="responsive-summary" id="questionsAccordionSummary">Вопросы · 0</span></div><div class="questions-actions"><div class="question-sort" role="group" aria-label="Сортировка вопросов"><button class="question-sort-btn active" type="button" data-sort="votes" aria-pressed="true">По голосам</button><button class="question-sort-btn" type="button" data-sort="newest" aria-pressed="false">Новые</button></div><button class="btn ghost" id="exportCsvBtn" style="padding:8px 10px;font-size:11px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>CSV</button><button class="responsive-section-toggle" type="button" data-accordion-toggle="questions" aria-expanded="true" aria-controls="questionsAccordionBody" aria-label="Свернуть вопросы"><span class="responsive-chevron" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span></button></div></div>
+            <div class="questions-toolbar-top"><div><h2 class="questions-title">Очередь вопросов <span id="speakerFilterLabel" style="font-size:11px;color:var(--muted);font-weight:500;"></span></h2><p class="questions-summary">Все вопросы и новые поступления в реальном времени</p><span class="responsive-summary" id="questionsAccordionSummary">Вопросы · 0</span></div><div class="questions-actions"><div class="question-sort" role="group" aria-label="Сортировка вопросов"><button class="question-sort-btn active" type="button" data-sort="votes" aria-pressed="true">По голосам</button><button class="question-sort-btn" type="button" data-sort="newest" aria-pressed="false">Новые</button></div><div class="export-menu" id="exportMenu"><button class="btn ghost" id="exportBtn" type="button" aria-expanded="false" aria-controls="exportMenuPanel" style="padding:8px 10px;font-size:11px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>Экспорт<svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px;"><path d="m6 9 6 6 6-6"/></svg></button><div class="export-menu-panel" id="exportMenuPanel" hidden><div class="export-menu-head"><strong>Экспорт вопросов</strong><span id="exportScopeLabel">Все вопросы</span></div><button class="export-option" id="exportCsvBtn" type="button"><span class="export-option-icon">CSV</span><span class="export-option-copy"><strong>CSV</strong><span>Данные для Excel и анализа</span></span></button><button class="export-option" id="exportPdfBtn" type="button"><span class="export-option-icon">PDF</span><span class="export-option-copy"><strong>PDF / печать</strong><span>Читаемый отчёт по мероприятию</span></span></button></div></div><button class="responsive-section-toggle" type="button" data-accordion-toggle="questions" aria-expanded="true" aria-controls="questionsAccordionBody" aria-label="Свернуть вопросы"><span class="responsive-chevron" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span></button></div></div>
           </div>
           <div class="responsive-section-body responsive-question-body" id="questionsAccordionBody"><div class="question-filter-row"><button class="filter-tab active" data-filter="all">Все <span id="filterAllCount">0</span></button><button class="filter-tab" data-filter="pending">На модерации <span id="filterPendingCount">0</span></button><button class="filter-tab" data-filter="open">Открытые <span id="filterOpenCount">0</span></button><button class="filter-tab" data-filter="asked">Заданные <span id="filterAskedCount">0</span></button><button class="filter-tab" data-filter="hidden">Скрытые <span id="filterHiddenCount">0</span></button></div><button class="btn ghost new-questions-banner" id="newQuestionsBanner" type="button" hidden><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg><span id="newQuestionsCount">0</span> новых вопросов</button><div class="question-feed"><div class="list" id="questionsList" style="contain: layout style"></div></div><details class="questions-manual"><summary><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Добавить вопрос вручную</summary><div class="manual-grid"><textarea class="textarea" id="godQuestionInput" placeholder="Текст вопроса…" maxlength="200" style="min-height:44px;"></textarea><input class="input" id="godNameInput" placeholder="Имя" maxlength="120"><input class="input" id="godCompanyInput" placeholder="Компания" maxlength="120"><button class="btn primary" id="godSubmitBtn">Опубликовать</button></div><div class="status" id="godStatus"></div></details></div>
         </section>
@@ -897,12 +928,56 @@
         render();
       });
 
-      // Экспорт CSV
-      document.getElementById('exportCsvBtn').addEventListener('click', () => {
-        const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
-        const qs = state.speakerFilter
+      // Экспорт CSV / PDF
+      const exportMenu = document.getElementById('exportMenu');
+      const exportBtn = document.getElementById('exportBtn');
+      const exportMenuPanel = document.getElementById('exportMenuPanel');
+      const exportScopeLabel = document.getElementById('exportScopeLabel');
+      const exportCsvBtn = document.getElementById('exportCsvBtn');
+      const exportPdfBtn = document.getElementById('exportPdfBtn');
+
+      function getExportQuestions() {
+        return state.speakerFilter
           ? state.questions.filter(q => String(q.speaker_id) === String(state.speakerFilter))
           : state.questions;
+      }
+
+      function getExportScope() {
+        if (!state.speakerFilter) return { label: `Все вопросы · ${state.questions.length}`, speaker: null };
+        const speaker = state.speakers.find(s => String(s.id) === String(state.speakerFilter)) || null;
+        const count = getExportQuestions().length;
+        return { label: `${speaker?.name || 'Выбранный спикер'} · ${count}`, speaker };
+      }
+
+      function openExportMenu() {
+        exportScopeLabel.textContent = getExportScope().label;
+        exportMenuPanel.hidden = false;
+        exportBtn.setAttribute('aria-expanded', 'true');
+      }
+
+      function closeExportMenu() {
+        exportMenuPanel.hidden = true;
+        exportBtn.setAttribute('aria-expanded', 'false');
+      }
+
+      exportBtn.addEventListener('click', () => {
+        if (exportMenuPanel.hidden) openExportMenu();
+        else closeExportMenu();
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!exportMenuPanel.hidden && !exportMenu.contains(event.target)) closeExportMenu();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !exportMenuPanel.hidden) {
+          closeExportMenu();
+          exportBtn.focus();
+        }
+      });
+
+      exportCsvBtn.addEventListener('click', () => {
+        const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
+        const qs = getExportQuestions();
         const rows = [['ID','Спикер','Вопрос','Автор','Компания','Статус','Голоса','Время']];
         qs.forEach(q => {
           const sp = speakerMap.get(String(q.speaker_id));
@@ -923,6 +998,158 @@
         const a    = document.createElement('a');
         a.href = url; a.download = `${roomBrand.csvPrefix}-${roomSlug}-${new Date().toISOString().slice(0,10)}.csv`;
         a.click(); URL.revokeObjectURL(url);
+        closeExportMenu();
+      });
+
+      function reportEscape(value) {
+        return String(value ?? '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      function reportStatus(status) {
+        return ({
+          pending: 'На модерации',
+          open: 'Открыт',
+          asked: 'Задан',
+          hidden: 'Скрыт'
+        })[status] || status || '—';
+      }
+
+      function buildReportHtml(qs) {
+        const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
+        const scope = getExportScope();
+        const stats = {
+          total: qs.length,
+          asked: qs.filter(q => q.status === 'asked').length,
+          open: qs.filter(q => q.status === 'open').length,
+          pending: qs.filter(q => q.status === 'pending').length,
+          votes: qs.reduce((sum, q) => sum + Number(q.votes_count || 0), 0)
+        };
+
+        const dated = qs
+          .map(q => new Date(q.created_at))
+          .filter(d => !Number.isNaN(d.getTime()))
+          .sort((a,b) => a - b);
+        const dateLabel = dated.length
+          ? dated[0].toLocaleDateString('ru-RU', { day:'2-digit', month:'long', year:'numeric' })
+          : new Date().toLocaleDateString('ru-RU', { day:'2-digit', month:'long', year:'numeric' });
+
+        const groups = new Map();
+        qs.forEach(q => {
+          const key = q.speaker_id == null ? '__general__' : String(q.speaker_id);
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(q);
+        });
+
+        const orderedKeys = [];
+        state.speakers.forEach(s => {
+          const key = String(s.id);
+          if (groups.has(key)) orderedKeys.push(key);
+        });
+        if (groups.has('__general__')) orderedKeys.push('__general__');
+        groups.forEach((_, key) => { if (!orderedKeys.includes(key)) orderedKeys.push(key); });
+
+        let questionNumber = 0;
+        const sections = orderedKeys.map(key => {
+          const speaker = key === '__general__' ? null : speakerMap.get(key);
+          const title = speaker?.name || (state.room?.mode === 'panel' ? 'Общие вопросы панели' : 'Без спикера');
+          const subtitle = [speaker?.regalia, speaker?.topic].filter(Boolean).join(' · ');
+          const items = [...groups.get(key)].sort((a,b) => new Date(a.created_at) - new Date(b.created_at)).map(q => {
+            questionNumber += 1;
+            const author = [q.author_name, q.author_company].filter(Boolean).join(' · ') || 'Анонимно';
+            const time = q.created_at ? new Date(q.created_at).toLocaleString('ru-RU') : '—';
+            const votes = Number(q.votes_count || 0);
+            return `<article class="question">
+              <div class="question-no">${String(questionNumber).padStart(2,'0')}</div>
+              <div class="question-body">
+                <div class="question-top"><span class="status status-${reportEscape(q.status)}">${reportEscape(reportStatus(q.status))}</span><span class="votes">${votes} ${votes === 1 ? 'голос' : 'голосов'}</span></div>
+                <div class="question-text">${reportEscape(q.text || '')}</div>
+                <div class="question-meta">${reportEscape(author)} · ${reportEscape(time)}</div>
+              </div>
+            </article>`;
+          }).join('');
+          return `<section class="speaker-section">
+            <div class="speaker-head"><div><div class="speaker-kicker">${state.room?.mode === 'panel' ? 'Панель' : 'Спикер'}</div><h2>${reportEscape(title)}</h2>${subtitle ? `<p>${reportEscape(subtitle)}</p>` : ''}</div><div class="speaker-count">${groups.get(key).length}</div></div>
+            ${items}
+          </section>`;
+        }).join('');
+
+        const title = state.room?.title || state.room?.slug || roomSlug;
+        return `<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${reportEscape(title)} · Q&A отчёт</title>
+<style>
+  *{box-sizing:border-box} body{margin:0;background:#eef2f7;color:#101827;font-family:Inter,Arial,sans-serif}
+  .toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:flex-end;padding:12px 20px;background:rgba(238,242,247,.96);border-bottom:1px solid #dce3ec}
+  .toolbar button{border:0;border-radius:10px;background:#155eef;color:#fff;font:700 14px/1 Arial,sans-serif;padding:12px 16px;cursor:pointer}
+  .report{width:min(980px,calc(100% - 32px));margin:28px auto;background:#fff;box-shadow:0 18px 60px rgba(16,24,39,.12)}
+  .cover{padding:54px 58px 44px;background:#081525;color:#fff}
+  .brand{font-size:12px;font-weight:800;letter-spacing:.14em;color:#76a9ff;text-transform:uppercase}
+  h1{font-size:44px;line-height:1.05;margin:24px 0 14px}.room{max-width:760px;font-size:18px;line-height:1.45;color:#d8e2f0}
+  .date{margin-top:10px;font-size:13px;color:#91a8c9}.scope{margin-top:26px;display:inline-flex;padding:8px 11px;border:1px solid #29405e;border-radius:999px;color:#d8e2f0;font-size:12px;font-weight:700}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#dfe6ef;border-bottom:1px solid #dfe6ef}
+  .stat{padding:22px 20px;background:#fff}.stat strong{display:block;font-size:28px}.stat span{display:block;margin-top:6px;color:#667085;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+  .content{padding:36px 58px 58px}.speaker-section+.speaker-section{margin-top:42px;padding-top:36px;border-top:2px solid #edf1f5}
+  .speaker-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:18px}.speaker-kicker{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#155eef}
+  h2{font-size:24px;line-height:1.2;margin:6px 0 0}.speaker-head p{margin:7px 0 0;color:#667085;font-size:12px;line-height:1.45}.speaker-count{min-width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#eef4ff;color:#155eef;font-size:13px;font-weight:800}
+  .question{display:grid;grid-template-columns:42px 1fr;gap:14px;padding:18px 0;border-top:1px solid #edf1f5;break-inside:avoid}.question-no{font-size:12px;font-weight:800;color:#98a2b3;padding-top:4px}
+  .question-top{display:flex;gap:9px;align-items:center;margin-bottom:9px}.status{display:inline-flex;padding:5px 8px;border-radius:999px;background:#eef2f6;color:#475467;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.status-asked{background:#e8f7ef;color:#087443}.status-open{background:#eef4ff;color:#155eef}.status-pending{background:#fff5df;color:#a15c00}.status-hidden{background:#f2f4f7;color:#667085}.votes{color:#667085;font-size:10px;font-weight:700}
+  .question-text{font-size:17px;line-height:1.48;font-weight:650}.question-meta{margin-top:9px;color:#7b8798;font-size:10px;line-height:1.4}
+  .empty{padding:80px 20px;text-align:center;color:#667085}
+  @media(max-width:700px){.cover,.content{padding-left:24px;padding-right:24px}h1{font-size:34px}.stats{grid-template-columns:repeat(2,1fr)}.report{width:100%;margin:0}.toolbar{padding:10px}}
+  @media print{
+    @page{size:A4;margin:12mm}
+    body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .toolbar{display:none}.report{width:auto;margin:0;box-shadow:none}.cover{padding:14mm 12mm 10mm}
+    h1{font-size:30pt}.room{font-size:12pt}.stats{grid-template-columns:repeat(5,1fr)}.stat{padding:10mm 4mm}.stat strong{font-size:19pt}
+    .content{padding:10mm 12mm}.speaker-section{break-before:auto}.speaker-section+.speaker-section{margin-top:10mm;padding-top:8mm}
+    .question-text{font-size:11pt}.question{padding:5mm 0}
+  }
+</style>
+</head>
+<body>
+<div class="toolbar"><button onclick="window.print()">Сохранить PDF / Печать</button></div>
+<main class="report">
+  <header class="cover">
+    <div class="brand">${reportEscape(roomBrand.name || 'SANCHEZ')} · ${reportEscape(roomBrand.productName || 'Live Q&A')}</div>
+    <h1>Отчёт Q&A</h1>
+    <div class="room">${reportEscape(title)}</div>
+    <div class="date">${reportEscape(dateLabel)}</div>
+    <div class="scope">${reportEscape(scope.label)}</div>
+  </header>
+  <section class="stats">
+    <div class="stat"><strong>${stats.total}</strong><span>Вопросов</span></div>
+    <div class="stat"><strong>${stats.asked}</strong><span>Задано</span></div>
+    <div class="stat"><strong>${stats.open}</strong><span>Открыто</span></div>
+    <div class="stat"><strong>${stats.pending}</strong><span>Модерация</span></div>
+    <div class="stat"><strong>${stats.votes}</strong><span>Голосов</span></div>
+  </section>
+  <div class="content">${sections || '<div class="empty">Вопросов для отчёта нет.</div>'}</div>
+</main>
+</body>
+</html>`;
+      }
+
+      exportPdfBtn.addEventListener('click', () => {
+        const qs = getExportQuestions();
+        const reportWindow = window.open('', '_blank');
+        if (!reportWindow) {
+          setStatus('Браузер заблокировал окно отчёта. Разрешите всплывающие окна и повторите.', 'error');
+          return;
+        }
+        reportWindow.document.open();
+        reportWindow.document.write(buildReportHtml(qs));
+        reportWindow.document.close();
+        closeExportMenu();
+        reportWindow.focus();
+        setTimeout(() => reportWindow.print(), 250);
       });
 
       // God mode — добавить вопрос вручную
