@@ -38,7 +38,7 @@ export function initLoginNetworkBackground(canvas) {
 
   function readPalette() {
     return {
-      bg: themeColor('--bg', '#020810'),
+      bg: themeColor('--bg2', '#07111f'),
       edge: themeColor('--blue', '#1a4fd8'),
       node: themeColor('--blue-light', '#3b82f6'),
       pulse: themeColor('--color-info-strong', '#bfdbfe'),
@@ -176,7 +176,7 @@ export function initLoginNetworkBackground(canvas) {
         if (Math.abs(dx) > P.dist || Math.abs(dy) > P.dist) continue;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist >= P.dist) continue;
-        drawLine(a.x, a.y, b.x, b.y, C.edge, (1 - dist / P.dist) * 0.11, 0.55);
+        drawLine(a.x, a.y, b.x, b.y, C.edge, (1 - dist / P.dist) * 0.20, 0.7);
       }
     }
 
@@ -184,8 +184,8 @@ export function initLoginNetworkBackground(canvas) {
       const dx = node.x - hub.x;
       const dy = node.y - hub.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const alpha = Math.min(0.08, (P.dist * 0.035) / (dist + 80));
-      drawLine(node.x, node.y, hub.x, hub.y, C.edge, alpha, 0.45);
+      const alpha = Math.min(0.12, (P.dist * 0.055) / (dist + 80));
+      drawLine(node.x, node.y, hub.x, hub.y, C.edge, alpha, 0.55);
     }
 
     for (const pulse of pulses) {
@@ -194,19 +194,19 @@ export function initLoginNetworkBackground(canvas) {
       if (!source || !target) continue;
       const x = source.x + (target.x - source.x) * pulse.t;
       const y = source.y + (target.y - source.y) * pulse.t;
-      const alpha = Math.max(0, Math.sin(Math.min(1, pulse.t) * Math.PI) * 0.9);
-      drawDot(x, y, P.pulseR, C.pulse, alpha, 8);
+      const alpha = Math.max(0, Math.sin(Math.min(1, pulse.t) * Math.PI) * 0.95);
+      drawDot(x, y, P.pulseR, C.pulse, alpha, 10);
     }
 
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
       const flash = flashes[i] || 0;
-      if (flash > 0) drawDot(node.x, node.y, P.nodeR * (4 + flash * 4), C.flash, flash * 0.08, 16);
-      drawDot(node.x, node.y, P.nodeR + flash * 0.5, C.node, 0.48 + flash * 0.35, flash > 0 ? 10 : 4);
+      if (flash > 0) drawDot(node.x, node.y, P.nodeR * (4 + flash * 4), C.flash, flash * 0.11, 18);
+      drawDot(node.x, node.y, P.nodeR + flash * 0.5, C.node, 0.66 + flash * 0.28, flash > 0 ? 12 : 6);
     }
 
-    drawDot(hub.x, hub.y, P.hubR * 3.4, C.flash, 0.055 + hubFlash * 0.08, 22);
-    drawDot(hub.x, hub.y, P.hubR + hubFlash * 2, C.node, 0.72 + hubFlash * 0.2, 14);
+    drawDot(hub.x, hub.y, P.hubR * 3.4, C.flash, 0.095 + hubFlash * 0.09, 24);
+    drawDot(hub.x, hub.y, P.hubR + hubFlash * 2, C.node, 0.90 + hubFlash * 0.08, 16);
 
     if (!disposed && visible && !reduceMotion.matches) animId = requestAnimationFrame(() => drawFrame(true));
   }
