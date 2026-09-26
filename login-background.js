@@ -184,8 +184,9 @@ export function initLoginNetworkBackground(canvas) {
       const dx = node.x - hub.x;
       const dy = node.y - hub.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const alpha = Math.min(0.12, (P.dist * 0.055) / (dist + 80));
-      drawLine(node.x, node.y, hub.x, hub.y, C.edge, alpha, 0.55);
+      const normalized = Math.min(1, dist / Math.hypot(W, H));
+      const alpha = 0.18 - normalized * 0.07;
+      drawLine(node.x, node.y, hub.x, hub.y, C.edge, alpha, 0.65);
     }
 
     for (const pulse of pulses) {
