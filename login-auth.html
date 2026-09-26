@@ -15,8 +15,37 @@
       document.querySelector('[data-brand-stylesheet]').href = isTasigo ? './brands/tasigo-esg.css' : './brands/sanchez.css';
     })();
   </script>
+  <style>
+    .login-network-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .login-network-vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse at 50% 36%,
+        color-mix(in srgb, var(--color-bg) 78%, transparent) 0%,
+        color-mix(in srgb, var(--color-bg) 52%, transparent) 38%,
+        transparent 72%
+      );
+    }
+    .login-page .app { z-index: 2; }
+    @media (prefers-reduced-motion: reduce) {
+      .login-network-bg { opacity: .82; }
+    }
+  </style>
 </head>
-<body>
+<body class="login-page">
+  <canvas class="login-network-bg" id="loginNetworkBackground" aria-hidden="true"></canvas>
+  <div class="login-network-vignette" aria-hidden="true"></div>
   <div class="app">
     <main class="shell" style="max-width:480px; padding-top: clamp(32px, 8vh, 80px);">
       <section class="card">
@@ -57,6 +86,7 @@
 
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
+    import { initLoginNetworkBackground } from './login-background.js';
     import { supabase, getRoomSlug, getEventKey, getCurrentEventRoom, listEventRooms } from './supabase-qna.js';
 
     const room = getRoomSlug();
@@ -64,6 +94,7 @@
     const params = new URLSearchParams(location.search);
     const next = params.get('next') === 'moderator' ? 'moderator' : 'admin';
     applyBrandIdentity('login', getBrandForRoute(room, eventKey));
+    initLoginNetworkBackground(document.getElementById('loginNetworkBackground'));
 
     async function destinationUrl() {
       if (next === 'moderator') {
