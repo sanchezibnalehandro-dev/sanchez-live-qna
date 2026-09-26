@@ -11,6 +11,7 @@ export function initLoginNetworkBackground(canvas) {
   let H = 0;
   let dpr = 1;
   let pulseTimer = 0;
+  let colors = null;
 
   let nodes = [];
   let pulses = [];
@@ -35,7 +36,7 @@ export function initLoginNetworkBackground(canvas) {
     return value || fallback;
   }
 
-  function palette() {
+  function readPalette() {
     return {
       bg: themeColor('--bg', '#020810'),
       edge: themeColor('--blue', '#1a4fd8'),
@@ -49,6 +50,7 @@ export function initLoginNetworkBackground(canvas) {
     W = Math.max(1, window.innerWidth);
     H = Math.max(1, window.innerHeight);
     dpr = Math.min(window.devicePixelRatio || 1, 2);
+    colors = readPalette();
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     canvas.style.width = `${W}px`;
@@ -104,12 +106,11 @@ export function initLoginNetworkBackground(canvas) {
     ctx.restore();
   }
 
-  function nearestNode(exceptIndex = -1) {
-    const candidates = [];
-    for (let i = 0; i < nodes.length; i++) {
-      if (i !== exceptIndex) candidates.push(i);
-    }
-    return candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : -1;
+  function randomDestination(exceptIndex = -1) {
+    if (nodes.length <= 1) return -1;
+    let index = Math.floor(Math.random() * nodes.length);
+    if (index === exceptIndex) index = (index + 1) % nodes.length;
+    return index;
   }
 
   function emitPulse() {
@@ -139,7 +140,7 @@ export function initLoginNetworkBackground(canvas) {
 
       if (pulse.toHub) {
         hubFlash = 1;
-        const destIdx = nearestNode(pulse.fromIdx);
+        const destIdx = randomDestination(pulse.fromIdx);
         if (destIdx >= 0) nextLegs.push({ fromIdx: -1, toHub: false, destIdx, t: 0, speed: pulse.speed });
       } else if (pulse.destIdx >= 0 && pulse.destIdx < flashes.length) {
         flashes[pulse.destIdx] = 1;
@@ -155,7 +156,7 @@ export function initLoginNetworkBackground(canvas) {
   }
 
   function drawFrame(advance = true) {
-    const C = palette();
+    const C = colors || readPalette();
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalAlpha = 1;
