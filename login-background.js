@@ -209,7 +209,15 @@ export function initLoginNetworkBackground(canvas) {
     drawDot(hub.x, hub.y, P.hubR * 3.4, C.flash, 0.095 + hubFlash * 0.09, 24);
     drawDot(hub.x, hub.y, P.hubR + hubFlash * 2, C.node, 0.90 + hubFlash * 0.08, 16);
 
-    if (!disposed && visible && !reduceMotion.matches) animId = requestAnimationFrame(() => drawFrame(true));
+    scheduleFrame();
+  }
+
+  function scheduleFrame() {
+    if (animId || disposed || !visible || reduceMotion.matches) return;
+    animId = requestAnimationFrame(() => {
+      animId = 0;
+      drawFrame(true);
+    });
   }
 
   function stop() {
@@ -221,7 +229,7 @@ export function initLoginNetworkBackground(canvas) {
     stop();
     if (disposed) return;
     if (reduceMotion.matches) drawFrame(false);
-    else if (visible) animId = requestAnimationFrame(() => drawFrame(true));
+    else scheduleFrame();
   }
 
   function onVisibilityChange() {

@@ -691,7 +691,7 @@
     });
 
     eventSessionActivateBtn.addEventListener('click', async () => {
-      const viewedRoom = state.eventRooms.find(room => room.slug === state.room?.slug);
+      const viewedRoom = state.room;
       if (!viewedRoom || viewedRoom.is_current_session) return;
       const activated = await activateEventSession(viewedRoom);
       if (!activated) return;
@@ -745,6 +745,8 @@
       const section = accordionSections.get(name);
       if (!section?.button) return;
       section.root.dataset.accordionCollapsed = String(collapsed);
+      const body = section.root.querySelector('.responsive-section-body');
+      if (body) body.inert = collapsed;
       section.button.setAttribute('aria-expanded', String(!collapsed));
       section.button.setAttribute('aria-label', `${collapsed ? 'Развернуть' : 'Свернуть'} ${accordionLabels[name]}`);
     }
