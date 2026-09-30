@@ -19,6 +19,35 @@ const TASIGO_ESG_ROOM_BRAND = {
   stylesheetHref: './brands/tasigo-esg.css'
 };
 
+const ADMIN_ACCORDION_MEDIA = '(max-width: 1024px)';
+let adminAccordionInertGuardInitialized = false;
+
+function initAdminAccordionInertGuard() {
+  if (adminAccordionInertGuardInitialized || typeof window.matchMedia !== 'function') return;
+  adminAccordionInertGuardInitialized = true;
+
+  const media = window.matchMedia(ADMIN_ACCORDION_MEDIA);
+  const sync = () => {
+    const accordionMode = media.matches;
+    document.querySelectorAll('.admin-console [data-responsive-section]').forEach((section) => {
+      const body = section.querySelector('.responsive-section-body');
+      if (!body) return;
+      body.inert = accordionMode && section.dataset.accordionCollapsed === 'true';
+    });
+  };
+
+  const observer = new MutationObserver((mutations) => {
+    if (mutations.some((mutation) => mutation.attributeName === 'data-accordion-collapsed')) sync();
+  });
+  observer.observe(document.documentElement, {
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-accordion-collapsed']
+  });
+  media.addEventListener('change', sync);
+  sync();
+}
+
 export function getBrandForRoute(roomSlug, eventKey = null) {
   if (roomSlug?.startsWith(TASIGO_ESG_ROOM_PREFIX) || eventKey?.startsWith(TASIGO_ESG_ROOM_PREFIX)) {
     return TASIGO_ESG_ROOM_BRAND;
@@ -38,6 +67,8 @@ const PAGE_TITLES = {
 };
 
 export function applyBrandIdentity(page, brand = BRAND) {
+  if (page === 'admin') initAdminAccordionInertGuard();
+
   const stylesheet = document.querySelector('[data-brand-stylesheet]');
   if (stylesheet) stylesheet.href = brand.stylesheetHref;
 
