@@ -71,7 +71,11 @@ export function applyBrandIdentity(page, brand = BRAND) {
   if (page === 'admin') initAdminAccordionInertGuard();
 
   const stylesheet = document.querySelector('[data-brand-stylesheet]');
-  if (stylesheet) stylesheet.href = brand.stylesheetHref;
+  if (stylesheet) {
+    stylesheet.href = page === 'guest' && brand.guestStylesheetHref
+      ? brand.guestStylesheetHref
+      : brand.stylesheetHref;
+  }
 
   const heroImage = page === 'guest' && brand.heroImageUrl
     ? `url("${brand.heroImageUrl}")`
