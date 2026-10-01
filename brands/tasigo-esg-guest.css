@@ -84,60 +84,184 @@ body .guest-shell > .card:first-of-type .brand-logo-text {
 }
 
 @media (max-width: 767px) {
+  /* On mobile the normal/open state stays silent. Closed/offline remain visible. */
+  body .guest-shell .mobile-intake-status[data-intake-state="open"] {
+    display: none !important;
+  }
+
   body .guest-shell > .card:first-of-type {
-    min-height: 390px;
+    min-height: 350px;
   }
 
   body .guest-shell > .card:first-of-type::after {
     background-image:
-      linear-gradient(180deg, rgba(16, 22, 18, 0.10) 0%, rgba(16, 22, 18, 0.12) 34%, rgba(16, 22, 18, 0.56) 66%, #101612 96%),
-      linear-gradient(90deg, rgba(16, 22, 18, 0.62) 0%, rgba(16, 22, 18, 0.18) 58%, rgba(16, 22, 18, 0.02) 100%),
+      linear-gradient(180deg,
+        rgba(16, 22, 18, 0.02) 0%,
+        rgba(16, 22, 18, 0.04) 30%,
+        rgba(16, 22, 18, 0.22) 48%,
+        rgba(16, 22, 18, 0.68) 69%,
+        #101612 91%),
+      linear-gradient(90deg,
+        rgba(16, 22, 18, 0.42) 0%,
+        rgba(16, 22, 18, 0.10) 54%,
+        rgba(16, 22, 18, 0.00) 100%),
       var(--tasigo-guest-hero-image);
-    background-position: center, center, right top;
-    background-size: cover, cover, auto 76%;
+    background-position: center, center, 72% top;
+    background-size: cover, cover, 124% auto;
   }
 
   body .guest-shell > .card:first-of-type .card-inner {
-    min-height: 390px;
-    padding: 18px 18px 20px !important;
+    min-height: 350px;
+    padding: 16px 16px 18px !important;
   }
 
   body .guest-shell > .card:first-of-type .surface-kicker {
-    margin-top: 54px;
-    margin-bottom: 8px;
+    margin-top: 18px;
+    margin-bottom: 7px;
+  }
+
+  body .guest-shell > .card:first-of-type .surface-kicker::after {
+    font-size: 10px;
+    letter-spacing: 0.24em;
   }
 
   body .guest-shell > .card:first-of-type #speakerName {
-    max-width: 16ch;
-    font-size: clamp(28px, 7.8vw, 36px);
-    line-height: 1.02;
+    width: 100%;
+    max-width: none;
+    font-size: clamp(25px, 6.8vw, 30px);
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    text-wrap: pretty;
   }
 
+  /* Panel moderator and regalia get distinct reading levels without touching data/render logic. */
   body .guest-shell > .card:first-of-type #speakerMeta {
+    display: grid;
+    gap: 3px;
     margin-top: 10px;
     font-size: 14px;
     line-height: 1.32;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta br {
+    display: none;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta span {
+    display: block;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta span:first-child {
+    color: #f1ede2;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.28;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta span + span {
+    color: rgba(233, 228, 214, 0.70);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.38;
+  }
+
+  body .guest-shell > .card:first-of-type .brand-logo {
+    align-items: center;
+  }
+
+  body .guest-shell > .card:first-of-type .brand-logo-mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  body .guest-shell > .card:first-of-type .brand-logo-text {
+    max-width: calc(100% - 42px);
+    font-size: 10.5px;
+    line-height: 1.25;
+  }
+
+  /* Mobile participants remain collapsed by existing state logic, but are readable when opened. */
+  body .guest-shell .mobile-panel-participants .card-inner {
+    padding: 14px 16px 15px;
+  }
+
+  body .guest-shell .mobile-participant-accordion {
+    min-height: 50px;
+    padding: 9px 0;
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  body .guest-shell .mobile-participant-accordion-copy {
+    gap: 10px;
+  }
+
+  body .guest-shell .mobile-participant-accordion-icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  body .guest-shell .mobile-participant-accordion-chevron {
+    width: 22px;
+    height: 22px;
+  }
+
+  body .guest-shell .mobile-participant-hint {
+    margin-top: 2px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  body .guest-shell .mobile-panel-participants-content {
+    margin-top: 13px;
+  }
+
+  body .guest-shell .mobile-panel-participants .participant-list {
+    gap: 10px;
+  }
+
+  body .guest-shell .mobile-panel-participants .participant-chip {
+    min-height: 54px;
+    padding: 12px 14px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  body .guest-shell .mobile-panel-participants .participant-inline-regalia {
+    padding: 1px 4px 2px;
+    font-size: 14px;
+    line-height: 1.42;
   }
 }
 
 @media (max-width: 520px) {
   body .guest-shell > .card:first-of-type {
-    min-height: 370px;
+    min-height: 338px;
   }
 
   body .guest-shell > .card:first-of-type::after {
-    background-size: cover, cover, auto 72%;
+    background-position: center, center, 74% top;
+    background-size: cover, cover, 132% auto;
   }
 
   body .guest-shell > .card:first-of-type .card-inner {
-    min-height: 370px;
+    min-height: 338px;
   }
 
   body .guest-shell > .card:first-of-type .surface-kicker {
-    margin-top: 44px;
+    margin-top: 14px;
   }
 
   body .guest-shell > .card:first-of-type #speakerName {
-    font-size: clamp(27px, 8vw, 33px);
+    font-size: clamp(24px, 6.9vw, 28px);
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta span:first-child {
+    font-size: 14.5px;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta span + span {
+    font-size: 13px;
   }
 }
