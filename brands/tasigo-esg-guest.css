@@ -1,0 +1,143 @@
+@import url('./tasigo-esg.css');
+
+/* Guest-only compact hero polish.
+   Keeps the live guest mechanics untouched while making the approved image visible
+   and keeping the question form close to the first viewport. */
+
+body .guest-shell > .card:first-of-type {
+  min-height: 380px;
+}
+
+body .guest-shell > .card:first-of-type::after {
+  background-image:
+    linear-gradient(90deg, #101612 0%, rgba(16, 22, 18, 0.94) 20%, rgba(16, 22, 18, 0.68) 42%, rgba(16, 22, 18, 0.20) 68%, rgba(16, 22, 18, 0.04) 100%),
+    linear-gradient(180deg, rgba(16, 22, 18, 0.02) 0%, rgba(16, 22, 18, 0.04) 52%, rgba(16, 22, 18, 0.58) 88%, #101612 100%),
+    var(--tasigo-guest-hero-image);
+  background-position: center, center, right center;
+  background-size: cover, cover, auto 100%;
+}
+
+body .guest-shell > .card:first-of-type .card-inner {
+  min-height: 380px;
+  padding: 24px 28px 28px !important;
+}
+
+body .guest-shell > .card:first-of-type .surface-kicker {
+  margin: 28px 0 9px;
+}
+
+body .guest-shell > .card:first-of-type #speakerName {
+  max-width: 18ch;
+  font-size: clamp(32px, 4.2vw, 50px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+}
+
+body .guest-shell > .card:first-of-type #speakerMeta {
+  max-width: 620px;
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.38;
+}
+
+body .guest-shell > .card:first-of-type .brand-logo-mark {
+  width: 34px;
+  height: 34px;
+}
+
+body .guest-shell > .card:first-of-type .brand-logo-text {
+  max-width: 360px;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  body .guest-shell > .card:first-of-type {
+    min-height: 360px;
+  }
+
+  body .guest-shell > .card:first-of-type::after {
+    background-image:
+      linear-gradient(90deg, #101612 0%, rgba(16, 22, 18, 0.92) 26%, rgba(16, 22, 18, 0.52) 54%, rgba(16, 22, 18, 0.08) 100%),
+      linear-gradient(180deg, rgba(16, 22, 18, 0.02) 0%, rgba(16, 22, 18, 0.05) 52%, rgba(16, 22, 18, 0.60) 88%, #101612 100%),
+      var(--tasigo-guest-hero-image);
+    background-position: center, center, right center;
+    background-size: cover, cover, auto 100%;
+  }
+
+  body .guest-shell > .card:first-of-type .card-inner {
+    min-height: 360px;
+    padding: 22px 26px 24px !important;
+  }
+
+  body .guest-shell > .card:first-of-type .surface-kicker {
+    margin-top: 24px;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerName {
+    max-width: 17ch;
+    font-size: clamp(30px, 4.8vw, 40px);
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 767px) {
+  body .guest-shell > .card:first-of-type {
+    min-height: 390px;
+  }
+
+  body .guest-shell > .card:first-of-type::after {
+    background-image:
+      linear-gradient(180deg, rgba(16, 22, 18, 0.10) 0%, rgba(16, 22, 18, 0.12) 34%, rgba(16, 22, 18, 0.56) 66%, #101612 96%),
+      linear-gradient(90deg, rgba(16, 22, 18, 0.62) 0%, rgba(16, 22, 18, 0.18) 58%, rgba(16, 22, 18, 0.02) 100%),
+      var(--tasigo-guest-hero-image);
+    background-position: center, center, right top;
+    background-size: cover, cover, auto 76%;
+  }
+
+  body .guest-shell > .card:first-of-type .card-inner {
+    min-height: 390px;
+    padding: 18px 18px 20px !important;
+  }
+
+  body .guest-shell > .card:first-of-type .surface-kicker {
+    margin-top: 54px;
+    margin-bottom: 8px;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerName {
+    max-width: 16ch;
+    font-size: clamp(28px, 7.8vw, 36px);
+    line-height: 1.02;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 1.32;
+  }
+}
+
+@media (max-width: 520px) {
+  body .guest-shell > .card:first-of-type {
+    min-height: 370px;
+  }
+
+  body .guest-shell > .card:first-of-type::after {
+    background-size: cover, cover, auto 72%;
+  }
+
+  body .guest-shell > .card:first-of-type .card-inner {
+    min-height: 370px;
+  }
+
+  body .guest-shell > .card:first-of-type .surface-kicker {
+    margin-top: 44px;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerName {
+    font-size: clamp(27px, 8vw, 33px);
+  }
+}
