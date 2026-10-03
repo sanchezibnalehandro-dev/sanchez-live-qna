@@ -409,3 +409,88 @@ body .guest-shell > .card:first-of-type .brand-logo-text {
     margin-top: 22px;
   }
 }
+
+
+/* TASIGO tablet integrated hero — 768..1024 fix 2026-10-04 */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /*
+    The old tablet treatment inserted a standalone image band between the brand
+    and the session copy. At this width it reads like a banner ad and breaks the
+    hierarchy. Keep the approved photo as part of the hero instead.
+  */
+  body .guest-shell > .card:first-of-type {
+    min-height: 0 !important;
+    height: auto;
+  }
+
+  body .guest-shell > .card:first-of-type::after {
+    display: block;
+    inset: 0;
+    background-image:
+      linear-gradient(
+        90deg,
+        #101612 0%,
+        rgba(16, 22, 18, 0.97) 32%,
+        rgba(16, 22, 18, 0.82) 54%,
+        rgba(16, 22, 18, 0.46) 76%,
+        rgba(16, 22, 18, 0.22) 100%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(16, 22, 18, 0.12) 0%,
+        rgba(16, 22, 18, 0.20) 42%,
+        rgba(16, 22, 18, 0.70) 82%,
+        #101612 100%
+      ),
+      url('../assets/tasigo/guest-hero.webp');
+    background-position: center, center, 100% 45%;
+    background-size: cover, cover, cover;
+    background-repeat: no-repeat;
+    filter: saturate(0.95);
+    transform: none;
+  }
+
+  /* Kill the separate image strip from the previous tablet experiment. */
+  body .guest-shell > .card:first-of-type .card-inner::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  body .guest-shell > .card:first-of-type .card-inner {
+    min-height: 0 !important;
+    height: auto;
+    justify-content: flex-start;
+    padding: 22px 26px 26px !important;
+  }
+
+  body .guest-shell > .card:first-of-type .card-inner > div:nth-of-type(2) {
+    width: min(100%, 560px);
+    margin-bottom: 0 !important;
+  }
+
+  body .guest-shell > .card:first-of-type .surface-kicker {
+    margin: 30px 0 9px;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerName {
+    width: min(100%, 720px);
+    max-width: 16ch;
+    margin: 0;
+    font-size: clamp(36px, 5.2vw, 46px);
+    line-height: 1.01;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.36);
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta {
+    max-width: 610px;
+    margin-top: 12px;
+    font-size: 14.5px;
+    line-height: 1.38;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.34);
+  }
+
+  body .guest-shell > .card:first-of-type #panelParticipants {
+    max-width: 680px;
+    margin-top: 18px !important;
+  }
+}
