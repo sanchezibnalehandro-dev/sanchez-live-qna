@@ -8,6 +8,7 @@ export const SANCHEZ_BRAND = {
   csvPrefix: 'sanchez-qna',
   logoUrl: null,
   faviconUrl: null,
+  heroImageUrl: null,
   stylesheetHref: './brands/sanchez.css'
 };
 
@@ -70,7 +71,16 @@ export function applyBrandIdentity(page, brand = BRAND) {
   if (page === 'admin') initAdminAccordionInertGuard();
 
   const stylesheet = document.querySelector('[data-brand-stylesheet]');
-  if (stylesheet) stylesheet.href = brand.stylesheetHref;
+  if (stylesheet) {
+    stylesheet.href = page === 'guest' && brand.guestStylesheetHref
+      ? brand.guestStylesheetHref
+      : brand.stylesheetHref;
+  }
+
+  const heroImage = page === 'guest' && brand.heroImageUrl
+    ? `url("${brand.heroImageUrl}")`
+    : 'none';
+  document.documentElement.style.setProperty('--tasigo-guest-hero-image', heroImage);
 
   document.querySelectorAll('[data-brand-mark]').forEach((element) => {
     if (!brand.logoUrl) {
