@@ -324,3 +324,88 @@ body .guest-shell > .card:first-of-type .brand-logo-text {
     height: 142px;
   }
 }
+
+
+/* TASIGO mobile integrated hero — approved tuning 2026-10-04 */
+@media (max-width: 767px) {
+  /*
+    Keep desktop/tablet presentation intact.
+    On narrow guest screens the approved event image becomes an atmospheric
+    background behind the session copy instead of a separate image band.
+  */
+  body .guest-shell > .card:first-of-type {
+    min-height: 0 !important;
+    height: auto;
+  }
+
+  body .guest-shell > .card:first-of-type::after {
+    display: block;
+    inset: -2px;
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(16, 22, 18, 0.72) 0%,
+        rgba(16, 22, 18, 0.82) 28%,
+        rgba(16, 22, 18, 0.91) 64%,
+        rgba(16, 22, 18, 0.96) 100%
+      ),
+      linear-gradient(
+        90deg,
+        rgba(16, 22, 18, 0.82) 0%,
+        rgba(16, 22, 18, 0.58) 62%,
+        rgba(16, 22, 18, 0.48) 100%
+      ),
+      url('../assets/tasigo/guest-hero.webp');
+    background-position: center, center, 100% 45%;
+    background-size: cover, cover, cover;
+    background-repeat: no-repeat;
+    filter: blur(2px) saturate(0.95);
+    transform: scale(1.012);
+    transform-origin: center;
+  }
+
+  /* Remove the old standalone tablet/mobile image band. */
+  body .guest-shell > .card:first-of-type .card-inner::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  body .guest-shell > .card:first-of-type .card-inner {
+    min-height: 0 !important;
+    height: auto;
+    justify-content: flex-start;
+    padding: 16px 16px 20px !important;
+  }
+
+  /* Base desktop hero uses auto margin to push copy down. Mobile must not. */
+  body .guest-shell > .card:first-of-type .card-inner > div:nth-of-type(2) {
+    width: 100%;
+    margin-bottom: 0 !important;
+  }
+
+  body .guest-shell > .card:first-of-type .surface-kicker {
+    margin: 26px 0 8px;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerName {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.05;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.50);
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta {
+    margin: 10px 0 0;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.50);
+  }
+}
+
+@media (max-width: 390px) {
+  body .guest-shell > .card:first-of-type #speakerName {
+    font-size: 26px;
+  }
+
+  body .guest-shell > .card:first-of-type .surface-kicker {
+    margin-top: 22px;
+  }
+}
