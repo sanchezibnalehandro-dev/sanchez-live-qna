@@ -201,18 +201,28 @@
     .program-add-option span { color: var(--muted); font-size: 9px; font-weight: 700; }
     .program-list { min-height: 0; overflow: auto; display: grid; gap: 8px; padding: 12px; }
     .program-row {
-      display: grid; grid-template-columns: 72px minmax(260px,1fr) minmax(250px,300px);
+      position: relative; display: grid; grid-template-columns: 72px minmax(260px,1fr) minmax(250px,300px);
       gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--color-border-subtle);
       border-radius: 14px; background: var(--color-surface-subtle);
+      transition: box-shadow .18s ease, border-color .18s ease, opacity .18s ease;
     }
     .program-row.service { border-style: dashed; }
-    .program-order { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; align-self: stretch; }
-    .program-order-label { grid-column: 1 / -1; align-self: center; color: var(--muted); font-size: 10px; font-weight: 800; text-align: center; }
-    .program-move {
-      min-height: 38px; border: 1px solid var(--color-border); border-radius: 9px;
-      background: var(--color-surface-raised); color: var(--text); cursor: pointer; font: inherit; font-size: 15px;
+    .program-row.program-drag-source { opacity: .28; border-color: var(--color-accent-border); }
+    .program-order { display: grid; gap: 7px; align-self: stretch; align-content: start; }
+    .program-order-label { color: var(--muted); font-size: 10px; font-weight: 800; text-align: center; }
+    .program-drag-handle {
+      min-height: 54px; display: grid; place-items: center; touch-action: none;
+      border: 1px solid var(--color-border); border-radius: 11px; background: var(--color-surface-raised);
+      color: var(--muted); cursor: grab; font: inherit; font-size: 20px; font-weight: 900; letter-spacing: -4px;
     }
-    .program-move:disabled { opacity: .3; cursor: default; }
+    .program-drag-handle:active { cursor: grabbing; }
+    .program-drag-handle:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
+    .program-drag-ghost {
+      position: fixed !important; z-index: 1000; pointer-events: none; margin: 0 !important;
+      opacity: .96; box-shadow: 0 24px 70px rgba(0,0,0,.45);
+      border-color: var(--color-accent-border) !important; transform: rotate(.25deg) scale(1.01);
+    }
+    body.program-drag-active { user-select: none; cursor: grabbing; }
     .program-main { min-width: 0; display: grid; gap: 7px; }
     .program-flags { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-height: 22px; }
     .program-flag {
@@ -235,18 +245,15 @@
     }
     .program-field input:focus-visible, .program-toolbar-field input:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; }
     .program-duration { display: grid; gap: 8px; min-width: 0; }
-    .program-duration-main { display: grid; grid-template-columns: 52px minmax(78px,1fr) 52px; gap: 6px; }
-    .program-duration-main button {
-      min-height: 42px; border: 1px solid var(--color-border); border-radius: 10px;
-      background: var(--color-surface-raised); color: var(--text); font: inherit; font-size: 12px; font-weight: 900; cursor: pointer;
+    .program-duration-control { display: grid; grid-template-columns: minmax(0,1fr) 82px auto; gap: 10px; align-items: center; }
+    .program-duration-slider { width: 100%; min-width: 0; min-height: 42px; padding: 0; border: 0; background: transparent; accent-color: var(--color-accent); cursor: pointer; touch-action: pan-y; }
+    .program-duration-number {
+      width: 82px; min-height: 42px; box-sizing: border-box; padding: 8px 9px;
+      border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-raised);
+      color: var(--text); font: inherit; font-size: 13px; font-weight: 800; text-align: center;
+      font-variant-numeric: tabular-nums;
     }
-    .program-duration-main input { text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
-    .program-duration-presets { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; }
-    .program-duration-preset {
-      min-height: 30px; padding: 4px; border: 1px solid var(--color-border-subtle); border-radius: 8px;
-      background: transparent; color: var(--muted); font: inherit; font-size: 9px; font-weight: 800; cursor: pointer;
-    }
-    .program-duration-preset.active { border-color: var(--color-accent-border); background: var(--color-accent-soft); color: var(--color-accent-text); }
+    .program-duration-unit { color: var(--muted); font-size: 10px; font-weight: 800; }
     @media (max-width: 820px) {
       .program-modal { place-items: stretch; padding: 8px; }
       .program-dialog { max-height: calc(100vh - 16px); border-radius: 16px; }
@@ -256,6 +263,7 @@
       .program-add-menu { position: static; width: auto; margin-top: 6px; }
       .program-row { grid-template-columns: 62px minmax(0,1fr); align-items: start; }
       .program-main, .program-duration { grid-column: 2; }
+      .program-duration-control { grid-template-columns: minmax(0,1fr) 76px auto; }
       .program-dialog-head, .program-dialog-foot { align-items: flex-start; }
       .program-dialog-foot { flex-direction: column; }
       .program-dialog-actions { width: 100%; }
@@ -615,12 +623,9 @@
         <div class="program-add-wrap">
           <button class="program-add-btn" id="programAddBtn" type="button" aria-expanded="false">+ Добавить блок</button>
           <div class="program-add-menu" id="programAddMenu" hidden>
-            <button class="program-add-option" type="button" data-service-title="Сбор гостей" data-service-duration="30">Сбор гостей <span>30 мин</span></button>
-            <button class="program-add-option" type="button" data-service-title="Кофе-брейк" data-service-duration="20">Кофе-брейк <span>20 мин</span></button>
-            <button class="program-add-option" type="button" data-service-title="Перерыв" data-service-duration="15">Перерыв <span>15 мин</span></button>
-            <button class="program-add-option" type="button" data-service-title="Обед" data-service-duration="60">Обед <span>60 мин</span></button>
-            <button class="program-add-option" type="button" data-service-title="Нетворкинг" data-service-duration="30">Нетворкинг <span>30 мин</span></button>
-            <button class="program-add-option" type="button" data-service-title="Новый блок" data-service-duration="15">Другое <span>15 мин</span></button>
+            <button class="program-add-option" type="button" data-service-title="Обед" data-service-duration="60">Обед</button>
+            <button class="program-add-option" type="button" data-service-title="Кофе-брейк" data-service-duration="20">Кофе-брейк</button>
+            <button class="program-add-option" type="button" data-service-title="Другое" data-service-duration="30">Другое</button>
           </div>
         </div>
       </div>
@@ -797,6 +802,7 @@
     let programDraft = [];
     let programAnchorStart = null;
     let programSaving = false;
+    let programDraftKey = 0;
     let pendingSpeakerDeletionId = null;
     let deletingSpeakerId = null;
     let speakerDeleteTimer = null;
@@ -980,13 +986,121 @@
       return start + '–' + formatProgramTime(end.toISOString());
     }
 
-    function renderDurationPresets(item, index) {
-      return [15, 20, 30, 45, 60].map(value => {
-        const active = Number(item.duration_minutes) === value ? ' active' : '';
-        return `<button class="program-duration-preset${active}" type="button" data-duration-preset="${value}" data-program-index="${index}">${value}</button>`;
-      }).join('');
+    function ensureProgramItemKey(item) {
+      if (item._program_key) return item._program_key;
+      const stable = item.kind === 'session' && item.room_id != null
+        ? 'session:' + item.room_id
+        : item.id != null
+          ? 'service:' + item.id
+          : 'draft:' + (++programDraftKey);
+      item._program_key = stable;
+      return stable;
     }
 
+    function programDurationSliderMax(item) {
+      const duration = programDuration(item) || 30;
+      return Math.max(180, Math.ceil(duration / 60) * 60);
+    }
+
+    function refreshProgramTimingInDom() {
+      recalculateProgramTimes();
+      programList.querySelectorAll('[data-program-time]').forEach(node => {
+        const item = programDraft[Number(node.dataset.programTime)];
+        if (item) node.textContent = formatProgramRange(item);
+      });
+    }
+
+    function animateProgramRowReflow(before) {
+      programList.querySelectorAll('.program-row').forEach(row => {
+        const oldTop = before.get(row.dataset.programKey);
+        if (oldTop == null) return;
+        const delta = oldTop - row.getBoundingClientRect().top;
+        if (Math.abs(delta) < 1) return;
+        row.animate(
+          [{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }],
+          { duration: 170, easing: 'cubic-bezier(.2,.8,.2,1)' }
+        );
+      });
+    }
+
+    function startProgramPointerDrag(event, handle) {
+      if (programSaving || event.button > 0) return;
+      const source = handle.closest('.program-row');
+      if (!source) return;
+
+      event.preventDefault();
+      const sourceRect = source.getBoundingClientRect();
+      const ghost = source.cloneNode(true);
+      ghost.classList.add('program-drag-ghost');
+      ghost.querySelectorAll('input, button').forEach(node => node.setAttribute('tabindex', '-1'));
+      Object.assign(ghost.style, {
+        left: sourceRect.left + 'px',
+        top: sourceRect.top + 'px',
+        width: sourceRect.width + 'px',
+        height: sourceRect.height + 'px'
+      });
+      document.body.appendChild(ghost);
+
+      const offsetY = event.clientY - sourceRect.top;
+      const pointerId = event.pointerId;
+      source.classList.add('program-drag-source');
+      document.body.classList.add('program-drag-active');
+      handle.setPointerCapture?.(pointerId);
+
+      const move = moveEvent => {
+        if (moveEvent.pointerId !== pointerId) return;
+        moveEvent.preventDefault();
+        const listRect = programList.getBoundingClientRect();
+        if (moveEvent.clientY < listRect.top + 52) programList.scrollTop -= 18;
+        if (moveEvent.clientY > listRect.bottom - 52) programList.scrollTop += 18;
+        ghost.style.top = (moveEvent.clientY - offsetY) + 'px';
+
+        const rows = [...programList.querySelectorAll('.program-row')];
+        const before = new Map(rows.map(row => [row.dataset.programKey, row.getBoundingClientRect().top]));
+        const candidates = rows.filter(row => row !== source);
+        let inserted = false;
+        for (const row of candidates) {
+          const rect = row.getBoundingClientRect();
+          if (moveEvent.clientY < rect.top + rect.height / 2) {
+            if (source.nextElementSibling !== row) programList.insertBefore(source, row);
+            inserted = true;
+            break;
+          }
+        }
+        if (!inserted && programList.lastElementChild !== source) programList.appendChild(source);
+        animateProgramRowReflow(before);
+      };
+
+      const finish = endEvent => {
+        if (endEvent.pointerId !== pointerId) return;
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', finish);
+        window.removeEventListener('pointercancel', finish);
+        try { handle.releasePointerCapture?.(pointerId); } catch {}
+        ghost.remove();
+        source.classList.remove('program-drag-source');
+        document.body.classList.remove('program-drag-active');
+
+        const order = [...programList.querySelectorAll('.program-row')].map(row => row.dataset.programKey);
+        const byKey = new Map(programDraft.map(item => [ensureProgramItemKey(item), item]));
+        programDraft = order.map(key => byKey.get(key)).filter(Boolean);
+        renderProgramEditor();
+        setProgramStatus('Порядок изменён перетаскиванием, время пересчитано.');
+      };
+
+      window.addEventListener('pointermove', move, { passive: false });
+      window.addEventListener('pointerup', finish);
+      window.addEventListener('pointercancel', finish);
+    }
+
+    function moveProgramItemByKeyboard(index, direction) {
+      const target = index + direction;
+      if (target < 0 || target >= programDraft.length) return;
+      [programDraft[index], programDraft[target]] = [programDraft[target], programDraft[index]];
+      renderProgramEditor();
+      programList.querySelector(`[data-program-index="${target}"] .program-drag-handle`)?.focus();
+      setProgramStatus('Порядок изменён, время пересчитано.');
+    }
     function renderProgramEditor() {
       recalculateProgramTimes();
       programList.innerHTML = programDraft.map((item, index) => {
@@ -997,16 +1111,15 @@
           ? `<button class="program-remove" type="button" data-program-remove="${index}">Удалить</button>`
           : '';
         return `
-          <div class="program-row ${isService ? 'service' : ''}" data-program-index="${index}">
+          <div class="program-row ${isService ? 'service' : ''}" data-program-index="${index}" data-program-key="${ensureProgramItemKey(item)}">
             <div class="program-order">
               <div class="program-order-label">${String(index + 1).padStart(2, '0')}</div>
-              <button class="program-move" type="button" data-program-move="-1" data-program-index="${index}" aria-label="Поднять блок" ${index === 0 ? 'disabled' : ''}>↑</button>
-              <button class="program-move" type="button" data-program-move="1" data-program-index="${index}" aria-label="Опустить блок" ${index === programDraft.length - 1 ? 'disabled' : ''}>↓</button>
+              <button class="program-drag-handle" type="button" data-program-drag="${index}" aria-label="Перетащить блок ${index + 1}. Стрелки вверх и вниз меняют порядок.">⋮⋮</button>
             </div>
             <div class="program-main">
               <div class="program-flags">
                 <span class="program-flag ${isService ? 'service' : ''}">${typeLabel}</span>
-                <span class="program-flag time">${formatProgramRange(item)}</span>
+                <span class="program-flag time" data-program-time="${index}">${formatProgramRange(item)}</span>
                 ${currentBadge}
                 ${removeButton}
               </div>
@@ -1015,31 +1128,30 @@
               </label>
             </div>
             <div class="program-duration">
-              <label class="program-field">Длительность, мин
-                <div class="program-duration-main">
-                  <button type="button" data-duration-step="-5" data-program-index="${index}" aria-label="Уменьшить длительность на 5 минут">−5</button>
-                  <input type="number" min="1" max="1440" step="1" inputmode="numeric" data-program-duration="${index}" value="${item.duration_minutes ?? ''}">
-                  <button type="button" data-duration-step="5" data-program-index="${index}" aria-label="Увеличить длительность на 5 минут">+5</button>
+              <label class="program-field">Длительность
+                <div class="program-duration-control">
+                  <input class="program-duration-slider" type="range" min="5" max="${programDurationSliderMax(item)}" step="5" data-program-duration-slider="${index}" value="${programDuration(item) || 30}" aria-label="Длительность блока в минутах">
+                  <input class="program-duration-number" type="number" min="1" max="1440" step="1" inputmode="numeric" data-program-duration-number="${index}" value="${item.duration_minutes ?? ''}" aria-label="Длительность блока вручную">
+                  <span class="program-duration-unit">мин</span>
                 </div>
               </label>
-              <div class="program-duration-presets">${renderDurationPresets(item, index)}</div>
             </div>
           </div>`;
       }).join('');
 
-      programList.querySelectorAll('[data-program-move]').forEach(button => {
-        button.addEventListener('click', () => {
-          if (programSaving) return;
-          const index = Number(button.dataset.programIndex);
-          const direction = Number(button.dataset.programMove);
-          const target = index + direction;
-          if (!Number.isInteger(index) || target < 0 || target >= programDraft.length) return;
-          [programDraft[index], programDraft[target]] = [programDraft[target], programDraft[index]];
-          renderProgramEditor();
-          setProgramStatus('Порядок изменён, время пересчитано.');
+      programList.querySelectorAll('[data-program-drag]').forEach(handle => {
+        handle.addEventListener('pointerdown', event => startProgramPointerDrag(event, handle));
+        handle.addEventListener('keydown', event => {
+          const index = Number(handle.dataset.programDrag);
+          if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            moveProgramItemByKeyboard(index, -1);
+          } else if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            moveProgramItemByKeyboard(index, 1);
+          }
         });
       });
-
       programList.querySelectorAll('[data-program-title]').forEach(input => {
         input.addEventListener('input', () => {
           const item = programDraft[Number(input.dataset.programTitle)];
@@ -1049,37 +1161,40 @@
         });
       });
 
-      programList.querySelectorAll('[data-program-duration]').forEach(input => {
+      programList.querySelectorAll('[data-program-duration-slider]').forEach(slider => {
+        slider.addEventListener('input', () => {
+          const index = Number(slider.dataset.programDurationSlider);
+          const item = programDraft[index];
+          if (!item) return;
+          item.duration_minutes = Number(slider.value);
+          const number = programList.querySelector(`[data-program-duration-number="${index}"]`);
+          if (number) number.value = slider.value;
+          refreshProgramTimingInDom();
+          setProgramStatus('Длительность изменена, время пересчитано.');
+        });
+      });
+
+      programList.querySelectorAll('[data-program-duration-number]').forEach(input => {
+        input.addEventListener('input', () => {
+          const index = Number(input.dataset.programDurationNumber);
+          const item = programDraft[index];
+          if (!item) return;
+          const value = input.value === '' ? null : Math.max(1, Math.round(Number(input.value)));
+          if (value !== null && !Number.isFinite(value)) return;
+          item.duration_minutes = value;
+          const slider = programList.querySelector(`[data-program-duration-slider="${index}"]`);
+          if (slider && value !== null) {
+            slider.max = String(Math.max(180, Math.ceil(value / 60) * 60));
+            slider.value = String(Math.max(5, value));
+          }
+          refreshProgramTimingInDom();
+          setProgramStatus('Длительность изменена, время пересчитано.');
+        });
         input.addEventListener('change', () => {
-          const item = programDraft[Number(input.dataset.programDuration)];
-          if (!item) return;
-          item.duration_minutes = input.value === '' ? null : Number(input.value);
-          renderProgramEditor();
-          setProgramStatus('Длительность изменена, время пересчитано.');
+          const value = input.value === '' ? null : Math.max(1, Math.round(Number(input.value)));
+          input.value = value == null ? '' : String(value);
         });
       });
-
-      programList.querySelectorAll('[data-duration-step]').forEach(button => {
-        button.addEventListener('click', () => {
-          const item = programDraft[Number(button.dataset.programIndex)];
-          if (!item) return;
-          const current = programDuration(item) || 15;
-          item.duration_minutes = Math.max(5, current + Number(button.dataset.durationStep));
-          renderProgramEditor();
-          setProgramStatus('Длительность изменена, время пересчитано.');
-        });
-      });
-
-      programList.querySelectorAll('[data-duration-preset]').forEach(button => {
-        button.addEventListener('click', () => {
-          const item = programDraft[Number(button.dataset.programIndex)];
-          if (!item) return;
-          item.duration_minutes = Number(button.dataset.durationPreset);
-          renderProgramEditor();
-          setProgramStatus('Длительность изменена, время пересчитано.');
-        });
-      });
-
       programList.querySelectorAll('[data-program-remove]').forEach(button => {
         button.addEventListener('click', () => {
           const index = Number(button.dataset.programRemove);
@@ -1102,7 +1217,8 @@
         starts_at: null,
         duration_minutes: duration,
         mode: null,
-        is_current_session: false
+        is_current_session: false,
+        _program_key: 'draft:' + (++programDraftKey)
       });
       renderProgramEditor();
       setProgramStatus('Добавлен блок «' + title + '». Можно переименовать и переставить.');
@@ -1123,6 +1239,7 @@
       try {
         programDraft = await listEventProgramItems(state.room.event_key);
         if (!programDraft.length) throw new Error('Программа мероприятия пуста.');
+        programDraft.forEach(ensureProgramItemKey);
         programAnchorStart = programDraft[0]?.starts_at || null;
         renderProgramAnchorControls();
         renderProgramEditor();
