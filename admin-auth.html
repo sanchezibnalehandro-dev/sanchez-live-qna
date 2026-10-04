@@ -237,6 +237,13 @@
       margin-left: auto; min-height: 26px; padding: 3px 8px; border: 1px solid var(--color-border);
       border-radius: 8px; background: transparent; color: var(--color-danger-text); font: inherit; font-size: 9px; font-weight: 800; cursor: pointer;
     }
+    .program-configure {
+      margin-left: auto; min-height: 26px; padding: 3px 8px; border: 1px solid var(--color-border);
+      border-radius: 8px; background: transparent; color: var(--color-accent-text); font: inherit; font-size: 9px; font-weight: 800; cursor: pointer;
+    }
+    .program-configure:hover, .program-configure:focus-visible, .program-remove:hover, .program-remove:focus-visible {
+      border-color: var(--color-border-strong); background: var(--color-surface-hover); outline: none;
+    }
     .program-field { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
     .program-field input {
       width: 100%; min-width: 0; box-sizing: border-box; min-height: 42px; padding: 8px 10px;
@@ -623,6 +630,8 @@
         <div class="program-add-wrap">
           <button class="program-add-btn" id="programAddBtn" type="button" aria-expanded="false">+ Добавить блок</button>
           <div class="program-add-menu" id="programAddMenu" hidden>
+            <button class="program-add-option" type="button" data-session-mode="speaker">Выступление<span>Новая Q&amp;A-сессия</span></button>
+            <button class="program-add-option" type="button" data-session-mode="panel">Панель<span>Новая Q&amp;A-сессия</span></button>
             <button class="program-add-option" type="button" data-service-title="Обед" data-service-duration="60">Обед</button>
             <button class="program-add-option" type="button" data-service-title="Кофе-брейк" data-service-duration="20">Кофе-брейк</button>
             <button class="program-add-option" type="button" data-service-title="Другое" data-service-duration="30">Другое</button>
@@ -645,6 +654,7 @@
     import {
       supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, listEventRooms, listEventProgramItems, listSpeakers, updateSpeaker,
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration, saveEventProgram,
+      createEventProgramSession,
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
       setCurrentEventSession, subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
@@ -802,6 +812,7 @@
     let programDraft = [];
     let programAnchorStart = null;
     let programSaving = false;
+    let programCreatingSession = false;
     let programDraftKey = 0;
     let pendingSpeakerDeletionId = null;
     let deletingSpeakerId = null;
@@ -1110,6 +1121,9 @@
         const removeButton = isService
           ? `<button class="program-remove" type="button" data-program-remove="${index}">Удалить</button>`
           : '';
+        const configureButton = !isService && item.slug
+          ? `<button class="program-configure" type="button" data-program-configure="${index}">Настроить сессию</button>`
+          : '';
         return `
           <div class="program-row ${isService ? 'service' : ''}" data-program-index="${index}" data-program-key="${ensureProgramItemKey(item)}">
             <div class="program-order">
@@ -1121,6 +1135,7 @@
                 <span class="program-flag ${isService ? 'service' : ''}">${typeLabel}</span>
                 <span class="program-flag time" data-program-time="${index}">${formatProgramRange(item)}</span>
                 ${currentBadge}
+                ${configureButton}
                 ${removeButton}
               </div>
               <label class="program-field">Название
@@ -1204,6 +1219,13 @@
           setProgramStatus('Организационный блок удалён из черновика.');
         });
       });
+      programList.querySelectorAll('[data-program-configure]').forEach(button => {
+        button.addEventListener('click', () => {
+          const item = programDraft[Number(button.dataset.programConfigure)];
+          if (!item?.slug) return;
+          location.href = `./admin-auth.html?room=${encodeURIComponent(item.slug)}`;
+        });
+      });
     }
 
     function addServiceProgramItem(title, duration) {
@@ -1226,6 +1248,46 @@
       programAddBtn.setAttribute('aria-expanded', 'false');
       const inputs = programList.querySelectorAll('[data-program-title]');
       inputs[inputs.length - 1]?.focus();
+    }
+
+    async function addSessionProgramItem(mode) {
+      if (programSaving || programCreatingSession || !state.room?.event_key) return;
+
+      programCreatingSession = true;
+      programAddBtn.disabled = true;
+      programAddMenu.hidden = true;
+      programAddBtn.setAttribute('aria-expanded', 'false');
+      setProgramStatus('Создаю Q&A-сессию…');
+
+      try {
+        const item = await createEventProgramSession(state.room.event_key, mode);
+        if (!item?.room_id || !item?.program_item_id || !item?.slug) {
+          throw new Error('Сервер вернул неполные данные новой сессии.');
+        }
+
+        programDraft.push({
+          id: item.program_item_id,
+          event_key: state.room.event_key,
+          room_id: item.room_id,
+          kind: 'session',
+          title: item.title || (mode === 'panel' ? 'Новая панель' : 'Новое выступление'),
+          session_order: item.session_order,
+          starts_at: item.starts_at || null,
+          duration_minutes: item.duration_minutes ?? 30,
+          mode: item.mode,
+          slug: item.slug,
+          is_current_session: Boolean(item.is_current_session),
+          _program_key: `session:${item.room_id}`
+        });
+        renderProgramEditor();
+        setProgramStatus('Новая сессия создана. Она не в эфире, приём вопросов закрыт.');
+        programList.querySelector(`[data-program-key="session:${item.room_id}"] [data-program-title]`)?.focus();
+      } catch (error) {
+        setProgramStatus(error.message || 'Не удалось создать Q&A-сессию.', 'error');
+      } finally {
+        programCreatingSession = false;
+        programAddBtn.disabled = false;
+      }
     }
 
     async function openProgramEditor() {
@@ -1320,6 +1382,11 @@
     programAddMenu.querySelectorAll('[data-service-title]').forEach(button => {
       button.addEventListener('click', () => {
         addServiceProgramItem(button.dataset.serviceTitle, Number(button.dataset.serviceDuration));
+      });
+    });
+    programAddMenu.querySelectorAll('[data-session-mode]').forEach(button => {
+      button.addEventListener('click', () => {
+        void addSessionProgramItem(button.dataset.sessionMode);
       });
     });
 
