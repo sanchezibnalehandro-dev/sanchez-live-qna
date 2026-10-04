@@ -142,8 +142,8 @@
       background: rgba(0,0,0,.72); backdrop-filter: blur(8px);
     }
     .program-dialog {
-      width: min(1040px, 100%); max-height: min(860px, calc(100vh - 40px)); display: grid;
-      grid-template-rows: auto minmax(0,1fr) auto; overflow: hidden;
+      width: min(1120px, 100%); max-height: min(900px, calc(100vh - 40px)); display: grid;
+      grid-template-rows: auto auto minmax(0,1fr) auto; overflow: hidden;
       border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-surface-raised);
       box-shadow: 0 28px 90px rgba(0,0,0,.55);
     }
@@ -155,24 +155,66 @@
     .program-dialog-head p { margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
     .program-dialog-foot { border-top: 1px solid var(--color-border-subtle); }
     .program-dialog-actions { display: flex; gap: 8px; }
-    .program-status { min-height: 16px; color: var(--muted); font-size: 10px; }
+    .program-status { min-height: 16px; color: var(--muted); font-size: 10px; line-height: 1.4; }
     .program-status.error { color: var(--color-danger-text); }
     .program-status.success { color: var(--color-success-text); }
+    .program-toolbar {
+      display: grid; grid-template-columns: minmax(170px,220px) minmax(280px,360px) 1fr auto;
+      gap: 12px; align-items: end; padding: 14px 18px;
+      border-bottom: 1px solid var(--color-border-subtle); background: var(--color-surface-subtle);
+    }
+    .program-toolbar-field { display: grid; gap: 6px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .program-toolbar-field input {
+      min-height: 44px; box-sizing: border-box; width: 100%; padding: 8px 10px;
+      border: 1px solid var(--color-border); border-radius: 11px; background: var(--color-surface-raised);
+      color: var(--text); font: inherit; font-size: 13px; font-weight: 800; color-scheme: dark;
+    }
+    .program-clock {
+      display: grid; grid-template-columns: 52px 58px 18px 58px 52px; gap: 6px; align-items: center;
+    }
+    .program-clock input {
+      min-width: 0; padding-inline: 6px; text-align: center; font-size: 18px; font-variant-numeric: tabular-nums;
+    }
+    .program-clock-colon { color: var(--text); font-size: 19px; font-weight: 900; text-align: center; }
+    .program-clock-step, .program-add-btn {
+      min-height: 44px; border: 1px solid var(--color-border); border-radius: 11px;
+      background: var(--color-surface-raised); color: var(--text); font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+    }
+    .program-clock-step:hover, .program-clock-step:focus-visible, .program-add-btn:hover, .program-add-btn:focus-visible {
+      border-color: var(--color-border-strong); background: var(--color-surface-hover); outline: none;
+    }
+    .program-toolbar-note { align-self: center; color: var(--muted); font-size: 10px; line-height: 1.45; }
+    .program-add-wrap { position: relative; }
+    .program-add-btn { min-width: 150px; padding: 8px 12px; background: var(--color-accent); border-color: transparent; color: var(--color-text-on-accent); }
+    .program-add-menu[hidden] { display: none; }
+    .program-add-menu {
+      position: absolute; top: calc(100% + 8px); right: 0; z-index: 10; width: 260px;
+      display: grid; gap: 5px; padding: 7px; border: 1px solid var(--color-border); border-radius: 13px;
+      background: var(--color-surface-raised); box-shadow: 0 18px 48px rgba(0,0,0,.34);
+    }
+    .program-add-option {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px;
+      padding: 8px 10px; border: 0; border-radius: 9px; background: transparent; color: var(--text);
+      font: inherit; font-size: 11px; font-weight: 800; text-align: left; cursor: pointer;
+    }
+    .program-add-option:hover, .program-add-option:focus-visible { background: var(--color-surface-hover); outline: none; }
+    .program-add-option span { color: var(--muted); font-size: 9px; font-weight: 700; }
     .program-list { min-height: 0; overflow: auto; display: grid; gap: 8px; padding: 12px; }
     .program-row {
-      display: grid; grid-template-columns: 72px minmax(240px,1fr) minmax(180px,220px) 120px;
-      gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--color-border-subtle);
+      display: grid; grid-template-columns: 72px minmax(260px,1fr) minmax(250px,300px);
+      gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--color-border-subtle);
       border-radius: 14px; background: var(--color-surface-subtle);
     }
+    .program-row.service { border-style: dashed; }
     .program-order { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; align-self: stretch; }
     .program-order-label { grid-column: 1 / -1; align-self: center; color: var(--muted); font-size: 10px; font-weight: 800; text-align: center; }
     .program-move {
-      min-height: 34px; border: 1px solid var(--color-border); border-radius: 9px;
-      background: var(--color-surface-raised); color: var(--text); cursor: pointer; font: inherit;
+      min-height: 38px; border: 1px solid var(--color-border); border-radius: 9px;
+      background: var(--color-surface-raised); color: var(--text); cursor: pointer; font: inherit; font-size: 15px;
     }
     .program-move:disabled { opacity: .3; cursor: default; }
-    .program-main { min-width: 0; display: grid; gap: 6px; }
-    .program-flags { display: flex; flex-wrap: wrap; gap: 5px; }
+    .program-main { min-width: 0; display: grid; gap: 7px; }
+    .program-flags { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-height: 22px; }
     .program-flag {
       display: inline-flex; width: fit-content; padding: 3px 7px; border-radius: 999px;
       background: var(--color-neutral-soft); color: var(--color-neutral-text); font-size: 8px;
@@ -180,20 +222,40 @@
     }
     .program-flag.current { background: var(--color-success-soft); color: var(--color-success-text); }
     .program-flag.time { background: color-mix(in srgb, var(--color-accent) 12%, transparent); color: var(--color-accent-text); }
+    .program-flag.service { background: var(--color-warning-soft); color: var(--color-warning-text); }
+    .program-remove {
+      margin-left: auto; min-height: 26px; padding: 3px 8px; border: 1px solid var(--color-border);
+      border-radius: 8px; background: transparent; color: var(--color-danger-text); font: inherit; font-size: 9px; font-weight: 800; cursor: pointer;
+    }
     .program-field { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
     .program-field input {
-      width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; padding: 8px 10px;
+      width: 100%; min-width: 0; box-sizing: border-box; min-height: 42px; padding: 8px 10px;
       border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-raised);
       color: var(--text); font: inherit; font-size: 12px; text-transform: none; letter-spacing: normal;
     }
-    .program-field input:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; }
-    .program-field input:disabled { opacity: .72; cursor: default; color: var(--muted); background: var(--color-surface-subtle); }
-    @media (max-width: 760px) {
-      .program-modal { place-items: stretch; padding: 10px; }
-      .program-dialog { max-height: calc(100vh - 20px); border-radius: 16px; }
+    .program-field input:focus-visible, .program-toolbar-field input:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; }
+    .program-duration { display: grid; gap: 8px; min-width: 0; }
+    .program-duration-main { display: grid; grid-template-columns: 52px minmax(78px,1fr) 52px; gap: 6px; }
+    .program-duration-main button {
+      min-height: 42px; border: 1px solid var(--color-border); border-radius: 10px;
+      background: var(--color-surface-raised); color: var(--text); font: inherit; font-size: 12px; font-weight: 900; cursor: pointer;
+    }
+    .program-duration-main input { text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .program-duration-presets { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; }
+    .program-duration-preset {
+      min-height: 30px; padding: 4px; border: 1px solid var(--color-border-subtle); border-radius: 8px;
+      background: transparent; color: var(--muted); font: inherit; font-size: 9px; font-weight: 800; cursor: pointer;
+    }
+    .program-duration-preset.active { border-color: var(--color-accent-border); background: var(--color-accent-soft); color: var(--color-accent-text); }
+    @media (max-width: 820px) {
+      .program-modal { place-items: stretch; padding: 8px; }
+      .program-dialog { max-height: calc(100vh - 16px); border-radius: 16px; }
+      .program-toolbar { grid-template-columns: 1fr; align-items: stretch; }
+      .program-clock { grid-template-columns: 54px 1fr 18px 1fr 54px; }
+      .program-add-btn { width: 100%; }
+      .program-add-menu { position: static; width: auto; margin-top: 6px; }
       .program-row { grid-template-columns: 62px minmax(0,1fr); align-items: start; }
-      .program-main { grid-column: 2; }
-      .program-field { grid-column: 2; }
+      .program-main, .program-duration { grid-column: 2; }
       .program-dialog-head, .program-dialog-foot { align-items: flex-start; }
       .program-dialog-foot { flex-direction: column; }
       .program-dialog-actions { width: 100%; }
@@ -533,12 +595,38 @@
   <div class="program-modal" id="programModal" hidden>
     <section class="program-dialog" role="dialog" aria-modal="true" aria-labelledby="programDialogTitle">
       <div class="program-dialog-head">
-        <div><h2 id="programDialogTitle">Программа мероприятия</h2><p>Старт задаётся у первого блока. После перестановки время пересчитывается автоматически по длительности.</p></div>
+        <div><h2 id="programDialogTitle">Программа мероприятия</h2><p>Сессии Q&A и организационные блоки живут в одном расписании. LIVE переключается отдельно.</p></div>
         <button class="qr-close" id="programCloseBtn" type="button" aria-label="Закрыть программу">×</button>
+      </div>
+      <div class="program-toolbar">
+        <label class="program-toolbar-field">Дата программы
+          <input type="date" id="programDateInput">
+        </label>
+        <div class="program-toolbar-field">Старт · 24 часа
+          <div class="program-clock">
+            <button class="program-clock-step" id="programStartMinusBtn" type="button" aria-label="Сдвинуть старт на 5 минут назад">−5</button>
+            <input type="text" inputmode="numeric" maxlength="2" id="programHourInput" aria-label="Часы" placeholder="00">
+            <span class="program-clock-colon">:</span>
+            <input type="text" inputmode="numeric" maxlength="2" id="programMinuteInput" aria-label="Минуты" placeholder="00">
+            <button class="program-clock-step" id="programStartPlusBtn" type="button" aria-label="Сдвинуть старт на 5 минут вперёд">+5</button>
+          </div>
+        </div>
+        <div class="program-toolbar-note">Порядок и длительность автоматически пересчитывают время всех следующих блоков.</div>
+        <div class="program-add-wrap">
+          <button class="program-add-btn" id="programAddBtn" type="button" aria-expanded="false">+ Добавить блок</button>
+          <div class="program-add-menu" id="programAddMenu" hidden>
+            <button class="program-add-option" type="button" data-service-title="Сбор гостей" data-service-duration="30">Сбор гостей <span>30 мин</span></button>
+            <button class="program-add-option" type="button" data-service-title="Кофе-брейк" data-service-duration="20">Кофе-брейк <span>20 мин</span></button>
+            <button class="program-add-option" type="button" data-service-title="Перерыв" data-service-duration="15">Перерыв <span>15 мин</span></button>
+            <button class="program-add-option" type="button" data-service-title="Обед" data-service-duration="60">Обед <span>60 мин</span></button>
+            <button class="program-add-option" type="button" data-service-title="Нетворкинг" data-service-duration="30">Нетворкинг <span>30 мин</span></button>
+            <button class="program-add-option" type="button" data-service-title="Новый блок" data-service-duration="15">Другое <span>15 мин</span></button>
+          </div>
+        </div>
       </div>
       <div class="program-list" id="programList"></div>
       <div class="program-dialog-foot">
-        <div class="program-status" id="programStatus">Изменения не влияют на текущую live-сессию.</div>
+        <div class="program-status" id="programStatus">Program v2 не меняет текущую live-сессию.</div>
         <div class="program-dialog-actions">
           <button class="btn ghost" id="programCancelBtn" type="button">Отмена</button>
           <button class="btn primary" id="programSaveBtn" type="button">Сохранить программу</button>
@@ -550,8 +638,8 @@
   <script type="module">
     import { applyBrandIdentity, getBrandForRoomSlug } from './brand.js';
     import {
-      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, listEventRooms, listSpeakers, updateSpeaker,
-      setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration, updateEventProgram,
+      supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, listEventRooms, listEventProgramItems, listSpeakers, updateSpeaker,
+      setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration, saveEventProgram,
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
       setCurrentEventSession, subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
@@ -592,6 +680,13 @@
     const programModal = document.getElementById('programModal');
     const programList = document.getElementById('programList');
     const programStatus = document.getElementById('programStatus');
+    const programDateInput = document.getElementById('programDateInput');
+    const programHourInput = document.getElementById('programHourInput');
+    const programMinuteInput = document.getElementById('programMinuteInput');
+    const programStartMinusBtn = document.getElementById('programStartMinusBtn');
+    const programStartPlusBtn = document.getElementById('programStartPlusBtn');
+    const programAddBtn = document.getElementById('programAddBtn');
+    const programAddMenu = document.getElementById('programAddMenu');
     const programSaveBtn = document.getElementById('programSaveBtn');
     const programCancelBtn = document.getElementById('programCancelBtn');
     const programCloseBtn = document.getElementById('programCloseBtn');
@@ -745,41 +840,112 @@
       const eventRooms = await listEventRooms(state.room?.event_key);
       renderEventSessionSelector(eventRooms);
     }
-    function toLocalDateTimeValue(value) {
-      if (!value) return '';
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return '';
-      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-      return local.toISOString().slice(0, 16);
-    }
-
-    function fromLocalDateTimeValue(value) {
-      if (!value) return null;
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) throw new Error('Некорректное время начала.');
-      return date.toISOString();
-    }
-
     function setProgramStatus(message, type = '') {
       programStatus.textContent = message;
       programStatus.className = `program-status ${type}`.trim();
     }
 
+    function padProgramNumber(value) {
+      return String(value).padStart(2, '0');
+    }
+
     function syncProgramOrder() {
-      programDraft.forEach((room, index) => {
-        room.session_order = (index + 1) * 10;
+      programDraft.forEach((item, index) => {
+        item.session_order = (index + 1) * 10;
       });
     }
+
     function formatProgramTime(value) {
       if (!value) return '';
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return '';
-      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
 
-    function programDuration(room) {
-      const value = Number(room?.duration_minutes);
+    function programDuration(item) {
+      const value = Number(item?.duration_minutes);
       return Number.isInteger(value) && value > 0 ? value : null;
+    }
+
+    function programAnchorParts(value) {
+      if (!value) return { date: '', hour: '', minute: '' };
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return { date: '', hour: '', minute: '' };
+      return {
+        date: [date.getFullYear(), padProgramNumber(date.getMonth() + 1), padProgramNumber(date.getDate())].join('-'),
+        hour: padProgramNumber(date.getHours()),
+        minute: padProgramNumber(date.getMinutes())
+      };
+    }
+
+    function renderProgramAnchorControls() {
+      const parts = programAnchorParts(programAnchorStart);
+      programDateInput.value = parts.date;
+      programHourInput.value = parts.hour;
+      programMinuteInput.value = parts.minute;
+    }
+
+    function readProgramAnchorControls() {
+      const dateValue = programDateInput.value.trim();
+      const hourValue = programHourInput.value.trim();
+      const minuteValue = programMinuteInput.value.trim();
+
+      if (!dateValue && !hourValue && !minuteValue) return null;
+      if (!dateValue || !hourValue || !minuteValue) {
+        throw new Error('Укажите дату, часы и минуты старта программы.');
+      }
+
+      const hour = Number(hourValue);
+      const minute = Number(minuteValue);
+      if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+        throw new Error('Часы должны быть от 00 до 23.');
+      }
+      if (!Number.isInteger(minute) || minute < 0 || minute > 59) {
+        throw new Error('Минуты должны быть от 00 до 59.');
+      }
+
+      const [year, month, day] = dateValue.split('-').map(Number);
+      const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+      if (Number.isNaN(date.getTime())) throw new Error('Некорректная дата программы.');
+      return date.toISOString();
+    }
+
+    function normalizeProgramClockField(input, max) {
+      const digits = input.value.replace(/\D/g, '').slice(0, 2);
+      if (!digits) {
+        input.value = '';
+        return;
+      }
+      const value = Math.min(max, Number(digits));
+      input.value = padProgramNumber(value);
+    }
+
+    function updateProgramAnchorFromControls() {
+      try {
+        normalizeProgramClockField(programHourInput, 23);
+        normalizeProgramClockField(programMinuteInput, 59);
+        programAnchorStart = readProgramAnchorControls();
+        renderProgramEditor();
+        setProgramStatus('Старт изменён, расписание пересчитано.');
+      } catch (error) {
+        setProgramStatus(error.message || 'Проверьте время старта.', 'error');
+      }
+    }
+
+    function shiftProgramAnchor(minutes) {
+      try {
+        programAnchorStart = readProgramAnchorControls();
+        if (!programAnchorStart) {
+          throw new Error('Сначала задайте дату и время старта.');
+        }
+        const next = new Date(new Date(programAnchorStart).getTime() + minutes * 60000);
+        programAnchorStart = next.toISOString();
+        renderProgramAnchorControls();
+        renderProgramEditor();
+        setProgramStatus('Старт сдвинут на ' + (minutes > 0 ? '+' : '') + minutes + ' мин.');
+      } catch (error) {
+        setProgramStatus(error.message || 'Не удалось изменить старт.', 'error');
+      }
     }
 
     function recalculateProgramTimes() {
@@ -787,56 +953,77 @@
       if (!programDraft.length) return;
 
       if (!programAnchorStart) {
-        programDraft.forEach(room => { room.starts_at = null; });
+        programDraft.forEach(item => { item.starts_at = null; });
         return;
       }
 
       let cursor = new Date(programAnchorStart);
       if (Number.isNaN(cursor.getTime())) return;
 
-      for (const room of programDraft) {
+      for (const item of programDraft) {
         if (!cursor) {
-          room.starts_at = null;
+          item.starts_at = null;
           continue;
         }
-        room.starts_at = cursor.toISOString();
-        const duration = programDuration(room);
+        item.starts_at = cursor.toISOString();
+        const duration = programDuration(item);
         cursor = duration ? new Date(cursor.getTime() + duration * 60000) : null;
       }
     }
 
-    function formatProgramRange(room) {
-      if (!room?.starts_at) return 'Время не рассчитано';
-      const start = formatProgramTime(room.starts_at);
-      const duration = programDuration(room);
-      if (!duration) return `${start}–?`;
-      const end = new Date(new Date(room.starts_at).getTime() + duration * 60000);
-      return `${start}–${formatProgramTime(end.toISOString())}`;
+    function formatProgramRange(item) {
+      if (!item?.starts_at) return 'Время не рассчитано';
+      const start = formatProgramTime(item.starts_at);
+      const duration = programDuration(item);
+      if (!duration) return start + '–?';
+      const end = new Date(new Date(item.starts_at).getTime() + duration * 60000);
+      return start + '–' + formatProgramTime(end.toISOString());
+    }
+
+    function renderDurationPresets(item, index) {
+      return [15, 20, 30, 45, 60].map(value => {
+        const active = Number(item.duration_minutes) === value ? ' active' : '';
+        return `<button class="program-duration-preset${active}" type="button" data-duration-preset="${value}" data-program-index="${index}">${value}</button>`;
+      }).join('');
     }
 
     function renderProgramEditor() {
       recalculateProgramTimes();
-      programList.innerHTML = programDraft.map((room, index) => {
-        const typeLabel = room.mode === 'panel' ? 'Панель' : 'Выступление';
+      programList.innerHTML = programDraft.map((item, index) => {
+        const isService = item.kind === 'service';
+        const typeLabel = isService ? 'Орг. блок' : (item.mode === 'panel' ? 'Панель' : 'Выступление');
+        const currentBadge = !isService && item.is_current_session ? '<span class="program-flag current">В эфире</span>' : '';
+        const removeButton = isService
+          ? `<button class="program-remove" type="button" data-program-remove="${index}">Удалить</button>`
+          : '';
         return `
-          <div class="program-row" data-program-room-id="${room.id}">
+          <div class="program-row ${isService ? 'service' : ''}" data-program-index="${index}">
             <div class="program-order">
               <div class="program-order-label">${String(index + 1).padStart(2, '0')}</div>
               <button class="program-move" type="button" data-program-move="-1" data-program-index="${index}" aria-label="Поднять блок" ${index === 0 ? 'disabled' : ''}>↑</button>
               <button class="program-move" type="button" data-program-move="1" data-program-index="${index}" aria-label="Опустить блок" ${index === programDraft.length - 1 ? 'disabled' : ''}>↓</button>
             </div>
             <div class="program-main">
-              <div class="program-flags"><span class="program-flag">${typeLabel}</span><span class="program-flag time">${formatProgramRange(room)}</span>${room.is_current_session ? '<span class="program-flag current">В эфире</span>' : ''}</div>
+              <div class="program-flags">
+                <span class="program-flag ${isService ? 'service' : ''}">${typeLabel}</span>
+                <span class="program-flag time">${formatProgramRange(item)}</span>
+                ${currentBadge}
+                ${removeButton}
+              </div>
               <label class="program-field">Название
-                <input type="text" maxlength="180" data-program-field="title" data-program-index="${index}" value="${escapeHtml(room.title || '')}">
+                <input type="text" maxlength="180" data-program-title="${index}" value="${escapeHtml(item.title || '')}">
               </label>
             </div>
-            <label class="program-field">${index === 0 ? 'Старт программы' : 'Начало · авто'}
-              <input type="datetime-local" data-program-field="starts_at" data-program-index="${index}" value="${toLocalDateTimeValue(room.starts_at)}" ${index === 0 ? '' : 'disabled'}>
-            </label>
-            <label class="program-field">Длительность, мин
-              <input type="number" min="1" step="5" inputmode="numeric" data-program-field="duration_minutes" data-program-index="${index}" value="${room.duration_minutes ?? ''}">
-            </label>
+            <div class="program-duration">
+              <label class="program-field">Длительность, мин
+                <div class="program-duration-main">
+                  <button type="button" data-duration-step="-5" data-program-index="${index}" aria-label="Уменьшить длительность на 5 минут">−5</button>
+                  <input type="number" min="1" max="1440" step="1" inputmode="numeric" data-program-duration="${index}" value="${item.duration_minutes ?? ''}">
+                  <button type="button" data-duration-step="5" data-program-index="${index}" aria-label="Увеличить длительность на 5 минут">+5</button>
+                </div>
+              </label>
+              <div class="program-duration-presets">${renderDurationPresets(item, index)}</div>
+            </div>
           </div>`;
       }).join('');
 
@@ -849,59 +1036,112 @@
           if (!Number.isInteger(index) || target < 0 || target >= programDraft.length) return;
           [programDraft[index], programDraft[target]] = [programDraft[target], programDraft[index]];
           renderProgramEditor();
-          setProgramStatus('Порядок изменён, время пересчитано. Нажмите «Сохранить программу».');
+          setProgramStatus('Порядок изменён, время пересчитано.');
         });
       });
 
-      programList.querySelectorAll('[data-program-field]').forEach(input => {
-        const field = input.dataset.programField;
-        if (field === 'title') {
-          input.addEventListener('input', () => {
-            const room = programDraft[Number(input.dataset.programIndex)];
-            if (!room) return;
-            room.title = input.value;
-            setProgramStatus('Есть несохранённые изменения.');
-          });
-          return;
-        }
+      programList.querySelectorAll('[data-program-title]').forEach(input => {
+        input.addEventListener('input', () => {
+          const item = programDraft[Number(input.dataset.programTitle)];
+          if (!item) return;
+          item.title = input.value;
+          setProgramStatus('Есть несохранённые изменения.');
+        });
+      });
 
+      programList.querySelectorAll('[data-program-duration]').forEach(input => {
         input.addEventListener('change', () => {
-          const index = Number(input.dataset.programIndex);
-          const room = programDraft[index];
-          if (!room) return;
-
-          if (field === 'duration_minutes') {
-            room.duration_minutes = input.value === '' ? null : Number(input.value);
-          }
-
-          if (field === 'starts_at' && index === 0) {
-            try {
-              programAnchorStart = fromLocalDateTimeValue(input.value);
-            } catch {
-              setProgramStatus('Некорректное время начала.', 'error');
-              return;
-            }
-          }
-
+          const item = programDraft[Number(input.dataset.programDuration)];
+          if (!item) return;
+          item.duration_minutes = input.value === '' ? null : Number(input.value);
           renderProgramEditor();
-          setProgramStatus('Время пересчитано. Нажмите «Сохранить программу».');
+          setProgramStatus('Длительность изменена, время пересчитано.');
+        });
+      });
+
+      programList.querySelectorAll('[data-duration-step]').forEach(button => {
+        button.addEventListener('click', () => {
+          const item = programDraft[Number(button.dataset.programIndex)];
+          if (!item) return;
+          const current = programDuration(item) || 15;
+          item.duration_minutes = Math.max(5, current + Number(button.dataset.durationStep));
+          renderProgramEditor();
+          setProgramStatus('Длительность изменена, время пересчитано.');
+        });
+      });
+
+      programList.querySelectorAll('[data-duration-preset]').forEach(button => {
+        button.addEventListener('click', () => {
+          const item = programDraft[Number(button.dataset.programIndex)];
+          if (!item) return;
+          item.duration_minutes = Number(button.dataset.durationPreset);
+          renderProgramEditor();
+          setProgramStatus('Длительность изменена, время пересчитано.');
+        });
+      });
+
+      programList.querySelectorAll('[data-program-remove]').forEach(button => {
+        button.addEventListener('click', () => {
+          const index = Number(button.dataset.programRemove);
+          if (programDraft[index]?.kind !== 'service') return;
+          programDraft.splice(index, 1);
+          renderProgramEditor();
+          setProgramStatus('Организационный блок удалён из черновика.');
         });
       });
     }
 
-    function openProgramEditor() {
-      if (!state.room?.event_key || !state.eventRooms.length) return;
-      programDraft = state.eventRooms.map(room => ({ ...room }));
-      programAnchorStart = programDraft[0]?.starts_at || null;
+    function addServiceProgramItem(title, duration) {
+      programDraft.push({
+        id: null,
+        event_key: state.room.event_key,
+        room_id: null,
+        kind: 'service',
+        title,
+        session_order: (programDraft.length + 1) * 10,
+        starts_at: null,
+        duration_minutes: duration,
+        mode: null,
+        is_current_session: false
+      });
       renderProgramEditor();
-      setProgramStatus('Изменения не влияют на текущую live-сессию.');
+      setProgramStatus('Добавлен блок «' + title + '». Можно переименовать и переставить.');
+      programAddMenu.hidden = true;
+      programAddBtn.setAttribute('aria-expanded', 'false');
+      const inputs = programList.querySelectorAll('[data-program-title]');
+      inputs[inputs.length - 1]?.focus();
+    }
+
+    async function openProgramEditor() {
+      if (!state.room?.event_key) return;
       programModal.hidden = false;
-      programModal.querySelector('input')?.focus();
+      programAddMenu.hidden = true;
+      programAddBtn.setAttribute('aria-expanded', 'false');
+      programSaveBtn.disabled = true;
+      setProgramStatus('Загружаю Program v2…');
+
+      try {
+        programDraft = await listEventProgramItems(state.room.event_key);
+        if (!programDraft.length) throw new Error('Программа мероприятия пуста.');
+        programAnchorStart = programDraft[0]?.starts_at || null;
+        renderProgramAnchorControls();
+        renderProgramEditor();
+        setProgramStatus('Program v2: организационные блоки пока не отображаются на гостевой странице до следующего этапа.');
+        programDateInput.focus();
+      } catch (error) {
+        programDraft = [];
+        programAnchorStart = null;
+        programList.innerHTML = '';
+        setProgramStatus(error.message || 'Не удалось загрузить программу.', 'error');
+      } finally {
+        programSaveBtn.disabled = false;
+      }
     }
 
     function closeProgramEditor() {
       if (programSaving) return;
       programModal.hidden = true;
+      programAddMenu.hidden = true;
       programDraft = [];
       programAnchorStart = null;
     }
@@ -933,45 +1173,84 @@
       }
     }
 
-    eventProgramBtn.addEventListener('click', openProgramEditor);
+    eventProgramBtn.addEventListener('click', () => { void openProgramEditor(); });
     programCancelBtn.addEventListener('click', closeProgramEditor);
     programCloseBtn.addEventListener('click', closeProgramEditor);
     programModal.addEventListener('click', event => {
       if (event.target === programModal) closeProgramEditor();
     });
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && !programModal.hidden) closeProgramEditor();
+      if (event.key === 'Escape' && !programModal.hidden) {
+        if (!programAddMenu.hidden) {
+          programAddMenu.hidden = true;
+          programAddBtn.setAttribute('aria-expanded', 'false');
+        } else {
+          closeProgramEditor();
+        }
+      }
     });
 
-    programSaveBtn.addEventListener('click', async () => {
-      if (programSaving || !state.room?.event_key) return;
+    programAddBtn.addEventListener('click', event => {
+      event.stopPropagation();
+      programAddMenu.hidden = !programAddMenu.hidden;
+      programAddBtn.setAttribute('aria-expanded', String(!programAddMenu.hidden));
+    });
+    programAddMenu.addEventListener('click', event => event.stopPropagation());
+    document.addEventListener('click', () => {
+      programAddMenu.hidden = true;
+      programAddBtn.setAttribute('aria-expanded', 'false');
+    });
+    programAddMenu.querySelectorAll('[data-service-title]').forEach(button => {
+      button.addEventListener('click', () => {
+        addServiceProgramItem(button.dataset.serviceTitle, Number(button.dataset.serviceDuration));
+      });
+    });
 
-      recalculateProgramTimes();
+    programDateInput.addEventListener('change', updateProgramAnchorFromControls);
+    [programHourInput, programMinuteInput].forEach(input => {
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/\D/g, '').slice(0, 2);
+      });
+      input.addEventListener('change', updateProgramAnchorFromControls);
+    });
+    programStartMinusBtn.addEventListener('click', () => shiftProgramAnchor(-5));
+    programStartPlusBtn.addEventListener('click', () => shiftProgramAnchor(5));
+
+    programSaveBtn.addEventListener('click', async () => {
+      if (programSaving || !state.room?.event_key || !programDraft.length) return;
+
+      try {
+        programAnchorStart = readProgramAnchorControls();
+        renderProgramAnchorControls();
+        recalculateProgramTimes();
+      } catch (error) {
+        setProgramStatus(error.message || 'Проверьте старт программы.', 'error');
+        return;
+      }
+
       let payload;
       try {
-        if (programAnchorStart && programDraft.some(room => !programDuration(room))) {
-          throw new Error('Чтобы рассчитать расписание, задайте длительность каждого блока.');
+        if (programAnchorStart && programDraft.some(item => !programDuration(item))) {
+          throw new Error('Для расписания задайте длительность каждого блока.');
         }
 
-        payload = programDraft.map(room => {
-          const title = String(room.title || '').trim();
+        payload = programDraft.map(item => {
+          const title = String(item.title || '').trim();
           if (!title) throw new Error('У каждого блока должно быть название.');
-          const duration = room.duration_minutes == null || room.duration_minutes === ''
+          const duration = item.duration_minutes == null || item.duration_minutes === ''
             ? null
-            : Number(room.duration_minutes);
+            : Number(item.duration_minutes);
           if (duration !== null && (!Number.isInteger(duration) || duration <= 0)) {
             throw new Error('Длительность должна быть целым числом минут больше нуля.');
           }
-          let startsAt = room.starts_at || null;
-          if (startsAt && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(startsAt)) {
-            startsAt = fromLocalDateTimeValue(startsAt);
-          }
           return {
-            id: room.id,
+            id: item.id,
+            kind: item.kind,
+            room_id: item.room_id,
             title,
-            starts_at: startsAt,
+            starts_at: item.starts_at || null,
             duration_minutes: duration,
-            session_order: room.session_order
+            session_order: item.session_order
           };
         });
       } catch (error) {
@@ -983,9 +1262,9 @@
       programSaveBtn.disabled = true;
       programCancelBtn.disabled = true;
       programCloseBtn.disabled = true;
-      setProgramStatus('Сохраняю программу…');
+      setProgramStatus('Сохраняю Program v2…');
       try {
-        await updateEventProgram(state.room.event_key, payload);
+        await saveEventProgram(state.room.event_key, payload);
         await refresh();
         await loadEventSessionSelector();
         setStatus('Программа сохранена.', 'success');
@@ -1002,6 +1281,7 @@
         programCloseBtn.disabled = false;
       }
     });
+
     eventSessionSelect.addEventListener('change', () => {
       const nextRoom = state.eventRooms.find(room => room.slug === eventSessionSelect.value);
       if (!nextRoom || nextRoom.slug === state.room?.slug) return;
