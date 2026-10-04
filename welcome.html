@@ -7,13 +7,8 @@
   <link rel="stylesheet" href="./theme.css" />
   <link rel="stylesheet" data-brand-stylesheet href="./brands/sanchez.css" />
   <style>
-    .event-entry {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: max(20px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
-    }
-    .event-entry-shell { width: min(720px, 100%); display: grid; gap: 14px; }
+    .event-entry { min-height: 100vh; display: grid; place-items: center; padding: max(20px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom)); }
+    .event-entry-shell { width: min(760px, 100%); display: grid; gap: 14px; }
     .event-entry-hero { padding: clamp(24px, 6vw, 46px); }
     .event-entry-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 34px; }
     .event-entry-brand .brand-logo-mark { width: 40px; height: 40px; border-radius: 12px; }
@@ -24,30 +19,36 @@
     .event-entry-title { margin: 9px 0 12px; color: var(--color-text); font-family: var(--font-display); font-size: clamp(32px, 8vw, 58px); line-height: 1.02; letter-spacing: -.035em; }
     .event-entry-copy { max-width: 580px; margin: 0; color: var(--color-text-secondary); font-size: 14px; line-height: 1.55; }
     .event-entry-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-top: 30px; }
-    .event-entry-action {
-      min-height: 74px; display: grid; align-content: center; gap: 4px; padding: 14px 16px;
-      border: 1px solid var(--color-border); border-radius: 16px; text-decoration: none;
-      background: var(--color-surface-subtle); color: var(--color-text);
-      transition: border-color .15s ease, transform .15s ease, background .15s ease;
-    }
+    .event-entry-actions.single { grid-template-columns: 1fr; }
+    .event-entry-action { min-height: 74px; display: grid; align-content: center; gap: 4px; padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 16px; text-decoration: none; background: var(--color-surface-subtle); color: var(--color-text); transition: border-color .15s ease, transform .15s ease, background .15s ease; }
     .event-entry-action:hover { border-color: var(--color-border-strong); transform: translateY(-1px); }
     .event-entry-action.primary { background: var(--color-accent); color: var(--color-accent-contrast, #fff); border-color: transparent; }
     .event-entry-action strong { font-size: 15px; font-weight: 800; }
     .event-entry-action span { font-size: 10px; line-height: 1.4; opacity: .76; }
-    .event-now { padding: 18px 20px; display: grid; gap: 7px; }
-    .event-now-label { color: var(--color-success-text); font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
-    .event-now-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: currentColor; }
-    .event-now-title { color: var(--color-text); font-size: 16px; font-weight: 800; line-height: 1.35; }
-    .event-entry-foot { padding: 0 8px; color: var(--color-text-secondary); font-size: 10px; text-align: center; }
+    .event-program { position: relative; overflow: hidden; min-height: 210px; padding: clamp(22px, 5vw, 34px); display: grid; align-content: end; gap: 8px; background: radial-gradient(circle at 90% 14%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent 40%), var(--color-surface-raised); }
+    .event-program-label { color: var(--color-accent-text); font-size: 9px; font-weight: 850; letter-spacing: .15em; text-transform: uppercase; }
+    .event-program-time { color: var(--color-text); font-size: clamp(21px, 5vw, 32px); font-weight: 850; line-height: 1; font-variant-numeric: tabular-nums; }
+    .event-program-title { color: var(--color-text); font-family: var(--font-display); font-size: clamp(24px, 5vw, 38px); font-weight: 800; line-height: 1.08; letter-spacing: -.03em; }
+    .event-program-type { color: var(--color-text-secondary); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .event-live { padding: 18px 20px; display: grid; gap: 7px; }
+    .event-live-label { color: var(--color-success-text); font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .event-live-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: currentColor; }
+    .event-live-title { color: var(--color-text); font-size: 16px; font-weight: 800; line-height: 1.35; }
+    .event-live-meta { color: var(--color-text-secondary); font-size: 10px; }
+    .event-entry-foot { min-height: 20px; padding: 0 8px; color: var(--color-text-secondary); font-size: 10px; text-align: center; }
     .event-entry-realtime { display: inline-flex; align-items: center; gap: 6px; }
     .event-entry-realtime::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-    .event-entry-realtime[data-state="connected"] { color: var(--color-success-text); }
     .event-entry-realtime[data-state="offline"] { color: var(--color-danger-text); }
     @media (max-width: 560px) {
       .event-entry { align-items: start; padding-top: max(16px, env(safe-area-inset-top)); }
       .event-entry-actions { grid-template-columns: 1fr; }
       .event-entry-action { min-height: 68px; }
       .event-entry-brand { margin-bottom: 28px; }
+      .event-program { min-height: 190px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .event-entry-action { transition: none; }
+      .event-entry-action:hover { transform: none; }
     }
   </style>
 </head>
@@ -69,32 +70,44 @@
           </div>
           <div class="event-entry-kicker">LIVE EVENT</div>
           <h1 class="event-entry-title">Добро пожаловать</h1>
-          <p class="event-entry-copy">Здесь можно задать вопрос текущей сессии и посмотреть актуальную программу мероприятия.</p>
-          <div class="event-entry-actions">
-            <a class="event-entry-action primary" id="askLink" href="#">
+          <p class="event-entry-copy">Следите за программой мероприятия и подключайтесь к LIVE Q&amp;A, когда текущая сессия открыта для вопросов.</p>
+          <div class="event-entry-actions single" id="entryActions">
+            <a class="event-entry-action" id="askLink" href="#" hidden>
               <strong>Задать вопрос</strong>
               <span>Перейти в LIVE Q&amp;A текущей сессии</span>
             </a>
-            <a class="event-entry-action" id="programLink" href="#">
+            <a class="event-entry-action primary" id="programLink" href="#">
               <strong>Программа дня</strong>
-              <span>Расписание выступлений и панелей</span>
+              <span>Все выступления, панели и перерывы</span>
             </a>
           </div>
         </div>
       </section>
 
-      <section class="card event-now" id="currentSessionCard" hidden>
-        <div class="event-now-label">Сейчас в эфире</div>
-        <div class="event-now-title" id="currentSessionTitle"></div>
+      <section class="card event-program" id="programCard" aria-live="polite">
+        <div class="event-program-label" id="programLabel"></div>
+        <div class="event-program-time" id="programTime"></div>
+        <div class="event-program-title" id="programTitle"></div>
+        <div class="event-program-type" id="programType" hidden></div>
       </section>
 
-      <div class="event-entry-foot">Одна ссылка на всё мероприятие · программа и LIVE Q&amp;A · <span class="event-entry-realtime" id="realtimeStatus" data-state="connecting">подключение</span></div>
+      <section class="card event-live" id="liveSessionCard" hidden>
+        <div class="event-live-label">LIVE Q&amp;A</div>
+        <div class="event-live-title" id="liveSessionTitle"></div>
+        <div class="event-live-meta" id="liveSessionMeta"></div>
+      </section>
+
+      <div class="event-entry-foot">
+        Одна ссылка на всё мероприятие · программа и LIVE Q&amp;A
+        <span class="event-entry-realtime" id="realtimeStatus" data-state="connecting" role="status">подключение</span>
+      </div>
     </div>
   </main>
 
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
-    import { getEventKey, listEventRooms, subscribeEvent } from './supabase-qna.js';
+    import { deriveGuestProgramState, PROGRAM_HERO_STATE } from './guest-program-state.mjs';
+    import { getEventKey, loadGuestEventProgram, subscribeGuestEventProgram } from './supabase-qna.js';
 
     const eventKey = getEventKey();
     const brand = getBrandForRoute(null, eventKey);
@@ -103,13 +116,23 @@
     const appShell = document.getElementById('appShell');
     const bootstrapScreen = document.getElementById('bootstrapScreen');
     const bootstrapMessage = document.getElementById('bootstrapMessage');
+    const entryActions = document.getElementById('entryActions');
     const askLink = document.getElementById('askLink');
     const programLink = document.getElementById('programLink');
-    const currentSessionCard = document.getElementById('currentSessionCard');
-    const currentSessionTitle = document.getElementById('currentSessionTitle');
+    const programCard = document.getElementById('programCard');
+    const programLabel = document.getElementById('programLabel');
+    const programTime = document.getElementById('programTime');
+    const programTitle = document.getElementById('programTitle');
+    const programType = document.getElementById('programType');
+    const liveSessionCard = document.getElementById('liveSessionCard');
+    const liveSessionTitle = document.getElementById('liveSessionTitle');
+    const liveSessionMeta = document.getElementById('liveSessionMeta');
     const realtimeStatus = document.getElementById('realtimeStatus');
 
     let unsubscribeEvent = null;
+    let transitionTimer = null;
+    let transitionGeneration = 0;
+    let relevantRoomIds = new Set();
     let disposed = false;
     let refreshing = false;
     let refreshPending = false;
@@ -130,11 +153,11 @@
 
     function setRealtimeStatus(status) {
       if (disposed) return;
+      const connected = status === 'SUBSCRIBED';
       const offline = ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status);
-      realtimeStatus.dataset.state = status === 'SUBSCRIBED' ? 'connected' : offline ? 'offline' : 'connecting';
-      realtimeStatus.textContent = status === 'SUBSCRIBED'
-        ? 'Realtime'
-        : offline ? 'нет связи' : 'подключение';
+      realtimeStatus.hidden = connected;
+      realtimeStatus.dataset.state = offline ? 'offline' : 'connecting';
+      realtimeStatus.textContent = offline ? 'нет связи' : 'подключение';
     }
 
     function reportRefreshError(error) {
@@ -143,19 +166,87 @@
         showError(error?.code === 'EVENT_NOT_FOUND'
           ? 'Мероприятие не найдено. Проверьте QR-код или ссылку.'
           : 'Не удалось загрузить мероприятие. Обновите страницу и попробуйте снова.');
-        return;
       }
-      // Realtime indicator reflects channel state only; keep the last rendered data on transient fetch errors.
     }
 
     function queueRefresh() {
       void refresh().catch(reportRefreshError);
     }
 
-    function renderEvent(rooms) {
-      const current = rooms.find(room => room.is_current_session);
-      currentSessionCard.hidden = !current;
-      currentSessionTitle.textContent = current?.title || '';
+    function formatTime(value) {
+      if (value == null) return null;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return null;
+      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatRange(item) {
+      if (item.startMs == null || item.endMs == null) return '—';
+      return `${formatTime(item.startMs)}–${formatTime(item.endMs)}`;
+    }
+
+    function itemType(item) {
+      if (item.kind === 'service') return 'Организационный блок';
+      return item.mode === 'panel' ? 'Панель' : 'Выступление';
+    }
+
+    function armTransitionTimer(view) {
+      clearTimeout(transitionTimer);
+      transitionTimer = null;
+      const generation = ++transitionGeneration;
+      if (!view.nextTransitionAt) return;
+      const delay = Math.max(50, Math.min(view.nextTransitionAt - Date.now() + 100, 2_147_000_000));
+      transitionTimer = setTimeout(() => {
+        if (disposed || generation !== transitionGeneration) return;
+        queueRefresh();
+      }, delay);
+    }
+
+    function renderProgram(view) {
+      const item = view.heroItem;
+      const labels = {
+        [PROGRAM_HERO_STATE.NOW]: 'Сейчас по программе',
+        [PROGRAM_HERO_STATE.NEXT]: 'Далее',
+        [PROGRAM_HERO_STATE.COMPLETE]: 'Программа завершена',
+        [PROGRAM_HERO_STATE.UNSCHEDULED]: 'Расписание уточняется',
+        [PROGRAM_HERO_STATE.EMPTY]: 'Программа пока не опубликована'
+      };
+      programCard.dataset.mode = view.heroState.toLowerCase();
+      programLabel.textContent = labels[view.heroState];
+      programType.hidden = !item;
+
+      if (item) {
+        programTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service'
+          ? `до ${formatTime(item.endMs)}`
+          : formatRange(item);
+        programTitle.textContent = item.title || 'Без названия';
+        programType.textContent = itemType(item);
+      } else {
+        programTime.textContent = '—';
+        programTitle.textContent = view.heroState === PROGRAM_HERO_STATE.COMPLETE
+          ? 'Спасибо, что были с нами'
+          : view.heroState === PROGRAM_HERO_STATE.UNSCHEDULED
+            ? 'Время блоков появится здесь'
+            : 'Расписание готовится';
+      }
+    }
+
+    function render(snapshot) {
+      const view = deriveGuestProgramState(snapshot.items, snapshot.operationalCurrentRoom);
+      renderProgram(view);
+
+      const liveRoom = snapshot.operationalCurrentRoom;
+      liveSessionCard.hidden = !liveRoom;
+      liveSessionTitle.textContent = liveRoom?.title || '';
+      liveSessionMeta.textContent = liveRoom
+        ? `${liveRoom.mode === 'panel' ? 'Панель' : 'Выступление'} · активная Q&A-сессия`
+        : '';
+
+      askLink.hidden = !view.canAskCurrent;
+      entryActions.classList.toggle('single', !view.canAskCurrent);
+      askLink.classList.toggle('primary', view.canAskCurrent);
+      programLink.classList.toggle('primary', !view.canAskCurrent);
+      armTransitionTimer(view);
     }
 
     async function refresh() {
@@ -164,19 +255,13 @@
         refreshPending = true;
         return;
       }
-
       refreshing = true;
       refreshPending = false;
       try {
-        const rooms = await listEventRooms(eventKey);
+        const snapshot = await loadGuestEventProgram(eventKey);
         if (disposed) return;
-        if (!rooms.length) {
-          const error = new Error('Event not found');
-          error.code = 'EVENT_NOT_FOUND';
-          throw error;
-        }
-
-        renderEvent(rooms);
+        relevantRoomIds = new Set(snapshot.items.filter(item => item.kind === 'session' && item.room_id != null).map(item => String(item.room_id)));
+        render(snapshot);
         if (!hasRendered) {
           hasRendered = true;
           finishBootstrap();
@@ -195,13 +280,10 @@
         showError('В ссылке не указано мероприятие.');
         return;
       }
-
       const route = encodeURIComponent(eventKey);
       askLink.href = `./ask.html?event=${route}`;
       programLink.href = `./program.html?event=${route}`;
-
-      unsubscribeEvent = subscribeEvent(eventKey, queueRefresh, setRealtimeStatus);
-
+      unsubscribeEvent = subscribeGuestEventProgram(eventKey, () => relevantRoomIds, queueRefresh, setRealtimeStatus);
       try {
         await refresh();
       } catch (error) {
@@ -209,9 +291,15 @@
       }
     }
 
+    window.addEventListener('pageshow', event => {
+      if (event.persisted && !disposed) queueRefresh();
+    });
+
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
       disposed = true;
+      clearTimeout(transitionTimer);
+      transitionGeneration += 1;
       unsubscribeEvent?.();
       unsubscribeEvent = null;
     });

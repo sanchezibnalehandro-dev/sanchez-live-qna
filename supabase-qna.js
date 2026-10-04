@@ -245,9 +245,7 @@ export async function updateEventProgram(eventKey, rooms) {
   if (error) throw error;
 }
 
-export async function listEventProgramItems(eventKey) {
-  if (!eventKey?.trim()) return [];
-
+async function fetchEventProgramContext(eventKey) {
   const [{ data: items, error: itemsError }, rooms] = await Promise.all([
     supabase
       .from('qna_event_program_items')
@@ -260,17 +258,78 @@ export async function listEventProgramItems(eventKey) {
 
   if (itemsError) throw itemsError;
   const roomsById = new Map(rooms.map(room => [String(room.id), room]));
-
-  return (items || []).map(item => {
+  const normalizedItems = (items || []).map(item => {
     const room = item.room_id == null ? null : roomsById.get(String(item.room_id));
     return {
       ...item,
       title: item.kind === 'session' ? (room?.title || '') : (item.title || ''),
       mode: room?.mode || null,
       slug: room?.slug || null,
+      moderator_name: room?.moderator_name || null,
+      moderator_regalia: room?.moderator_regalia || null,
+      is_questions_open: Boolean(room?.is_questions_open),
       is_current_session: Boolean(room?.is_current_session)
     };
   });
+
+  return { items: normalizedItems, rooms };
+}
+
+export async function listEventProgramItems(eventKey) {
+  if (!eventKey?.trim()) return [];
+  const context = await fetchEventProgramContext(eventKey);
+  return context.items;
+}
+
+export async function loadGuestEventProgram(eventKey) {
+  if (!eventKey?.trim()) {
+    const error = new Error('Event not found');
+    error.code = 'EVENT_NOT_FOUND';
+    throw error;
+  }
+
+  const { items, rooms } = await fetchEventProgramContext(eventKey);
+  if (!items.length && !rooms.length) {
+    const error = new Error('Event not found');
+    error.code = 'EVENT_NOT_FOUND';
+    throw error;
+  }
+
+  const sessionRoomIds = [...new Set(items
+    .filter(item => item.kind === 'session' && item.room_id != null)
+    .map(item => Number(item.room_id))
+    .filter(Number.isFinite))];
+  let speakers = [];
+
+  if (sessionRoomIds.length) {
+    const { data, error } = await supabase
+      .from('qna_speakers')
+      .select('id, room_id, name, regalia, topic, fallback_label, sort_order, is_active')
+      .in('room_id', sessionRoomIds)
+      .order('room_id', { ascending: true })
+      .order('sort_order', { ascending: true })
+      .order('id', { ascending: true });
+    if (error) throw error;
+    speakers = data || [];
+  }
+
+  const speakersByRoom = new Map();
+  for (const speaker of speakers) {
+    const roomKey = String(speaker.room_id);
+    const roomSpeakers = speakersByRoom.get(roomKey) || [];
+    roomSpeakers.push(speaker);
+    speakersByRoom.set(roomKey, roomSpeakers);
+  }
+
+  return {
+    items: items.map(item => ({
+      ...item,
+      speakers: item.kind === 'session'
+        ? (speakersByRoom.get(String(item.room_id)) || [])
+        : []
+    })),
+    operationalCurrentRoom: rooms.find(room => room.is_current_session) || null
+  };
 }
 
 export async function saveEventProgram(eventKey, items) {
@@ -445,6 +504,95 @@ export function subscribeEvent(eventKey, onChange, onStatus) {
         clearTimeout(failureTimer);
         debounced();
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        clearTimeout(failureTimer);
+        failureTimer = setTimeout(() => {
+          if (active) onChange();
+        }, 1000);
+      }
+    });
+
+  return () => {
+    active = false;
+    clearTimeout(debounceTimer);
+    clearTimeout(failureTimer);
+    void supabase.removeChannel(channel);
+  };
+}
+
+export function subscribeGuestEventProgram(eventKey, getRelevantRoomIds, onChange, onStatus) {
+  const normalizedEventKey = eventKey?.trim();
+  if (!normalizedEventKey) return () => {};
+
+  let debounceTimer = null;
+  let failureTimer = null;
+  let active = true;
+
+  const debounced = () => {
+    if (!active) return;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      if (active) onChange();
+    }, 100);
+  };
+
+  const onProgramChange = payload => {
+    if (!active) return;
+    if (payload?.eventType === 'DELETE') {
+      debounced();
+      return;
+    }
+    const changedEventKey = payload?.new?.event_key ?? payload?.old?.event_key;
+    if (changedEventKey === normalizedEventKey) debounced();
+  };
+
+  const onSpeakerChange = payload => {
+    if (!active) return;
+    if (payload?.eventType === 'DELETE') {
+      debounced();
+      return;
+    }
+
+    const relevantRoomIds = new Set(
+      Array.from(getRelevantRoomIds?.() || [], roomId => String(roomId))
+    );
+    if (!relevantRoomIds.size) {
+      debounced();
+      return;
+    }
+
+    const changedRoomId = payload?.new?.room_id ?? payload?.old?.room_id;
+    if (changedRoomId == null || relevantRoomIds.has(String(changedRoomId))) debounced();
+  };
+
+  const channelKey = normalizedEventKey.replace(/[^a-z0-9_-]+/gi, '-').slice(0, 80) || 'event';
+  const channel = supabase.channel(`qna-guest-program-${channelKey}`, {
+    config: { postgres_changes_options: { wait: true, timeout: 15000 } }
+  })
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'qna_rooms',
+      filter: `event_key=eq.${normalizedEventKey}`
+    }, debounced)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'qna_event_program_items'
+    }, onProgramChange)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'qna_speakers'
+    }, onSpeakerChange)
+    .subscribe((status, error) => {
+      if (!active) return;
+      onStatus?.(status, error);
+      if (error) console.error('Guest program Realtime subscription error', error);
+
+      if (status === 'SUBSCRIBED') {
+        clearTimeout(failureTimer);
+        debounced();
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         clearTimeout(failureTimer);
         failureTimer = setTimeout(() => {
           if (active) onChange();
