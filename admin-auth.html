@@ -903,6 +903,7 @@
       if (programSaving) return;
       programModal.hidden = true;
       programDraft = [];
+      programAnchorStart = null;
     }
 
     async function activateEventSession(room) {
@@ -945,11 +946,14 @@
     programSaveBtn.addEventListener('click', async () => {
       if (programSaving || !state.room?.event_key) return;
 
-      syncProgramOrder();
+      recalculateProgramTimes();
       let payload;
       try {
-        payload = programDraft.map(room => {
-          const title = String(room.title || '').trim();
+        if (programAnchorStart && programDraft.some(room => !programDuration(room))) {
+          throw new Error('Чтобы рассчитать расписание, задайте длительность каждого блока.');
+        }
+
+        payload = programDraft.map(room => {          const title = String(room.title || '').trim();
           if (!title) throw new Error('У каждого блока должно быть название.');
           const duration = room.duration_minutes == null || room.duration_minutes === ''
             ? null
@@ -987,6 +991,7 @@
         setProgramStatus('Программа сохранена.', 'success');
         programModal.hidden = true;
         programDraft = [];
+        programAnchorStart = null;
       } catch (error) {
         setProgramStatus(error.message || 'Не удалось сохранить программу.', 'error');
       } finally {
