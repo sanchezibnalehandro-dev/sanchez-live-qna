@@ -39,7 +39,7 @@ export function getGuestSessionId(room) {
 export async function getRoomBySlug(roomSlug) {
   const { data, error } = await supabase
     .from('qna_rooms')
-    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order, is_current_session')
+    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order, starts_at, duration_minutes, is_current_session')
     .eq('slug', roomSlug)
     .single();
   if (error) throw error;
@@ -51,7 +51,7 @@ export async function listEventRooms(eventKey) {
 
   const { data, error } = await supabase
     .from('qna_rooms')
-    .select('id, slug, title, mode, moderator_name, moderator_regalia, is_questions_open, moderation_enabled, session_order, is_current_session')
+    .select('id, slug, title, mode, moderator_name, moderator_regalia, is_questions_open, moderation_enabled, session_order, starts_at, duration_minutes, is_current_session')
     .eq('event_key', eventKey)
     .order('session_order', { ascending: true })
     .order('id', { ascending: true });
@@ -64,7 +64,7 @@ export async function getCurrentEventRoom(eventKey) {
 
   const { data, error } = await supabase
     .from('qna_rooms')
-    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order, is_current_session')
+    .select('id, slug, title, fallback_label, is_questions_open, moderation_enabled, mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order, starts_at, duration_minutes, is_current_session')
     .eq('event_key', eventKey)
     .eq('is_current_session', true)
     .maybeSingle();
@@ -229,6 +229,20 @@ export async function setRoomModeration(roomId, moderationEnabled) {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function updateEventProgram(eventKey, rooms) {
+  const { error } = await supabase.rpc('update_qna_event_program', {
+    p_event_key: eventKey,
+    p_items: rooms.map(({ id, title, starts_at, duration_minutes, session_order }) => ({
+      id,
+      title,
+      starts_at: starts_at || null,
+      duration_minutes: duration_minutes == null ? null : Number(duration_minutes),
+      session_order
+    }))
+  });
+  if (error) throw error;
 }
 
 export async function updateSpeaker(speakerId, patch) {
