@@ -179,6 +179,7 @@
       font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
     }
     .program-flag.current { background: var(--color-success-soft); color: var(--color-success-text); }
+    .program-flag.time { background: color-mix(in srgb, var(--color-accent) 12%, transparent); color: var(--color-accent-text); }
     .program-field { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
     .program-field input {
       width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; padding: 8px 10px;
@@ -186,6 +187,7 @@
       color: var(--text); font: inherit; font-size: 12px; text-transform: none; letter-spacing: normal;
     }
     .program-field input:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; }
+    .program-field input:disabled { opacity: .72; cursor: default; color: var(--muted); background: var(--color-surface-subtle); }
     @media (max-width: 760px) {
       .program-modal { place-items: stretch; padding: 10px; }
       .program-dialog { max-height: calc(100vh - 20px); border-radius: 16px; }
@@ -531,7 +533,7 @@
   <div class="program-modal" id="programModal" hidden>
     <section class="program-dialog" role="dialog" aria-modal="true" aria-labelledby="programDialogTitle">
       <div class="program-dialog-head">
-        <div><h2 id="programDialogTitle">Программа мероприятия</h2><p>Порядок, название, начало и длительность программных блоков.</p></div>
+        <div><h2 id="programDialogTitle">Программа мероприятия</h2><p>Старт задаётся у первого блока. После перестановки время пересчитывается автоматически по длительности.</p></div>
         <button class="qr-close" id="programCloseBtn" type="button" aria-label="Закрыть программу">×</button>
       </div>
       <div class="program-list" id="programList"></div>
@@ -698,6 +700,7 @@
     let activatingSpeaker = false;
     let switchingEventSession = false;
     let programDraft = [];
+    let programAnchorStart = null;
     let programSaving = false;
     let pendingSpeakerDeletionId = null;
     let deletingSpeakerId = null;
@@ -767,9 +770,52 @@
         room.session_order = (index + 1) * 10;
       });
     }
+    function formatProgramTime(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function programDuration(room) {
+      const value = Number(room?.duration_minutes);
+      return Number.isInteger(value) && value > 0 ? value : null;
+    }
+
+    function recalculateProgramTimes() {
+      syncProgramOrder();
+      if (!programDraft.length) return;
+
+      if (!programAnchorStart) {
+        programDraft.forEach(room => { room.starts_at = null; });
+        return;
+      }
+
+      let cursor = new Date(programAnchorStart);
+      if (Number.isNaN(cursor.getTime())) return;
+
+      for (const room of programDraft) {
+        if (!cursor) {
+          room.starts_at = null;
+          continue;
+        }
+        room.starts_at = cursor.toISOString();
+        const duration = programDuration(room);
+        cursor = duration ? new Date(cursor.getTime() + duration * 60000) : null;
+      }
+    }
+
+    function formatProgramRange(room) {
+      if (!room?.starts_at) return 'Время не рассчитано';
+      const start = formatProgramTime(room.starts_at);
+      const duration = programDuration(room);
+      if (!duration) return `${start}–?`;
+      const end = new Date(new Date(room.starts_at).getTime() + duration * 60000);
+      return `${start}–${formatProgramTime(end.toISOString())}`;
+    }
 
     function renderProgramEditor() {
-      syncProgramOrder();
+      recalculateProgramTimes();
       programList.innerHTML = programDraft.map((room, index) => {
         const typeLabel = room.mode === 'panel' ? 'Панель' : 'Выступление';
         return `
@@ -780,13 +826,13 @@
               <button class="program-move" type="button" data-program-move="1" data-program-index="${index}" aria-label="Опустить блок" ${index === programDraft.length - 1 ? 'disabled' : ''}>↓</button>
             </div>
             <div class="program-main">
-              <div class="program-flags"><span class="program-flag">${typeLabel}</span>${room.is_current_session ? '<span class="program-flag current">В эфире</span>' : ''}</div>
+              <div class="program-flags"><span class="program-flag">${typeLabel}</span><span class="program-flag time">${formatProgramRange(room)}</span>${room.is_current_session ? '<span class="program-flag current">В эфире</span>' : ''}</div>
               <label class="program-field">Название
                 <input type="text" maxlength="180" data-program-field="title" data-program-index="${index}" value="${escapeHtml(room.title || '')}">
               </label>
             </div>
-            <label class="program-field">Начало
-              <input type="datetime-local" data-program-field="starts_at" data-program-index="${index}" value="${toLocalDateTimeValue(room.starts_at)}">
+            <label class="program-field">${index === 0 ? 'Старт программы' : 'Начало · авто'}
+              <input type="datetime-local" data-program-field="starts_at" data-program-index="${index}" value="${toLocalDateTimeValue(room.starts_at)}" ${index === 0 ? '' : 'disabled'}>
             </label>
             <label class="program-field">Длительность, мин
               <input type="number" min="1" step="5" inputmode="numeric" data-program-field="duration_minutes" data-program-index="${index}" value="${room.duration_minutes ?? ''}">
@@ -803,26 +849,42 @@
           if (!Number.isInteger(index) || target < 0 || target >= programDraft.length) return;
           [programDraft[index], programDraft[target]] = [programDraft[target], programDraft[index]];
           renderProgramEditor();
-          setProgramStatus('Порядок изменён. Нажмите «Сохранить программу».');
+          setProgramStatus('Порядок изменён, время пересчитано. Нажмите «Сохранить программу».');
         });
       });
 
       programList.querySelectorAll('[data-program-field]').forEach(input => {
-        input.addEventListener('input', () => {
+        const field = input.dataset.programField;
+        if (field === 'title') {
+          input.addEventListener('input', () => {
+            const room = programDraft[Number(input.dataset.programIndex)];
+            if (!room) return;
+            room.title = input.value;
+            setProgramStatus('Есть несохранённые изменения.');
+          });
+          return;
+        }
+
+        input.addEventListener('change', () => {
           const index = Number(input.dataset.programIndex);
           const room = programDraft[index];
           if (!room) return;
-          const field = input.dataset.programField;
-          if (field === 'title') room.title = input.value;
-          if (field === 'duration_minutes') room.duration_minutes = input.value === '' ? null : Number(input.value);
-          if (field === 'starts_at') {
+
+          if (field === 'duration_minutes') {
+            room.duration_minutes = input.value === '' ? null : Number(input.value);
+          }
+
+          if (field === 'starts_at' && index === 0) {
             try {
-              room.starts_at = fromLocalDateTimeValue(input.value);
+              programAnchorStart = fromLocalDateTimeValue(input.value);
             } catch {
-              room.starts_at = input.value;
+              setProgramStatus('Некорректное время начала.', 'error');
+              return;
             }
           }
-          setProgramStatus('Есть несохранённые изменения.');
+
+          renderProgramEditor();
+          setProgramStatus('Время пересчитано. Нажмите «Сохранить программу».');
         });
       });
     }
@@ -830,6 +892,7 @@
     function openProgramEditor() {
       if (!state.room?.event_key || !state.eventRooms.length) return;
       programDraft = state.eventRooms.map(room => ({ ...room }));
+      programAnchorStart = programDraft[0]?.starts_at || null;
       renderProgramEditor();
       setProgramStatus('Изменения не влияют на текущую live-сессию.');
       programModal.hidden = false;
@@ -840,6 +903,7 @@
       if (programSaving) return;
       programModal.hidden = true;
       programDraft = [];
+      programAnchorStart = null;
     }
 
     async function activateEventSession(room) {
@@ -882,9 +946,13 @@
     programSaveBtn.addEventListener('click', async () => {
       if (programSaving || !state.room?.event_key) return;
 
-      syncProgramOrder();
+      recalculateProgramTimes();
       let payload;
       try {
+        if (programAnchorStart && programDraft.some(room => !programDuration(room))) {
+          throw new Error('Чтобы рассчитать расписание, задайте длительность каждого блока.');
+        }
+
         payload = programDraft.map(room => {
           const title = String(room.title || '').trim();
           if (!title) throw new Error('У каждого блока должно быть название.');
@@ -924,6 +992,7 @@
         setProgramStatus('Программа сохранена.', 'success');
         programModal.hidden = true;
         programDraft = [];
+        programAnchorStart = null;
       } catch (error) {
         setProgramStatus(error.message || 'Не удалось сохранить программу.', 'error');
       } finally {

@@ -543,6 +543,7 @@ declare
   v_distinct_orders integer;
   v_existing integer;
   v_event_total integer;
+  v_anchor timestamptz;
 begin
   if p_event_key is null or btrim(p_event_key) = '' then
     raise exception 'Event key is required' using errcode = '22023';
@@ -602,14 +603,51 @@ begin
   order by id
   for update;
 
+  select item.starts_at
+  into v_anchor
+  from jsonb_to_recordset(p_items)
+    as item(id bigint, session_order integer, title text, starts_at timestamptz, duration_minutes integer)
+  order by item.session_order
+  limit 1;
+
+  if v_anchor is not null and exists (
+    select 1
+    from jsonb_to_recordset(p_items)
+      as item(id bigint, session_order integer, title text, starts_at timestamptz, duration_minutes integer)
+    where item.duration_minutes is null
+  ) then
+    raise exception 'Every scheduled program block requires a duration' using errcode = '22023';
+  end if;
+
+  with input as (
+    select *
+    from jsonb_to_recordset(p_items)
+      as item(id bigint, session_order integer, title text, starts_at timestamptz, duration_minutes integer)
+  ),
+  computed as (
+    select
+      input.*,
+      case
+        when v_anchor is null then null::timestamptz
+        else v_anchor + make_interval(
+          mins => coalesce(
+            sum(input.duration_minutes) over (
+              order by input.session_order
+              rows between unbounded preceding and 1 preceding
+            ),
+            0
+          )::integer
+        )
+      end as computed_starts_at
+    from input
+  )
   update public.qna_rooms room
   set session_order = item.session_order,
       title = btrim(item.title),
-      starts_at = item.starts_at,
+      starts_at = item.computed_starts_at,
       duration_minutes = item.duration_minutes,
       updated_at = now()
-  from jsonb_to_recordset(p_items)
-    as item(id bigint, session_order integer, title text, starts_at timestamptz, duration_minutes integer)
+  from computed item
   where room.id = item.id
     and room.event_key = p_event_key;
 end;
