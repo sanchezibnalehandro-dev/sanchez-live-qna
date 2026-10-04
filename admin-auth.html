@@ -815,7 +815,7 @@
     }
 
     function renderProgramEditor() {
-      syncProgramOrder();
+      recalculateProgramTimes();
       programList.innerHTML = programDraft.map((room, index) => {
         const typeLabel = room.mode === 'panel' ? 'Панель' : 'Выступление';
         return `
@@ -826,13 +826,13 @@
               <button class="program-move" type="button" data-program-move="1" data-program-index="${index}" aria-label="Опустить блок" ${index === programDraft.length - 1 ? 'disabled' : ''}>↓</button>
             </div>
             <div class="program-main">
-              <div class="program-flags"><span class="program-flag">${typeLabel}</span>${room.is_current_session ? '<span class="program-flag current">В эфире</span>' : ''}</div>
+              <div class="program-flags"><span class="program-flag">${typeLabel}</span><span class="program-flag time">${formatProgramRange(room)}</span>${room.is_current_session ? '<span class="program-flag current">В эфире</span>' : ''}</div>
               <label class="program-field">Название
                 <input type="text" maxlength="180" data-program-field="title" data-program-index="${index}" value="${escapeHtml(room.title || '')}">
               </label>
             </div>
-            <label class="program-field">Начало
-              <input type="datetime-local" data-program-field="starts_at" data-program-index="${index}" value="${toLocalDateTimeValue(room.starts_at)}">
+            <label class="program-field">${index === 0 ? 'Старт программы' : 'Начало · авто'}
+              <input type="datetime-local" data-program-field="starts_at" data-program-index="${index}" value="${toLocalDateTimeValue(room.starts_at)}" ${index === 0 ? '' : 'disabled'}>
             </label>
             <label class="program-field">Длительность, мин
               <input type="number" min="1" step="5" inputmode="numeric" data-program-field="duration_minutes" data-program-index="${index}" value="${room.duration_minutes ?? ''}">
@@ -849,26 +849,42 @@
           if (!Number.isInteger(index) || target < 0 || target >= programDraft.length) return;
           [programDraft[index], programDraft[target]] = [programDraft[target], programDraft[index]];
           renderProgramEditor();
-          setProgramStatus('Порядок изменён. Нажмите «Сохранить программу».');
+          setProgramStatus('Порядок изменён, время пересчитано. Нажмите «Сохранить программу».');
         });
       });
 
       programList.querySelectorAll('[data-program-field]').forEach(input => {
-        input.addEventListener('input', () => {
+        const field = input.dataset.programField;
+        if (field === 'title') {
+          input.addEventListener('input', () => {
+            const room = programDraft[Number(input.dataset.programIndex)];
+            if (!room) return;
+            room.title = input.value;
+            setProgramStatus('Есть несохранённые изменения.');
+          });
+          return;
+        }
+
+        input.addEventListener('change', () => {
           const index = Number(input.dataset.programIndex);
           const room = programDraft[index];
           if (!room) return;
-          const field = input.dataset.programField;
-          if (field === 'title') room.title = input.value;
-          if (field === 'duration_minutes') room.duration_minutes = input.value === '' ? null : Number(input.value);
-          if (field === 'starts_at') {
+
+          if (field === 'duration_minutes') {
+            room.duration_minutes = input.value === '' ? null : Number(input.value);
+          }
+
+          if (field === 'starts_at' && index === 0) {
             try {
-              room.starts_at = fromLocalDateTimeValue(input.value);
+              programAnchorStart = fromLocalDateTimeValue(input.value);
             } catch {
-              room.starts_at = input.value;
+              setProgramStatus('Некорректное время начала.', 'error');
+              return;
             }
           }
-          setProgramStatus('Есть несохранённые изменения.');
+
+          renderProgramEditor();
+          setProgramStatus('Время пересчитано. Нажмите «Сохранить программу».');
         });
       });
     }
@@ -876,6 +892,7 @@
     function openProgramEditor() {
       if (!state.room?.event_key || !state.eventRooms.length) return;
       programDraft = state.eventRooms.map(room => ({ ...room }));
+      programAnchorStart = programDraft[0]?.starts_at || null;
       renderProgramEditor();
       setProgramStatus('Изменения не влияют на текущую live-сессию.');
       programModal.hidden = false;
