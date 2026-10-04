@@ -179,6 +179,7 @@
       font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
     }
     .program-flag.current { background: var(--color-success-soft); color: var(--color-success-text); }
+    .program-flag.time { background: color-mix(in srgb, var(--color-accent) 12%, transparent); color: var(--color-accent-text); }
     .program-field { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
     .program-field input {
       width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; padding: 8px 10px;
@@ -186,6 +187,7 @@
       color: var(--text); font: inherit; font-size: 12px; text-transform: none; letter-spacing: normal;
     }
     .program-field input:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; }
+    .program-field input:disabled { opacity: .72; cursor: default; color: var(--muted); background: var(--color-surface-subtle); }
     @media (max-width: 760px) {
       .program-modal { place-items: stretch; padding: 10px; }
       .program-dialog { max-height: calc(100vh - 20px); border-radius: 16px; }
@@ -698,6 +700,7 @@
     let activatingSpeaker = false;
     let switchingEventSession = false;
     let programDraft = [];
+    let programAnchorStart = null;
     let programSaving = false;
     let pendingSpeakerDeletionId = null;
     let deletingSpeakerId = null;
@@ -766,6 +769,49 @@
       programDraft.forEach((room, index) => {
         room.session_order = (index + 1) * 10;
       });
+    }
+    function formatProgramTime(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function programDuration(room) {
+      const value = Number(room?.duration_minutes);
+      return Number.isInteger(value) && value > 0 ? value : null;
+    }
+
+    function recalculateProgramTimes() {
+      syncProgramOrder();
+      if (!programDraft.length) return;
+
+      if (!programAnchorStart) {
+        programDraft.forEach(room => { room.starts_at = null; });
+        return;
+      }
+
+      let cursor = new Date(programAnchorStart);
+      if (Number.isNaN(cursor.getTime())) return;
+
+      for (const room of programDraft) {
+        if (!cursor) {
+          room.starts_at = null;
+          continue;
+        }
+        room.starts_at = cursor.toISOString();
+        const duration = programDuration(room);
+        cursor = duration ? new Date(cursor.getTime() + duration * 60000) : null;
+      }
+    }
+
+    function formatProgramRange(room) {
+      if (!room?.starts_at) return 'Время не рассчитано';
+      const start = formatProgramTime(room.starts_at);
+      const duration = programDuration(room);
+      if (!duration) return `${start}–?`;
+      const end = new Date(new Date(room.starts_at).getTime() + duration * 60000);
+      return `${start}–${formatProgramTime(end.toISOString())}`;
     }
 
     function renderProgramEditor() {
