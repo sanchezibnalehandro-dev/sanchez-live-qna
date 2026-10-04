@@ -986,13 +986,121 @@
       return start + '–' + formatProgramTime(end.toISOString());
     }
 
-    function renderDurationPresets(item, index) {
-      return [15, 20, 30, 45, 60].map(value => {
-        const active = Number(item.duration_minutes) === value ? ' active' : '';
-        return `<button class="program-duration-preset${active}" type="button" data-duration-preset="${value}" data-program-index="${index}">${value}</button>`;
-      }).join('');
+    function ensureProgramItemKey(item) {
+      if (item._program_key) return item._program_key;
+      const stable = item.kind === 'session' && item.room_id != null
+        ? 'session:' + item.room_id
+        : item.id != null
+          ? 'service:' + item.id
+          : 'draft:' + (++programDraftKey);
+      item._program_key = stable;
+      return stable;
     }
 
+    function programDurationSliderMax(item) {
+      const duration = programDuration(item) || 30;
+      return Math.max(180, Math.ceil(duration / 60) * 60);
+    }
+
+    function refreshProgramTimingInDom() {
+      recalculateProgramTimes();
+      programList.querySelectorAll('[data-program-time]').forEach(node => {
+        const item = programDraft[Number(node.dataset.programTime)];
+        if (item) node.textContent = formatProgramRange(item);
+      });
+    }
+
+    function animateProgramRowReflow(before) {
+      programList.querySelectorAll('.program-row').forEach(row => {
+        const oldTop = before.get(row.dataset.programKey);
+        if (oldTop == null) return;
+        const delta = oldTop - row.getBoundingClientRect().top;
+        if (Math.abs(delta) < 1) return;
+        row.animate(
+          [{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }],
+          { duration: 170, easing: 'cubic-bezier(.2,.8,.2,1)' }
+        );
+      });
+    }
+
+    function startProgramPointerDrag(event, handle) {
+      if (programSaving || event.button > 0) return;
+      const source = handle.closest('.program-row');
+      if (!source) return;
+
+      event.preventDefault();
+      const sourceRect = source.getBoundingClientRect();
+      const ghost = source.cloneNode(true);
+      ghost.classList.add('program-drag-ghost');
+      ghost.querySelectorAll('input, button').forEach(node => node.setAttribute('tabindex', '-1'));
+      Object.assign(ghost.style, {
+        left: sourceRect.left + 'px',
+        top: sourceRect.top + 'px',
+        width: sourceRect.width + 'px',
+        height: sourceRect.height + 'px'
+      });
+      document.body.appendChild(ghost);
+
+      const offsetY = event.clientY - sourceRect.top;
+      const pointerId = event.pointerId;
+      source.classList.add('program-drag-source');
+      document.body.classList.add('program-drag-active');
+      handle.setPointerCapture?.(pointerId);
+
+      const move = moveEvent => {
+        if (moveEvent.pointerId !== pointerId) return;
+        moveEvent.preventDefault();
+        const listRect = programList.getBoundingClientRect();
+        if (moveEvent.clientY < listRect.top + 52) programList.scrollTop -= 18;
+        if (moveEvent.clientY > listRect.bottom - 52) programList.scrollTop += 18;
+        ghost.style.top = (moveEvent.clientY - offsetY) + 'px';
+
+        const rows = [...programList.querySelectorAll('.program-row')];
+        const before = new Map(rows.map(row => [row.dataset.programKey, row.getBoundingClientRect().top]));
+        const candidates = rows.filter(row => row !== source);
+        let inserted = false;
+        for (const row of candidates) {
+          const rect = row.getBoundingClientRect();
+          if (moveEvent.clientY < rect.top + rect.height / 2) {
+            if (source.nextElementSibling !== row) programList.insertBefore(source, row);
+            inserted = true;
+            break;
+          }
+        }
+        if (!inserted && programList.lastElementChild !== source) programList.appendChild(source);
+        animateProgramRowReflow(before);
+      };
+
+      const finish = endEvent => {
+        if (endEvent.pointerId !== pointerId) return;
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', finish);
+        window.removeEventListener('pointercancel', finish);
+        try { handle.releasePointerCapture?.(pointerId); } catch {}
+        ghost.remove();
+        source.classList.remove('program-drag-source');
+        document.body.classList.remove('program-drag-active');
+
+        const order = [...programList.querySelectorAll('.program-row')].map(row => row.dataset.programKey);
+        const byKey = new Map(programDraft.map(item => [ensureProgramItemKey(item), item]));
+        programDraft = order.map(key => byKey.get(key)).filter(Boolean);
+        renderProgramEditor();
+        setProgramStatus('Порядок изменён перетаскиванием, время пересчитано.');
+      };
+
+      window.addEventListener('pointermove', move, { passive: false });
+      window.addEventListener('pointerup', finish);
+      window.addEventListener('pointercancel', finish);
+    }
+
+    function moveProgramItemByKeyboard(index, direction) {
+      const target = index + direction;
+      if (target < 0 || target >= programDraft.length) return;
+      [programDraft[index], programDraft[target]] = [programDraft[target], programDraft[index]];
+      renderProgramEditor();
+      programList.querySelector(`[data-program-index="${target}"] .program-drag-handle`)?.focus();
+      setProgramStatus('Порядок изменён, время пересчитано.');
+    }
     function renderProgramEditor() {
       recalculateProgramTimes();
       programList.innerHTML = programDraft.map((item, index) => {
