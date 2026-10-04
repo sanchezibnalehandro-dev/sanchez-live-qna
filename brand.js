@@ -63,6 +63,8 @@ const PAGE_TITLES = {
   admin: 'Админка — {name} · {productName}',
   moderator: 'Модератор — {name} · {productName}',
   guest: 'Задать вопрос — {name}',
+  welcome: '{name} — мероприятие',
+  program: 'Программа — {name}',
   login: '{name} · {productName} — Вход'
 };
 

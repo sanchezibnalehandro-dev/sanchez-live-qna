@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title></title>
+  <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" data-brand-stylesheet href="./brands/sanchez.css" />
+  <style>
+    .event-entry {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: max(20px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+    }
+    .event-entry-shell { width: min(720px, 100%); display: grid; gap: 14px; }
+    .event-entry-hero { padding: clamp(24px, 6vw, 46px); }
+    .event-entry-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 34px; }
+    .event-entry-brand .brand-logo-mark { width: 40px; height: 40px; border-radius: 12px; }
+    .event-entry-brand-copy { min-width: 0; display: grid; gap: 2px; }
+    .event-entry-brand-copy strong { font-size: 13px; font-weight: 800; letter-spacing: .05em; }
+    .event-entry-brand-copy span { color: var(--color-text-secondary); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    .event-entry-kicker { color: var(--color-accent-text); font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .event-entry-title { margin: 9px 0 12px; color: var(--color-text); font-family: var(--font-display); font-size: clamp(32px, 8vw, 58px); line-height: 1.02; letter-spacing: -.035em; }
+    .event-entry-copy { max-width: 580px; margin: 0; color: var(--color-text-secondary); font-size: 14px; line-height: 1.55; }
+    .event-entry-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-top: 30px; }
+    .event-entry-action {
+      min-height: 74px; display: grid; align-content: center; gap: 4px; padding: 14px 16px;
+      border: 1px solid var(--color-border); border-radius: 16px; text-decoration: none;
+      background: var(--color-surface-subtle); color: var(--color-text);
+      transition: border-color .15s ease, transform .15s ease, background .15s ease;
+    }
+    .event-entry-action:hover { border-color: var(--color-border-strong); transform: translateY(-1px); }
+    .event-entry-action.primary { background: var(--color-accent); color: var(--color-accent-contrast, #fff); border-color: transparent; }
+    .event-entry-action strong { font-size: 15px; font-weight: 800; }
+    .event-entry-action span { font-size: 10px; line-height: 1.4; opacity: .76; }
+    .event-now { padding: 18px 20px; display: grid; gap: 7px; }
+    .event-now-label { color: var(--color-success-text); font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .event-now-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: currentColor; }
+    .event-now-title { color: var(--color-text); font-size: 16px; font-weight: 800; line-height: 1.35; }
+    .event-entry-foot { padding: 0 8px; color: var(--color-text-secondary); font-size: 10px; text-align: center; }
+    @media (max-width: 560px) {
+      .event-entry { align-items: start; padding-top: max(16px, env(safe-area-inset-top)); }
+      .event-entry-actions { grid-template-columns: 1fr; }
+      .event-entry-action { min-height: 68px; }
+      .event-entry-brand { margin-bottom: 28px; }
+    }
+  </style>
+</head>
+<body class="is-booting">
+  <div class="bootstrap-screen" id="bootstrapScreen" role="status" aria-live="polite">
+    <div class="bootstrap-card">
+      <div class="bootstrap-brand"><div class="brand-logo-mark" data-brand-mark></div><div class="bootstrap-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div></div>
+      <p class="bootstrap-message" id="bootstrapMessage">Загрузка мероприятия…</p>
+    </div>
+  </div>
+
+  <main class="event-entry app" id="appShell" inert aria-hidden="true">
+    <div class="event-entry-shell">
+      <section class="card">
+        <div class="event-entry-hero">
+          <div class="event-entry-brand">
+            <div class="brand-logo-mark" data-brand-mark></div>
+            <div class="event-entry-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div>
+          </div>
+          <div class="event-entry-kicker">LIVE EVENT</div>
+          <h1 class="event-entry-title">Добро пожаловать</h1>
+          <p class="event-entry-copy">Здесь можно задать вопрос текущей сессии и посмотреть актуальную программу мероприятия.</p>
+          <div class="event-entry-actions">
+            <a class="event-entry-action primary" id="askLink" href="#">
+              <strong>Задать вопрос</strong>
+              <span>Перейти в LIVE Q&amp;A текущей сессии</span>
+            </a>
+            <a class="event-entry-action" id="programLink" href="#">
+              <strong>Программа дня</strong>
+              <span>Расписание выступлений и панелей</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="card event-now" id="currentSessionCard" hidden>
+        <div class="event-now-label">Сейчас в эфире</div>
+        <div class="event-now-title" id="currentSessionTitle"></div>
+      </section>
+
+      <div class="event-entry-foot">Одна ссылка на всё мероприятие · программа и LIVE Q&amp;A</div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { applyBrandIdentity, getBrandForRoute } from './brand.js';
+    import { getEventKey, listEventRooms } from './supabase-qna.js';
+
+    const eventKey = getEventKey();
+    const brand = getBrandForRoute(null, eventKey);
+    applyBrandIdentity('welcome', brand);
+
+    const appShell = document.getElementById('appShell');
+    const bootstrapScreen = document.getElementById('bootstrapScreen');
+    const bootstrapMessage = document.getElementById('bootstrapMessage');
+    const askLink = document.getElementById('askLink');
+    const programLink = document.getElementById('programLink');
+    const currentSessionCard = document.getElementById('currentSessionCard');
+    const currentSessionTitle = document.getElementById('currentSessionTitle');
+
+    function finishBootstrap() {
+      appShell.removeAttribute('inert');
+      appShell.removeAttribute('aria-hidden');
+      document.body.classList.remove('is-booting');
+      document.body.classList.add('is-ready');
+    }
+
+    function showError(message) {
+      bootstrapScreen.classList.add('is-error');
+      bootstrapScreen.setAttribute('role', 'alert');
+      bootstrapMessage.textContent = message;
+    }
+
+    async function init() {
+      if (!eventKey) {
+        showError('В ссылке не указано мероприятие.');
+        return;
+      }
+
+      try {
+        const rooms = await listEventRooms(eventKey);
+        if (!rooms.length) {
+          showError('Мероприятие не найдено. Проверьте QR-код или ссылку.');
+          return;
+        }
+
+        const route = encodeURIComponent(eventKey);
+        askLink.href = `./ask.html?event=${route}`;
+        programLink.href = `./program.html?event=${route}`;
+
+        const current = rooms.find(room => room.is_current_session);
+        if (current) {
+          currentSessionTitle.textContent = current.title || 'Текущая сессия';
+          currentSessionCard.hidden = false;
+        }
+
+        finishBootstrap();
+      } catch (error) {
+        console.error('Event welcome failed to load', error);
+        showError('Не удалось загрузить мероприятие. Обновите страницу и попробуйте снова.');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
