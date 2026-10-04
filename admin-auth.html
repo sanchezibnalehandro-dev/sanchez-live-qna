@@ -742,6 +742,105 @@
       const eventRooms = await listEventRooms(state.room?.event_key);
       renderEventSessionSelector(eventRooms);
     }
+    function toLocalDateTimeValue(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 16);
+    }
+
+    function fromLocalDateTimeValue(value) {
+      if (!value) return null;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) throw new Error('Некорректное время начала.');
+      return date.toISOString();
+    }
+
+    function setProgramStatus(message, type = '') {
+      programStatus.textContent = message;
+      programStatus.className = `program-status ${type}`.trim();
+    }
+
+    function syncProgramOrder() {
+      programDraft.forEach((room, index) => {
+        room.session_order = (index + 1) * 10;
+      });
+    }
+
+    function renderProgramEditor() {
+      syncProgramOrder();
+      programList.innerHTML = programDraft.map((room, index) => {
+        const typeLabel = room.mode === 'panel' ? 'Панель' : 'Выступление';
+        return `
+          <div class="program-row" data-program-room-id="${room.id}">
+            <div class="program-order">
+              <div class="program-order-label">${String(index + 1).padStart(2, '0')}</div>
+              <button class="program-move" type="button" data-program-move="-1" data-program-index="${index}" aria-label="Поднять блок" ${index === 0 ? 'disabled' : ''}>↑</button>
+              <button class="program-move" type="button" data-program-move="1" data-program-index="${index}" aria-label="Опустить блок" ${index === programDraft.length - 1 ? 'disabled' : ''}>↓</button>
+            </div>
+            <div class="program-main">
+              <div class="program-flags"><span class="program-flag">${typeLabel}</span>${room.is_current_session ? '<span class="program-flag current">В эфире</span>' : ''}</div>
+              <label class="program-field">Название
+                <input type="text" maxlength="180" data-program-field="title" data-program-index="${index}" value="${escapeHtml(room.title || '')}">
+              </label>
+            </div>
+            <label class="program-field">Начало
+              <input type="datetime-local" data-program-field="starts_at" data-program-index="${index}" value="${toLocalDateTimeValue(room.starts_at)}">
+            </label>
+            <label class="program-field">Длительность, мин
+              <input type="number" min="1" step="5" inputmode="numeric" data-program-field="duration_minutes" data-program-index="${index}" value="${room.duration_minutes ?? ''}">
+            </label>
+          </div>`;
+      }).join('');
+
+      programList.querySelectorAll('[data-program-move]').forEach(button => {
+        button.addEventListener('click', () => {
+          if (programSaving) return;
+          const index = Number(button.dataset.programIndex);
+          const direction = Number(button.dataset.programMove);
+          const target = index + direction;
+          if (!Number.isInteger(index) || target < 0 || target >= programDraft.length) return;
+          [programDraft[index], programDraft[target]] = [programDraft[target], programDraft[index]];
+          renderProgramEditor();
+          setProgramStatus('Порядок изменён. Нажмите «Сохранить программу».');
+        });
+      });
+
+      programList.querySelectorAll('[data-program-field]').forEach(input => {
+        input.addEventListener('input', () => {
+          const index = Number(input.dataset.programIndex);
+          const room = programDraft[index];
+          if (!room) return;
+          const field = input.dataset.programField;
+          if (field === 'title') room.title = input.value;
+          if (field === 'duration_minutes') room.duration_minutes = input.value === '' ? null : Number(input.value);
+          if (field === 'starts_at') {
+            try {
+              room.starts_at = fromLocalDateTimeValue(input.value);
+            } catch {
+              room.starts_at = input.value;
+            }
+          }
+          setProgramStatus('Есть несохранённые изменения.');
+        });
+      });
+    }
+
+    function openProgramEditor() {
+      if (!state.room?.event_key || !state.eventRooms.length) return;
+      programDraft = state.eventRooms.map(room => ({ ...room }));
+      renderProgramEditor();
+      setProgramStatus('Изменения не влияют на текущую live-сессию.');
+      programModal.hidden = false;
+      programModal.querySelector('input')?.focus();
+    }
+
+    function closeProgramEditor() {
+      if (programSaving) return;
+      programModal.hidden = true;
+      programDraft = [];
+    }
 
     async function activateEventSession(room) {
       if (!room || switchingEventSession) return false;
