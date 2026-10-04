@@ -295,7 +295,20 @@ export async function createEventProgramSession(eventKey, mode) {
     p_mode: mode
   });
   if (error) throw error;
-  return Array.isArray(data) ? (data[0] || null) : data;
+  const row = Array.isArray(data) ? (data[0] || null) : data;
+  if (!row) return null;
+  return {
+    room_id: row.room_id,
+    program_item_id: row.program_item_id,
+    title: row.title,
+    mode: row.mode,
+    session_order: row.session_order,
+    starts_at: row.starts_at,
+    duration_minutes: row.duration_minutes,
+    is_current_session: row.is_current_session,
+    is_questions_open: row.is_questions_open,
+    slug: row.room_slug
+  };
 }
 
 export async function updateSpeaker(speakerId, patch) {
