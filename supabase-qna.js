@@ -289,6 +289,15 @@ export async function saveEventProgram(eventKey, items) {
   if (error) throw error;
 }
 
+export async function createEventProgramSession(eventKey, mode) {
+  const { data, error } = await supabase.rpc('create_qna_event_program_session', {
+    p_event_key: eventKey,
+    p_mode: mode
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? (data[0] || null) : data;
+}
+
 export async function updateSpeaker(speakerId, patch) {
   const payload = {
     name: cleanOptional(patch.name),
