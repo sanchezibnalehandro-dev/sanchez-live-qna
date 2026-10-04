@@ -16,46 +16,47 @@
     .program-brand-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; }
     .program-brand-copy span { color: var(--color-text-secondary); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
     .program-nav { display: flex; gap: 7px; flex: 0 0 auto; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-    .realtime-pill {
-      min-height: 28px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px;
-      border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface-subtle);
-      color: var(--color-text-secondary); font-size: 9px; font-weight: 800; white-space: nowrap;
-    }
+    .realtime-pill { min-height: 28px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface-subtle); color: var(--color-text-secondary); font-size: 9px; font-weight: 800; white-space: nowrap; }
     .realtime-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-    .realtime-pill[data-state="connected"] { color: var(--color-success-text); }
     .realtime-pill[data-state="offline"] { color: var(--color-danger-text); }
-    .program-nav a {
-      min-height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 7px 11px;
-      border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-subtle);
-      color: var(--color-text); text-decoration: none; font-size: 10px; font-weight: 800;
-    }
-    .program-hero { padding: clamp(22px, 5vw, 36px); }
+    .program-nav a { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 7px 11px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-subtle); color: var(--color-text); text-decoration: none; font-size: 10px; font-weight: 800; }
+    .program-intro { padding: clamp(20px, 4vw, 30px); }
     .program-kicker { color: var(--color-accent-text); font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
-    .program-title { margin: 7px 0 6px; color: var(--color-text); font-family: var(--font-display); font-size: clamp(30px, 6vw, 48px); line-height: 1.05; letter-spacing: -.035em; }
+    .program-title { margin: 7px 0 6px; color: var(--color-text); font-family: var(--font-display); font-size: clamp(28px, 5vw, 42px); line-height: 1.05; letter-spacing: -.035em; }
     .program-date { color: var(--color-text-secondary); font-size: 12px; }
+    .schedule-focus { position: relative; overflow: hidden; min-height: 270px; padding: clamp(24px, 6vw, 46px); display: grid; align-content: end; gap: 12px; background: radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 38%), var(--color-surface-raised); }
+    .schedule-focus::after { content: ''; position: absolute; top: 28px; right: 30px; width: 70px; height: 2px; border-radius: 999px; background: var(--color-accent); opacity: .75; }
+    .schedule-focus[data-mode="complete"]::after, .schedule-focus[data-mode="empty"]::after, .schedule-focus[data-mode="unscheduled"]::after { background: var(--color-text-secondary); opacity: .4; }
+    .schedule-focus-label { color: var(--color-accent-text); font-size: 10px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+    .schedule-focus-time { color: var(--color-text); font-size: clamp(24px, 5vw, 38px); font-weight: 850; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+    .schedule-focus-title { max-width: 720px; margin: 0; color: var(--color-text); font-family: var(--font-display); font-size: clamp(30px, 6vw, 52px); line-height: 1.04; letter-spacing: -.04em; }
+    .schedule-focus-type { color: var(--color-text-secondary); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .schedule-focus-meta { max-width: 720px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.55; }
+    .schedule-focus-action { width: fit-content; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 10px 15px; border-radius: 12px; background: var(--color-accent); border: 1px solid transparent; color: var(--color-accent-contrast, #fff); text-decoration: none; font-size: 11px; font-weight: 850; }
+    .program-group { display: grid; gap: 8px; }
+    .program-group-head { padding: 10px 4px 4px; display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
+    .program-group-head h2 { margin: 0; color: var(--color-text); font-size: 13px; font-weight: 850; }
+    .program-group-head span { color: var(--color-text-secondary); font-size: 9px; text-transform: uppercase; letter-spacing: .1em; }
     .program-list { display: grid; gap: 8px; }
-    .program-item {
-      display: grid; grid-template-columns: 112px minmax(0,1fr); gap: 16px; padding: 18px 20px;
-      border: 1px solid var(--color-border); border-radius: var(--radius-xl);
-      background: var(--color-surface-raised); box-shadow: var(--shadow-card);
-    }
+    .program-item { display: grid; grid-template-columns: 112px minmax(0,1fr); gap: 16px; padding: 18px 20px; border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface-raised); box-shadow: var(--shadow-card); }
+    .program-item.state-past { opacity: .48; filter: saturate(.7); }
+    .program-item.state-past:hover { opacity: .66; }
+    .program-item.state-unscheduled { background: var(--color-surface-subtle); box-shadow: none; }
     .program-time { display: grid; align-content: start; gap: 3px; padding-top: 2px; }
     .program-time strong { color: var(--color-text); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
     .program-time span { color: var(--color-text-secondary); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
     .program-content { min-width: 0; display: grid; gap: 7px; }
     .program-flags { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
-    .program-flag {
-      display: inline-flex; padding: 3px 7px; border-radius: 999px; background: var(--color-neutral-soft);
-      color: var(--color-neutral-text); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-    }
-    .program-flag.current { background: var(--color-success-soft); color: var(--color-success-text); }
+    .program-flag { display: inline-flex; padding: 3px 7px; border-radius: 999px; background: var(--color-neutral-soft); color: var(--color-neutral-text); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .program-flag.past { background: var(--color-surface-subtle); color: var(--color-text-secondary); }
     .program-name { color: var(--color-text); font-size: 16px; font-weight: 800; line-height: 1.35; }
     .program-meta { color: var(--color-text-secondary); font-size: 11px; line-height: 1.5; }
-    .program-empty { padding: 30px 22px; color: var(--color-text-secondary); text-align: center; }
     @media (max-width: 620px) {
       .program-top { align-items: flex-start; flex-direction: column; }
       .program-nav { width: 100%; }
       .program-nav a { flex: 1; }
+      .program-nav a[hidden] { display: none; }
+      .schedule-focus { min-height: 250px; }
       .program-item { grid-template-columns: 1fr; gap: 8px; padding: 16px; }
       .program-time { grid-template-columns: auto auto; justify-content: start; align-items: baseline; gap: 8px; }
     }
@@ -77,25 +78,43 @@
           <div class="program-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div>
         </div>
         <nav class="program-nav" aria-label="Разделы мероприятия">
-          <span class="realtime-pill" id="realtimeStatus" data-state="connecting">Подключение…</span>
+          <span class="realtime-pill" id="realtimeStatus" data-state="connecting" role="status">Подключение…</span>
           <a id="homeLink" href="#">Главная</a>
-          <a id="askLink" href="#">Задать вопрос</a>
+          <a id="askLink" href="#" hidden>Задать вопрос</a>
         </nav>
       </section>
 
-      <section class="card program-hero">
+      <section class="card program-intro">
         <div class="program-kicker">EVENT PROGRAM</div>
         <h1 class="program-title">Программа дня</h1>
         <div class="program-date" id="programDate">Актуальное расписание мероприятия</div>
       </section>
 
-      <section class="program-list" id="programList"></section>
+      <section class="card schedule-focus" id="scheduleFocus" aria-live="polite">
+        <div class="schedule-focus-label" id="focusLabel"></div>
+        <div class="schedule-focus-time" id="focusTime"></div>
+        <h2 class="schedule-focus-title" id="focusTitle"></h2>
+        <div class="schedule-focus-type" id="focusType" hidden></div>
+        <div class="schedule-focus-meta" id="focusMeta" hidden></div>
+        <a class="schedule-focus-action" id="focusAskLink" href="#" hidden>Задать вопрос</a>
+      </section>
+
+      <section class="program-group" id="scheduledSection" hidden>
+        <div class="program-group-head"><h2>Расписание дня</h2><span id="scheduledCount"></span></div>
+        <div class="program-list" id="programList"></div>
+      </section>
+
+      <section class="program-group" id="unscheduledSection" hidden>
+        <div class="program-group-head"><h2>Время уточняется</h2><span>Без времени</span></div>
+        <div class="program-list" id="unscheduledList"></div>
+      </section>
     </div>
   </main>
 
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
-    import { getEventKey, listEventRooms, listSpeakers, subscribeEvent, escapeHtml } from './supabase-qna.js';
+    import { deriveGuestProgramState, PROGRAM_HERO_STATE } from './guest-program-state.mjs';
+    import { escapeHtml, getEventKey, loadGuestEventProgram, subscribeGuestEventProgram } from './supabase-qna.js';
 
     const eventKey = getEventKey();
     const brand = getBrandForRoute(null, eventKey);
@@ -104,13 +123,27 @@
     const appShell = document.getElementById('appShell');
     const bootstrapScreen = document.getElementById('bootstrapScreen');
     const bootstrapMessage = document.getElementById('bootstrapMessage');
-    const programList = document.getElementById('programList');
     const programDate = document.getElementById('programDate');
+    const scheduleFocus = document.getElementById('scheduleFocus');
+    const focusLabel = document.getElementById('focusLabel');
+    const focusTime = document.getElementById('focusTime');
+    const focusTitle = document.getElementById('focusTitle');
+    const focusType = document.getElementById('focusType');
+    const focusMeta = document.getElementById('focusMeta');
+    const focusAskLink = document.getElementById('focusAskLink');
+    const scheduledSection = document.getElementById('scheduledSection');
+    const scheduledCount = document.getElementById('scheduledCount');
+    const programList = document.getElementById('programList');
+    const unscheduledSection = document.getElementById('unscheduledSection');
+    const unscheduledList = document.getElementById('unscheduledList');
     const homeLink = document.getElementById('homeLink');
     const askLink = document.getElementById('askLink');
     const realtimeStatus = document.getElementById('realtimeStatus');
 
     let unsubscribeEvent = null;
+    let transitionTimer = null;
+    let transitionGeneration = 0;
+    let relevantRoomIds = new Set();
     let disposed = false;
     let refreshing = false;
     let refreshPending = false;
@@ -131,11 +164,11 @@
 
     function setRealtimeStatus(status) {
       if (disposed) return;
+      const connected = status === 'SUBSCRIBED';
       const offline = ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status);
-      realtimeStatus.dataset.state = status === 'SUBSCRIBED' ? 'connected' : offline ? 'offline' : 'connecting';
-      realtimeStatus.textContent = status === 'SUBSCRIBED'
-        ? 'Realtime'
-        : offline ? 'Нет связи' : 'Подключение…';
+      realtimeStatus.hidden = connected;
+      realtimeStatus.dataset.state = offline ? 'offline' : 'connecting';
+      realtimeStatus.textContent = offline ? 'Нет связи' : 'Подключение…';
     }
 
     function reportRefreshError(error) {
@@ -144,9 +177,7 @@
         showError(error?.code === 'EVENT_NOT_FOUND'
           ? 'Мероприятие не найдено. Проверьте QR-код или ссылку.'
           : 'Не удалось загрузить программу. Обновите страницу и попробуйте снова.');
-        return;
       }
-      // Realtime indicator reflects channel state only; keep the last rendered data on transient fetch errors.
     }
 
     function queueRefresh() {
@@ -154,19 +185,15 @@
     }
 
     function formatTime(value) {
-      if (!value) return null;
+      if (value == null) return null;
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return null;
       return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     }
 
-    function formatRange(room) {
-      const start = formatTime(room.starts_at);
-      if (!start) return { range: '—', note: 'Время уточняется' };
-      const duration = Number(room.duration_minutes);
-      if (!Number.isFinite(duration) || duration <= 0) return { range: start, note: 'Начало' };
-      const end = new Date(new Date(room.starts_at).getTime() + duration * 60000);
-      return { range: `${start}–${formatTime(end.toISOString())}`, note: `${duration} мин` };
+    function formatRange(item) {
+      if (item.startMs == null || item.endMs == null) return { range: '—', note: 'Время уточняется' };
+      return { range: `${formatTime(item.startMs)}–${formatTime(item.endMs)}`, note: `${Number(item.duration_minutes)} мин` };
     }
 
     function formatDate(value) {
@@ -176,46 +203,103 @@
       return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
-    function speakerMeta(room, speakers) {
-      if (room.mode === 'panel') {
-        const names = speakers.map(item => item.name).filter(Boolean);
-        const participantText = names.length
-          ? `Участники: ${names.slice(0, 4).join(', ')}${names.length > 4 ? ` · +${names.length - 4}` : ''}`
-          : '';
-        const moderatorText = room.moderator_name ? `Модератор: ${room.moderator_name}` : '';
-        return [moderatorText, participantText].filter(Boolean).join(' · ');
-      }
-
-      const speaker = speakers[0];
-      if (!speaker) return '';
-      return [speaker.name, speaker.regalia, speaker.topic].filter(Boolean).join(' · ');
+    function itemType(item) {
+      if (item.kind === 'service') return 'Организационный блок';
+      return item.mode === 'panel' ? 'Панель' : 'Выступление';
     }
 
-    function render(rooms) {
-      const firstScheduled = rooms.find(room => room.starts_at);
-      const dateLabel = formatDate(firstScheduled?.starts_at);
-      programDate.textContent = dateLabel || 'Актуальное расписание мероприятия';
+    function speakerMeta(item) {
+      const speakers = item.speakers || [];
+      if (item.kind !== 'session') return '';
+      if (item.mode === 'panel') {
+        const names = speakers.map(entry => entry.name).filter(Boolean);
+        const participants = names.length ? `Участники: ${names.slice(0, 4).join(', ')}${names.length > 4 ? ` · +${names.length - 4}` : ''}` : '';
+        const moderatorIdentity = [item.moderator_name, item.moderator_regalia].filter(Boolean).join(', ');
+        const moderator = moderatorIdentity ? `Модератор: ${moderatorIdentity}` : '';
+        return [moderator, participants].filter(Boolean).join(' · ');
+      }
+      const speaker = speakers[0];
+      return speaker ? [speaker.name, speaker.regalia, speaker.topic].filter(Boolean).join(' · ') : '';
+    }
 
-      programList.innerHTML = rooms.map(room => {
-        const timing = formatRange(room);
-        const type = room.mode === 'panel' ? 'Панель' : 'Выступление';
-        const meta = speakerMeta(room, room.speakers || []);
-        return `
-          <article class="program-item">
-            <div class="program-time">
-              <strong>${escapeHtml(timing.range)}</strong>
-              <span>${escapeHtml(timing.note)}</span>
-            </div>
-            <div class="program-content">
-              <div class="program-flags">
-                <span class="program-flag">${type}</span>
-                ${room.is_current_session ? '<span class="program-flag current">Сейчас</span>' : ''}
-              </div>
-              <div class="program-name">${escapeHtml(room.title || 'Без названия')}</div>
-              ${meta ? `<div class="program-meta">${escapeHtml(meta)}</div>` : ''}
-            </div>
-          </article>`;
-      }).join('') || '<div class="card program-empty">Программа пока не опубликована.</div>';
+    function renderHero(view) {
+      const item = view.heroItem;
+      const labels = {
+        [PROGRAM_HERO_STATE.NOW]: 'СЕЙЧАС',
+        [PROGRAM_HERO_STATE.NEXT]: 'ДАЛЕЕ',
+        [PROGRAM_HERO_STATE.COMPLETE]: 'ПРОГРАММА ЗАВЕРШЕНА',
+        [PROGRAM_HERO_STATE.UNSCHEDULED]: 'ВРЕМЯ УТОЧНЯЕТСЯ',
+        [PROGRAM_HERO_STATE.EMPTY]: 'ПРОГРАММА'
+      };
+      scheduleFocus.dataset.mode = view.heroState.toLowerCase();
+      focusLabel.textContent = labels[view.heroState];
+      focusType.hidden = !item;
+      focusMeta.hidden = true;
+      focusAskLink.hidden = !view.canAskCurrent;
+      askLink.hidden = !view.canAskCurrent;
+
+      if (item) {
+        const timing = formatRange(item);
+        focusTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service'
+          ? `до ${formatTime(item.endMs)}`
+          : timing.range;
+        focusTitle.textContent = item.title || 'Без названия';
+        focusType.textContent = itemType(item);
+        const meta = speakerMeta(item);
+        focusMeta.textContent = meta;
+        focusMeta.hidden = !meta;
+        return;
+      }
+
+      focusTime.textContent = '—';
+      focusTitle.textContent = view.heroState === PROGRAM_HERO_STATE.COMPLETE
+        ? 'Спасибо, что были с нами'
+        : view.heroState === PROGRAM_HERO_STATE.UNSCHEDULED
+          ? 'Расписание готовится'
+          : 'Программа пока не опубликована';
+    }
+
+    function renderProgramItem(item) {
+      const timing = formatRange(item);
+      const meta = speakerMeta(item);
+      const pastFlag = item.scheduleState === 'PAST' ? '<span class="program-flag past">Завершено</span>' : '';
+      return `
+        <article class="program-item state-${item.scheduleState.toLowerCase()}">
+          <div class="program-time"><strong>${escapeHtml(timing.range)}</strong><span>${escapeHtml(timing.note)}</span></div>
+          <div class="program-content">
+            <div class="program-flags"><span class="program-flag">${escapeHtml(itemType(item))}</span>${pastFlag}</div>
+            <div class="program-name">${escapeHtml(item.title || 'Без названия')}</div>
+            ${meta ? `<div class="program-meta">${escapeHtml(meta)}</div>` : ''}
+          </div>
+        </article>`;
+    }
+
+    function armTransitionTimer(view) {
+      clearTimeout(transitionTimer);
+      transitionTimer = null;
+      const generation = ++transitionGeneration;
+      if (!view.nextTransitionAt) return;
+      const delay = Math.max(50, Math.min(view.nextTransitionAt - Date.now() + 100, 2_147_000_000));
+      transitionTimer = setTimeout(() => {
+        if (disposed || generation !== transitionGeneration) return;
+        queueRefresh();
+      }, delay);
+    }
+
+    function render(snapshot) {
+      const view = deriveGuestProgramState(snapshot.items, snapshot.operationalCurrentRoom);
+      const firstScheduled = view.scheduledItems[0];
+      programDate.textContent = formatDate(firstScheduled?.starts_at) || 'Актуальное расписание мероприятия';
+      renderHero(view);
+
+      const visibleScheduled = view.scheduledItems.filter(item => item.id !== view.heroItem?.id);
+      scheduledSection.hidden = !visibleScheduled.length;
+      scheduledCount.textContent = `${visibleScheduled.length} ${visibleScheduled.length === 1 ? 'блок' : 'блока'}`;
+      programList.innerHTML = visibleScheduled.map(renderProgramItem).join('');
+
+      unscheduledSection.hidden = !view.unscheduledItems.length;
+      unscheduledList.innerHTML = view.unscheduledItems.map(renderProgramItem).join('');
+      armTransitionTimer(view);
     }
 
     async function refresh() {
@@ -224,27 +308,13 @@
         refreshPending = true;
         return;
       }
-
       refreshing = true;
       refreshPending = false;
       try {
-        const rooms = await listEventRooms(eventKey);
+        const snapshot = await loadGuestEventProgram(eventKey);
         if (disposed) return;
-        if (!rooms.length) {
-          const error = new Error('Event not found');
-          error.code = 'EVENT_NOT_FOUND';
-          throw error;
-        }
-
-        const speakersByRoom = await Promise.all(
-          rooms.map(room => listSpeakers(room.id).catch(error => {
-            console.error('Program speakers failed to load', room.id, error);
-            return [];
-          }))
-        );
-        if (disposed) return;
-
-        render(rooms.map((room, index) => ({ ...room, speakers: speakersByRoom[index] })));
+        relevantRoomIds = new Set(snapshot.items.filter(item => item.kind === 'session' && item.room_id != null).map(item => String(item.room_id)));
+        render(snapshot);
         if (!hasRendered) {
           hasRendered = true;
           finishBootstrap();
@@ -263,13 +333,11 @@
         showError('В ссылке не указано мероприятие.');
         return;
       }
-
       const route = encodeURIComponent(eventKey);
       homeLink.href = `./welcome.html?event=${route}`;
       askLink.href = `./ask.html?event=${route}`;
-
-      unsubscribeEvent = subscribeEvent(eventKey, queueRefresh, setRealtimeStatus);
-
+      focusAskLink.href = `./ask.html?event=${route}`;
+      unsubscribeEvent = subscribeGuestEventProgram(eventKey, () => relevantRoomIds, queueRefresh, setRealtimeStatus);
       try {
         await refresh();
       } catch (error) {
@@ -277,9 +345,15 @@
       }
     }
 
+    window.addEventListener('pageshow', event => {
+      if (event.persisted && !disposed) queueRefresh();
+    });
+
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
       disposed = true;
+      clearTimeout(transitionTimer);
+      transitionGeneration += 1;
       unsubscribeEvent?.();
       unsubscribeEvent = null;
     });
