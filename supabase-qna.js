@@ -245,6 +245,50 @@ export async function updateEventProgram(eventKey, rooms) {
   if (error) throw error;
 }
 
+export async function listEventProgramItems(eventKey) {
+  if (!eventKey?.trim()) return [];
+
+  const [{ data: items, error: itemsError }, rooms] = await Promise.all([
+    supabase
+      .from('qna_event_program_items')
+      .select('id, event_key, room_id, kind, title, session_order, starts_at, duration_minutes')
+      .eq('event_key', eventKey)
+      .order('session_order', { ascending: true })
+      .order('id', { ascending: true }),
+    listEventRooms(eventKey)
+  ]);
+
+  if (itemsError) throw itemsError;
+  const roomsById = new Map(rooms.map(room => [String(room.id), room]));
+
+  return (items || []).map(item => {
+    const room = item.room_id == null ? null : roomsById.get(String(item.room_id));
+    return {
+      ...item,
+      title: item.kind === 'session' ? (room?.title || '') : (item.title || ''),
+      mode: room?.mode || null,
+      slug: room?.slug || null,
+      is_current_session: Boolean(room?.is_current_session)
+    };
+  });
+}
+
+export async function saveEventProgram(eventKey, items) {
+  const { error } = await supabase.rpc('save_qna_event_program', {
+    p_event_key: eventKey,
+    p_items: items.map(({ id, kind, room_id, title, starts_at, duration_minutes, session_order }) => ({
+      id: id == null ? null : Number(id),
+      kind,
+      room_id: room_id == null ? null : Number(room_id),
+      title,
+      starts_at: starts_at || null,
+      duration_minutes: duration_minutes == null ? null : Number(duration_minutes),
+      session_order
+    }))
+  });
+  if (error) throw error;
+}
+
 export async function updateSpeaker(speakerId, patch) {
   const payload = {
     name: cleanOptional(patch.name),
