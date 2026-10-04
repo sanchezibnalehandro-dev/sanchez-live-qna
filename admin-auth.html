@@ -533,7 +533,7 @@
   <div class="program-modal" id="programModal" hidden>
     <section class="program-dialog" role="dialog" aria-modal="true" aria-labelledby="programDialogTitle">
       <div class="program-dialog-head">
-        <div><h2 id="programDialogTitle">Программа мероприятия</h2><p>Порядок, название, начало и длительность программных блоков.</p></div>
+        <div><h2 id="programDialogTitle">Программа мероприятия</h2><p>Старт задаётся у первого блока. После перестановки время пересчитывается автоматически по длительности.</p></div>
         <button class="qr-close" id="programCloseBtn" type="button" aria-label="Закрыть программу">×</button>
       </div>
       <div class="program-list" id="programList"></div>
@@ -953,7 +953,8 @@
           throw new Error('Чтобы рассчитать расписание, задайте длительность каждого блока.');
         }
 
-        payload = programDraft.map(room => {          const title = String(room.title || '').trim();
+        payload = programDraft.map(room => {
+          const title = String(room.title || '').trim();
           if (!title) throw new Error('У каждого блока должно быть название.');
           const duration = room.duration_minutes == null || room.duration_minutes === ''
             ? null
