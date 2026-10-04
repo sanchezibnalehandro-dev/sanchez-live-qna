@@ -145,8 +145,7 @@
           : 'Не удалось загрузить мероприятие. Обновите страницу и попробуйте снова.');
         return;
       }
-      realtimeStatus.dataset.state = 'offline';
-      realtimeStatus.textContent = 'ошибка обновления';
+      // Realtime indicator reflects channel state only; keep the last rendered data on transient fetch errors.
     }
 
     function queueRefresh() {
@@ -210,11 +209,12 @@
       }
     }
 
-    window.addEventListener('pagehide', () => {
+    window.addEventListener('pagehide', event => {
+      if (event.persisted) return;
       disposed = true;
       unsubscribeEvent?.();
       unsubscribeEvent = null;
-    }, { once: true });
+    });
 
     init();
   </script>
