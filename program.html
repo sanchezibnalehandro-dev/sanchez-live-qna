@@ -15,7 +15,15 @@
     .program-brand-copy { min-width: 0; display: grid; gap: 1px; }
     .program-brand-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 800; }
     .program-brand-copy span { color: var(--color-text-secondary); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-    .program-nav { display: flex; gap: 7px; flex: 0 0 auto; }
+    .program-nav { display: flex; gap: 7px; flex: 0 0 auto; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .realtime-pill {
+      min-height: 28px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px;
+      border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface-subtle);
+      color: var(--color-text-secondary); font-size: 9px; font-weight: 800; white-space: nowrap;
+    }
+    .realtime-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .realtime-pill[data-state="connected"] { color: var(--color-success-text); }
+    .realtime-pill[data-state="offline"] { color: var(--color-danger-text); }
     .program-nav a {
       min-height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 7px 11px;
       border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-subtle);
@@ -69,6 +77,7 @@
           <div class="program-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div>
         </div>
         <nav class="program-nav" aria-label="Разделы мероприятия">
+          <span class="realtime-pill" id="realtimeStatus" data-state="connecting">Подключение…</span>
           <a id="homeLink" href="#">Главная</a>
           <a id="askLink" href="#">Задать вопрос</a>
         </nav>
@@ -86,7 +95,7 @@
 
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
-    import { getEventKey, listEventRooms, listSpeakers, escapeHtml } from './supabase-qna.js';
+    import { getEventKey, listEventRooms, listSpeakers, subscribeEvent, escapeHtml } from './supabase-qna.js';
 
     const eventKey = getEventKey();
     const brand = getBrandForRoute(null, eventKey);
@@ -99,6 +108,13 @@
     const programDate = document.getElementById('programDate');
     const homeLink = document.getElementById('homeLink');
     const askLink = document.getElementById('askLink');
+    const realtimeStatus = document.getElementById('realtimeStatus');
+
+    let unsubscribeEvent = null;
+    let disposed = false;
+    let refreshing = false;
+    let refreshPending = false;
+    let hasRendered = false;
 
     function finishBootstrap() {
       appShell.removeAttribute('inert');
@@ -111,6 +127,31 @@
       bootstrapScreen.classList.add('is-error');
       bootstrapScreen.setAttribute('role', 'alert');
       bootstrapMessage.textContent = message;
+    }
+
+    function setRealtimeStatus(status) {
+      if (disposed) return;
+      const offline = ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status);
+      realtimeStatus.dataset.state = status === 'SUBSCRIBED' ? 'connected' : offline ? 'offline' : 'connecting';
+      realtimeStatus.textContent = status === 'SUBSCRIBED'
+        ? 'Realtime'
+        : offline ? 'Нет связи' : 'Подключение…';
+    }
+
+    function reportRefreshError(error) {
+      console.error('Event program refresh failed', error);
+      if (!hasRendered) {
+        showError(error?.code === 'EVENT_NOT_FOUND'
+          ? 'Мероприятие не найдено. Проверьте QR-код или ссылку.'
+          : 'Не удалось загрузить программу. Обновите страницу и попробуйте снова.');
+        return;
+      }
+      realtimeStatus.dataset.state = 'offline';
+      realtimeStatus.textContent = 'Ошибка обновления';
+    }
+
+    function queueRefresh() {
+      void refresh().catch(reportRefreshError);
     }
 
     function formatTime(value) {
@@ -178,22 +219,23 @@
       }).join('') || '<div class="card program-empty">Программа пока не опубликована.</div>';
     }
 
-    async function init() {
-      if (!eventKey) {
-        showError('В ссылке не указано мероприятие.');
+    async function refresh() {
+      if (disposed) return;
+      if (refreshing) {
+        refreshPending = true;
         return;
       }
 
+      refreshing = true;
+      refreshPending = false;
       try {
         const rooms = await listEventRooms(eventKey);
+        if (disposed) return;
         if (!rooms.length) {
-          showError('Мероприятие не найдено. Проверьте QR-код или ссылку.');
-          return;
+          const error = new Error('Event not found');
+          error.code = 'EVENT_NOT_FOUND';
+          throw error;
         }
-
-        const route = encodeURIComponent(eventKey);
-        homeLink.href = `./welcome.html?event=${route}`;
-        askLink.href = `./ask.html?event=${route}`;
 
         const speakersByRoom = await Promise.all(
           rooms.map(room => listSpeakers(room.id).catch(error => {
@@ -201,14 +243,46 @@
             return [];
           }))
         );
+        if (disposed) return;
 
         render(rooms.map((room, index) => ({ ...room, speakers: speakersByRoom[index] })));
-        finishBootstrap();
-      } catch (error) {
-        console.error('Event program failed to load', error);
-        showError('Не удалось загрузить программу. Обновите страницу и попробуйте снова.');
+        if (!hasRendered) {
+          hasRendered = true;
+          finishBootstrap();
+        }
+      } finally {
+        refreshing = false;
+        if (!disposed && refreshPending) {
+          refreshPending = false;
+          queueRefresh();
+        }
       }
     }
+
+    async function init() {
+      if (!eventKey) {
+        showError('В ссылке не указано мероприятие.');
+        return;
+      }
+
+      const route = encodeURIComponent(eventKey);
+      homeLink.href = `./welcome.html?event=${route}`;
+      askLink.href = `./ask.html?event=${route}`;
+
+      unsubscribeEvent = subscribeEvent(eventKey, queueRefresh, setRealtimeStatus);
+
+      try {
+        await refresh();
+      } catch (error) {
+        reportRefreshError(error);
+      }
+    }
+
+    window.addEventListener('pagehide', () => {
+      disposed = true;
+      unsubscribeEvent?.();
+      unsubscribeEvent = null;
+    }, { once: true });
 
     init();
   </script>
