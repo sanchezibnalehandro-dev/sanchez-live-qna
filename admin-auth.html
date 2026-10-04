@@ -1154,7 +1154,10 @@
         return `./${page}?${route}`;
       };
 
-      document.getElementById('openGuestBtn').addEventListener('click', () => window.open(liveContextUrl('ask.html'), '_blank', 'noopener'));
+      document.getElementById('openGuestBtn').addEventListener('click', () => {
+        const page = state.room?.event_key ? 'welcome.html' : 'ask.html';
+        window.open(liveContextUrl(page), '_blank', 'noopener');
+      });
       document.getElementById('openModBtn').addEventListener('click',   () => window.open(liveContextUrl('mod-auth.html'), '_blank', 'noopener'));
       document.getElementById('refreshBtn').addEventListener('click', () => refresh());
       const logoutBtn = document.getElementById('logoutBtn');
@@ -1677,7 +1680,7 @@
         const isVercelPreview = host.endsWith('.vercel.app') && host !== 'sanchez-live-qna.vercel.app';
         const origin = isLocal || isVercelPreview ? QR_PRODUCTION_ORIGIN : location.origin;
         const path = state.room?.event_key
-          ? '/ask.html?event=' + encodeURIComponent(state.room.event_key)
+          ? '/welcome.html?event=' + encodeURIComponent(state.room.event_key)
           : '/ask.html?room=' + encodeURIComponent(roomSlug);
         return origin + path;
       }
@@ -1826,7 +1829,7 @@
 
           ctx.fillStyle = text;
           ctx.font = '800 72px Montserrat, Arial, sans-serif';
-          ctx.fillText('ЗАДАЙТЕ ВОПРОС', 960, 175);
+          ctx.fillText(state.room?.event_key ? 'ПРИСОЕДИНЯЙТЕСЬ' : 'ЗАДАЙТЕ ВОПРОС', 960, 175);
 
           const qrSize = 560;
           const qrX = (1920 - qrSize) / 2;
@@ -1837,7 +1840,7 @@
 
           ctx.fillStyle = text;
           ctx.font = '600 30px Montserrat, Arial, sans-serif';
-          ctx.fillText('Наведите камеру телефона на QR-код', 960, 890);
+          ctx.fillText(state.room?.event_key ? 'Программа дня и LIVE Q&A' : 'Наведите камеру телефона на QR-код', 960, 890);
           ctx.fillStyle = muted;
           ctx.font = '500 22px Montserrat, Arial, sans-serif';
           ctx.fillText(qrGuestUrl(), 960, 945);
