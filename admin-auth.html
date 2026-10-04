@@ -869,6 +869,70 @@
       }
     }
 
+    eventProgramBtn.addEventListener('click', openProgramEditor);
+    programCancelBtn.addEventListener('click', closeProgramEditor);
+    programCloseBtn.addEventListener('click', closeProgramEditor);
+    programModal.addEventListener('click', event => {
+      if (event.target === programModal) closeProgramEditor();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !programModal.hidden) closeProgramEditor();
+    });
+
+    programSaveBtn.addEventListener('click', async () => {
+      if (programSaving || !state.room?.event_key) return;
+
+      syncProgramOrder();
+      let payload;
+      try {
+        payload = programDraft.map(room => {
+          const title = String(room.title || '').trim();
+          if (!title) throw new Error('У каждого блока должно быть название.');
+          const duration = room.duration_minutes == null || room.duration_minutes === ''
+            ? null
+            : Number(room.duration_minutes);
+          if (duration !== null && (!Number.isInteger(duration) || duration <= 0)) {
+            throw new Error('Длительность должна быть целым числом минут больше нуля.');
+          }
+          let startsAt = room.starts_at || null;
+          if (startsAt && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(startsAt)) {
+            startsAt = fromLocalDateTimeValue(startsAt);
+          }
+          return {
+            id: room.id,
+            title,
+            starts_at: startsAt,
+            duration_minutes: duration,
+            session_order: room.session_order
+          };
+        });
+      } catch (error) {
+        setProgramStatus(error.message || 'Проверьте данные программы.', 'error');
+        return;
+      }
+
+      programSaving = true;
+      programSaveBtn.disabled = true;
+      programCancelBtn.disabled = true;
+      programCloseBtn.disabled = true;
+      setProgramStatus('Сохраняю программу…');
+      try {
+        await updateEventProgram(state.room.event_key, payload);
+        await refresh();
+        await loadEventSessionSelector();
+        setStatus('Программа сохранена.', 'success');
+        setProgramStatus('Программа сохранена.', 'success');
+        programModal.hidden = true;
+        programDraft = [];
+      } catch (error) {
+        setProgramStatus(error.message || 'Не удалось сохранить программу.', 'error');
+      } finally {
+        programSaving = false;
+        programSaveBtn.disabled = false;
+        programCancelBtn.disabled = false;
+        programCloseBtn.disabled = false;
+      }
+    });
     eventSessionSelect.addEventListener('change', () => {
       const nextRoom = state.eventRooms.find(room => room.slug === eventSessionSelect.value);
       if (!nextRoom || nextRoom.slug === state.room?.slug) return;
