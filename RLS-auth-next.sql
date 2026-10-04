@@ -1,9 +1,10 @@
 -- Актуальная RLS-модель для минимального Q&A.
 -- Guest: читает публичные данные, отправляет вопросы через submit_guest_question() и голоса.
--- Authenticated: управляет комнатой, спикерами и вопросами.
+-- Authenticated: управляет комнатой, программой, спикерами и вопросами.
 -- Снятие гостевого голоса выполняется через scoped RPC remove_vote() из schema.sql.
 
 alter table public.qna_rooms enable row level security;
+alter table public.qna_event_program_items enable row level security;
 alter table public.qna_speakers enable row level security;
 alter table public.qna_questions enable row level security;
 alter table public.qna_question_votes enable row level security;
@@ -23,6 +24,37 @@ for update
 to authenticated
 using (true)
 with check (true);
+
+
+drop policy if exists public_read_event_program_items on public.qna_event_program_items;
+drop policy if exists auth_insert_event_program_items on public.qna_event_program_items;
+drop policy if exists auth_update_event_program_items on public.qna_event_program_items;
+drop policy if exists auth_delete_event_program_items on public.qna_event_program_items;
+
+create policy public_read_event_program_items
+on public.qna_event_program_items
+for select
+to anon, authenticated
+using (true);
+
+create policy auth_insert_event_program_items
+on public.qna_event_program_items
+for insert
+to authenticated
+with check (true);
+
+create policy auth_update_event_program_items
+on public.qna_event_program_items
+for update
+to authenticated
+using (true)
+with check (true);
+
+create policy auth_delete_event_program_items
+on public.qna_event_program_items
+for delete
+to authenticated
+using (true);
 
 
 drop policy if exists public_read_speakers on public.qna_speakers;
@@ -120,6 +152,7 @@ using (true);
 
 -- Ограничиваем права колонками, которые реально использует гостевой UI.
 revoke all privileges on table public.qna_rooms from anon;
+revoke all privileges on table public.qna_event_program_items from anon;
 revoke all privileges on table public.qna_speakers from anon;
 revoke all privileges on table public.qna_questions from anon;
 revoke all privileges on table public.qna_question_votes from anon;
@@ -129,6 +162,10 @@ grant select (
   mode, moderator_name, moderator_regalia, active_speaker_id, event_key, session_order,
   starts_at, duration_minutes, is_current_session
 ) on public.qna_rooms to anon;
+
+grant select (
+  id, event_key, room_id, kind, title, session_order, starts_at, duration_minutes
+) on public.qna_event_program_items to anon;
 
 grant select (
   id, room_id, name, regalia, topic, fallback_label, sort_order, is_active
@@ -144,15 +181,22 @@ grant select (
 
 -- Авторизованный интерфейс получает только CRUD, который использует приложение.
 revoke all privileges on table public.qna_rooms from authenticated;
+revoke all privileges on table public.qna_event_program_items from authenticated;
 revoke all privileges on table public.qna_speakers from authenticated;
 revoke all privileges on table public.qna_questions from authenticated;
 revoke all privileges on table public.qna_question_votes from authenticated;
 
 grant select, update on public.qna_rooms to authenticated;
+grant select, insert, update, delete on public.qna_event_program_items to authenticated;
 grant select, insert, update, delete on public.qna_speakers to authenticated;
 grant select, insert, update, delete on public.qna_questions to authenticated;
 grant insert, delete on public.qna_question_votes to authenticated;
 
+grant usage, select on sequence public.qna_event_program_items_id_seq to authenticated;
 grant usage, select on sequence public.qna_speakers_id_seq to authenticated;
 grant usage, select on sequence public.qna_questions_id_seq to authenticated;
 grant usage, select on sequence public.qna_question_votes_id_seq to authenticated;
+
+-- Explicit grants for new public-schema objects (required by current Supabase Data API defaults).
+grant select, insert, update, delete on public.qna_event_program_items to service_role;
+grant usage, select on sequence public.qna_event_program_items_id_seq to service_role;
