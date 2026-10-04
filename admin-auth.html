@@ -119,7 +119,7 @@
     .live-context h1 { margin-top: 4px; font-size: clamp(22px, 2.1vw, 30px); background: none; color: var(--text); -webkit-text-fill-color: var(--text); }
     .live-context p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .event-session-control {
-      display: grid; grid-template-columns: auto minmax(260px, 1fr) auto auto; align-items: center; gap: 10px;
+      display: grid; grid-template-columns: auto minmax(260px, 1fr) auto auto auto; align-items: center; gap: 10px;
       margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-2); border-radius: 12px;
       background: var(--color-surface-subtle);
     }
@@ -135,6 +135,68 @@
     .event-session-state { white-space: nowrap; font-size: 10px; font-weight: 800; color: var(--color-success-text); }
     .event-session-state.inactive { color: var(--color-warning-text); }
     .event-session-activate { min-height: var(--control-height-touch); padding: 6px 12px; font-size: 11px; white-space: nowrap; }
+    .event-session-program { min-height: var(--control-height-touch); padding: 6px 12px; font-size: 11px; white-space: nowrap; }
+    .program-modal[hidden] { display: none; }
+    .program-modal {
+      position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 20px;
+      background: rgba(0,0,0,.72); backdrop-filter: blur(8px);
+    }
+    .program-dialog {
+      width: min(1040px, 100%); max-height: min(860px, calc(100vh - 40px)); display: grid;
+      grid-template-rows: auto minmax(0,1fr) auto; overflow: hidden;
+      border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-surface-raised);
+      box-shadow: 0 28px 90px rgba(0,0,0,.55);
+    }
+    .program-dialog-head, .program-dialog-foot {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px;
+    }
+    .program-dialog-head { border-bottom: 1px solid var(--color-border-subtle); }
+    .program-dialog-head h2 { margin: 0; color: var(--text); font-size: 16px; }
+    .program-dialog-head p { margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
+    .program-dialog-foot { border-top: 1px solid var(--color-border-subtle); }
+    .program-dialog-actions { display: flex; gap: 8px; }
+    .program-status { min-height: 16px; color: var(--muted); font-size: 10px; }
+    .program-status.error { color: var(--color-danger-text); }
+    .program-status.success { color: var(--color-success-text); }
+    .program-list { min-height: 0; overflow: auto; display: grid; gap: 8px; padding: 12px; }
+    .program-row {
+      display: grid; grid-template-columns: 72px minmax(240px,1fr) minmax(180px,220px) 120px;
+      gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--color-border-subtle);
+      border-radius: 14px; background: var(--color-surface-subtle);
+    }
+    .program-order { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; align-self: stretch; }
+    .program-order-label { grid-column: 1 / -1; align-self: center; color: var(--muted); font-size: 10px; font-weight: 800; text-align: center; }
+    .program-move {
+      min-height: 34px; border: 1px solid var(--color-border); border-radius: 9px;
+      background: var(--color-surface-raised); color: var(--text); cursor: pointer; font: inherit;
+    }
+    .program-move:disabled { opacity: .3; cursor: default; }
+    .program-main { min-width: 0; display: grid; gap: 6px; }
+    .program-flags { display: flex; flex-wrap: wrap; gap: 5px; }
+    .program-flag {
+      display: inline-flex; width: fit-content; padding: 3px 7px; border-radius: 999px;
+      background: var(--color-neutral-soft); color: var(--color-neutral-text); font-size: 8px;
+      font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    }
+    .program-flag.current { background: var(--color-success-soft); color: var(--color-success-text); }
+    .program-field { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    .program-field input {
+      width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; padding: 8px 10px;
+      border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-raised);
+      color: var(--text); font: inherit; font-size: 12px; text-transform: none; letter-spacing: normal;
+    }
+    .program-field input:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; }
+    @media (max-width: 760px) {
+      .program-modal { place-items: stretch; padding: 10px; }
+      .program-dialog { max-height: calc(100vh - 20px); border-radius: 16px; }
+      .program-row { grid-template-columns: 62px minmax(0,1fr); align-items: start; }
+      .program-main { grid-column: 2; }
+      .program-field { grid-column: 2; }
+      .program-dialog-head, .program-dialog-foot { align-items: flex-start; }
+      .program-dialog-foot { flex-direction: column; }
+      .program-dialog-actions { width: 100%; }
+      .program-dialog-actions .btn { flex: 1; }
+    }
     @media (max-width: 1024px) {
       .event-session-control { grid-template-columns: 1fr; align-items: stretch; }
       .event-session-label { min-width: 0; }
@@ -428,6 +490,7 @@
               <select class="event-session-select" id="eventSessionSelect" aria-label="Просматриваемая сессия"></select>
               <span class="event-session-state" id="eventSessionState"></span>
               <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
+              <button class="btn ghost event-session-program" id="eventProgramBtn" type="button">Программа</button>
             </div>
             
             <div class="live-controls">
@@ -465,11 +528,28 @@
     </main>
   </div>
 
+  <div class="program-modal" id="programModal" hidden>
+    <section class="program-dialog" role="dialog" aria-modal="true" aria-labelledby="programDialogTitle">
+      <div class="program-dialog-head">
+        <div><h2 id="programDialogTitle">Программа мероприятия</h2><p>Порядок, название, начало и длительность программных блоков.</p></div>
+        <button class="qr-close" id="programCloseBtn" type="button" aria-label="Закрыть программу">×</button>
+      </div>
+      <div class="program-list" id="programList"></div>
+      <div class="program-dialog-foot">
+        <div class="program-status" id="programStatus">Изменения не влияют на текущую live-сессию.</div>
+        <div class="program-dialog-actions">
+          <button class="btn ghost" id="programCancelBtn" type="button">Отмена</button>
+          <button class="btn primary" id="programSaveBtn" type="button">Сохранить программу</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <script type="module">
     import { applyBrandIdentity, getBrandForRoomSlug } from './brand.js';
     import {
       supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, listEventRooms, listSpeakers, updateSpeaker,
-      setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration,
+      setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration, updateEventProgram,
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
       setCurrentEventSession, subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
@@ -506,6 +586,13 @@
     const eventSessionSelect = document.getElementById('eventSessionSelect');
     const eventSessionState = document.getElementById('eventSessionState');
     const eventSessionActivateBtn = document.getElementById('eventSessionActivateBtn');
+    const eventProgramBtn = document.getElementById('eventProgramBtn');
+    const programModal = document.getElementById('programModal');
+    const programList = document.getElementById('programList');
+    const programStatus = document.getElementById('programStatus');
+    const programSaveBtn = document.getElementById('programSaveBtn');
+    const programCancelBtn = document.getElementById('programCancelBtn');
+    const programCloseBtn = document.getElementById('programCloseBtn');
     const filterTabs      = Array.from(document.querySelectorAll('.filter-tab'));
 
     function finishBootstrap() {
@@ -610,6 +697,8 @@
     const pendingQuestionActions = new Set();
     let activatingSpeaker = false;
     let switchingEventSession = false;
+    let programDraft = [];
+    let programSaving = false;
     let pendingSpeakerDeletionId = null;
     let deletingSpeakerId = null;
     let speakerDeleteTimer = null;
@@ -629,6 +718,7 @@
       state.eventRooms = eventRooms;
       const showSelector = state.room?.event_key != null && eventRooms.length >= 1;
       eventSessionControl.hidden = !showSelector;
+      eventProgramBtn.hidden = !showSelector;
       if (!showSelector) {
         eventSessionSelect.replaceChildren();
         eventSessionState.textContent = '';
@@ -639,7 +729,8 @@
       eventSessionSelect.replaceChildren(...eventRooms.map(room => {
         const option = document.createElement('option');
         option.value = room.slug;
-        option.textContent = room.title;
+        const sessionTime = room.starts_at ? new Date(room.starts_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+        option.textContent = [sessionTime, room.title].filter(Boolean).join(' · ');
         option.selected = room.slug === state.room.slug;
         return option;
       }));
