@@ -10,10 +10,14 @@ create table if not exists public.qna_rooms (
   moderator_regalia text null,
   event_key text null,
   session_order integer not null default 100,
+  starts_at timestamptz null,
+  duration_minutes integer null,
   is_current_session boolean not null default false,
   active_speaker_id bigint null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint qna_rooms_duration_minutes_check
+    check (duration_minutes is null or duration_minutes > 0)
 );
 
 -- `create table if not exists` не меняет уже развёрнутую таблицу.
@@ -34,7 +38,23 @@ alter table public.qna_rooms
 alter table public.qna_rooms
   add column if not exists event_key text,
   add column if not exists session_order integer,
+  add column if not exists starts_at timestamptz,
+  add column if not exists duration_minutes integer,
   add column if not exists is_current_session boolean;
+
+do $program$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'qna_rooms_duration_minutes_check'
+      and conrelid = 'public.qna_rooms'::regclass
+  ) then
+    alter table public.qna_rooms
+      add constraint qna_rooms_duration_minutes_check
+      check (duration_minutes is null or duration_minutes > 0);
+  end if;
+end;
+$program$;
 
 update public.qna_rooms
 set session_order = 100
