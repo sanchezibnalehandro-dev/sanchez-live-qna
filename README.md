@@ -39,11 +39,11 @@ Live Q&A-инструмент для мероприятий: гости зада
 
 ## Backend
 
-Supabase. Таблицы: `qna_rooms`, `qna_speakers`, `qna_questions`, `qna_question_votes`.
+Supabase. Таблицы: `qna_rooms`, `qna_event_program_items`, `qna_speakers`, `qna_questions`, `qna_question_votes`.
 
 SQL-файлы в репозитории: `schema.sql` (актуальная Q&A-схема, триггеры и RPC, включая current event session), `RLS-auth-next.sql` (актуальные RLS-политики и grants).
 
-Realtime Publication: все 4 таблицы добавлены в `supabase_realtime`.
+Realtime Publication: все 5 Q&A/program-таблиц добавлены в `supabase_realtime`.
 
 ## Деплой
 

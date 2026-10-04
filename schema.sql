@@ -17,7 +17,9 @@ create table if not exists public.qna_rooms (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint qna_rooms_duration_minutes_check
-    check (duration_minutes is null or duration_minutes > 0)
+    check (duration_minutes is null or duration_minutes > 0),
+  constraint qna_rooms_id_event_key_key
+    unique (id, event_key)
 );
 
 -- `create table if not exists` не меняет уже развёрнутую таблицу.
@@ -107,6 +109,61 @@ begin
   end if;
 end;
 $$;
+
+do $program_v2_room_key$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'qna_rooms_id_event_key_key'
+      and conrelid = 'public.qna_rooms'::regclass
+  ) then
+    alter table public.qna_rooms
+      add constraint qna_rooms_id_event_key_key
+      unique (id, event_key);
+  end if;
+end;
+$program_v2_room_key$;
+
+create table if not exists public.qna_event_program_items (
+  id bigserial primary key,
+  event_key text not null,
+  room_id bigint null,
+  kind text not null,
+  title text null,
+  session_order integer not null,
+  starts_at timestamptz null,
+  duration_minutes integer null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint qna_event_program_items_event_key_check
+    check (btrim(event_key) <> ''),
+  constraint qna_event_program_items_kind_check
+    check (kind in ('session', 'service')),
+  constraint qna_event_program_items_shape_check
+    check (
+      (kind = 'session' and room_id is not null)
+      or
+      (kind = 'service' and room_id is null and title is not null and btrim(title) <> '')
+    ),
+  constraint qna_event_program_items_order_check
+    check (session_order > 0),
+  constraint qna_event_program_items_duration_check
+    check (duration_minutes is null or duration_minutes > 0),
+  constraint qna_event_program_items_room_key
+    unique (room_id),
+  constraint qna_event_program_items_event_order_key
+    unique (event_key, session_order)
+    deferrable initially deferred,
+  constraint qna_event_program_items_room_event_fkey
+    foreign key (room_id, event_key)
+    references public.qna_rooms (id, event_key)
+    on update cascade
+    on delete restrict
+);
+
+create index if not exists qna_event_program_items_room_event_idx
+on public.qna_event_program_items (room_id, event_key);
 
 create table if not exists public.qna_speakers (
   id bigserial primary key,
@@ -553,6 +610,15 @@ begin
     raise exception 'Program payload must be an array' using errcode = '22023';
   end if;
 
+  if exists (
+    select 1
+    from public.qna_event_program_items
+    where event_key = p_event_key
+      and kind = 'service'
+  ) then
+    raise exception 'PROGRAM_V2_REQUIRES_NEW_EDITOR' using errcode = '22023';
+  end if;
+
   select count(*), count(distinct id), count(distinct session_order)
   into v_requested, v_distinct_ids, v_distinct_orders
   from jsonb_to_recordset(p_items)
@@ -650,6 +716,28 @@ begin
   from computed item
   where room.id = item.id
     and room.event_key = p_event_key;
+
+  insert into public.qna_event_program_items (
+    event_key, room_id, kind, title, session_order, starts_at, duration_minutes
+  )
+  select
+    room.event_key,
+    room.id,
+    'session',
+    null,
+    room.session_order,
+    room.starts_at,
+    room.duration_minutes
+  from public.qna_rooms room
+  where room.event_key = p_event_key
+  on conflict (room_id) do update
+  set event_key = excluded.event_key,
+      kind = 'session',
+      title = null,
+      session_order = excluded.session_order,
+      starts_at = excluded.starts_at,
+      duration_minutes = excluded.duration_minutes,
+      updated_at = now();
 end;
 $$;
 
