@@ -536,7 +536,7 @@ returns void
 language plpgsql
 security invoker
 set search_path = public
-as $
+as $$
 declare
   v_requested integer;
   v_distinct_ids integer;
@@ -613,7 +613,7 @@ begin
   where room.id = item.id
     and room.event_key = p_event_key;
 end;
-$;
+$$;
 
 revoke execute on function public.update_qna_event_program(text, jsonb)
 from public, anon;
