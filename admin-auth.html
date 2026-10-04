@@ -246,7 +246,7 @@
     .program-field input:focus-visible, .program-toolbar-field input:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; }
     .program-duration { display: grid; gap: 8px; min-width: 0; }
     .program-duration-control { display: grid; grid-template-columns: minmax(0,1fr) 82px auto; gap: 10px; align-items: center; }
-    .program-duration-slider { width: 100%; min-width: 0; accent-color: var(--color-accent); cursor: pointer; touch-action: pan-y; }
+    .program-duration-slider { width: 100%; min-width: 0; min-height: 42px; padding: 0; border: 0; background: transparent; accent-color: var(--color-accent); cursor: pointer; touch-action: pan-y; }
     .program-duration-number {
       width: 82px; min-height: 42px; box-sizing: border-box; padding: 8px 9px;
       border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface-raised);
@@ -625,7 +625,7 @@
           <div class="program-add-menu" id="programAddMenu" hidden>
             <button class="program-add-option" type="button" data-service-title="Обед" data-service-duration="60">Обед</button>
             <button class="program-add-option" type="button" data-service-title="Кофе-брейк" data-service-duration="20">Кофе-брейк</button>
-            <button class="program-add-option" type="button" data-service-title="Новый блок" data-service-duration="30">Другое</button>
+            <button class="program-add-option" type="button" data-service-title="Другое" data-service-duration="30">Другое</button>
           </div>
         </div>
       </div>
