@@ -188,7 +188,7 @@
       if (value == null) return null;
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return null;
-      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: brand.timeZone || undefined });
     }
 
     function formatRange(item) {
@@ -200,7 +200,7 @@
       if (!value) return null;
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return null;
-      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: brand.timeZone || undefined });
     }
 
     function itemType(item) {
