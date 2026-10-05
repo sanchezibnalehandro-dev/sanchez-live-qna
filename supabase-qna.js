@@ -249,7 +249,7 @@ async function fetchEventProgramContext(eventKey) {
   const [{ data: items, error: itemsError }, rooms] = await Promise.all([
     supabase
       .from('qna_event_program_items')
-      .select('id, event_key, room_id, kind, title, session_order, starts_at, duration_minutes')
+      .select('id, event_key, room_id, kind, title, session_order, starts_at, duration_minutes, is_current')
       .eq('event_key', eventKey)
       .order('session_order', { ascending: true })
       .order('id', { ascending: true }),
@@ -424,6 +424,20 @@ export async function setActiveSpeaker(roomId, speakerId) {
 export async function setCurrentEventSession(roomId) {
   const { error } = await supabase.rpc('set_current_event_session', {
     p_room_id: roomId
+  });
+  if (error) throw error;
+}
+
+export async function setCurrentEventProgramItem(programItemId) {
+  const { error } = await supabase.rpc('set_current_event_program_item', {
+    p_program_item_id: programItemId
+  });
+  if (error) throw error;
+}
+
+export async function clearCurrentEventProgramItem(eventKey) {
+  const { error } = await supabase.rpc('clear_current_event_program_item', {
+    p_event_key: eventKey
   });
   if (error) throw error;
 }
