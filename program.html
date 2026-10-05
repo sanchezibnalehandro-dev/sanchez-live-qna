@@ -50,6 +50,7 @@
     .program-flag { display: inline-flex; padding: 3px 7px; border-radius: 999px; background: var(--color-neutral-soft); color: var(--color-neutral-text); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
     .program-flag.past { background: var(--color-surface-subtle); color: var(--color-text-secondary); }
     .program-flag.next { background: color-mix(in srgb, var(--color-accent) 14%, transparent); color: var(--color-accent-text); }
+    .program-flag.current { background: var(--color-success-soft); color: var(--color-success-text); }
     .program-name { color: var(--color-text); font-size: 16px; font-weight: 800; line-height: 1.35; }
     .program-meta { color: var(--color-text-secondary); font-size: 11px; line-height: 1.5; }
     @media (max-width: 620px) {
@@ -264,12 +265,13 @@
       const timing = formatRange(item);
       const meta = speakerMeta(item);
       const pastFlag = item.scheduleState === 'PAST' ? '<span class="program-flag past">Завершено</span>' : '';
+      const currentFlag = item.scheduleState === 'NOW' ? '<span class="program-flag current">Сейчас</span>' : '';
       const nextFlag = String(item.id) === String(nextItemId) ? '<span class="program-flag next">Далее</span>' : '';
       return `
         <article class="program-item state-${item.scheduleState.toLowerCase()}">
           <div class="program-time"><strong>${escapeHtml(timing.range)}</strong><span>${escapeHtml(timing.note)}</span></div>
           <div class="program-content">
-            <div class="program-flags"><span class="program-flag">${escapeHtml(itemType(item))}</span>${pastFlag}${nextFlag}</div>
+            <div class="program-flags"><span class="program-flag">${escapeHtml(itemType(item))}</span>${pastFlag}${currentFlag}${nextFlag}</div>
             <div class="program-name">${escapeHtml(item.title || 'Без названия')}</div>
             ${meta ? `<div class="program-meta">${escapeHtml(meta)}</div>` : ''}
           </div>
@@ -320,7 +322,7 @@
       programDate.textContent = formatDate(firstScheduled?.starts_at) || 'Актуальное расписание мероприятия';
       renderHero(view);
 
-      const visibleScheduled = view.scheduledItems.filter(item => item.id !== view.heroItem?.id);
+      const visibleScheduled = view.scheduledItems;
       scheduledSection.hidden = !visibleScheduled.length;
       scheduledCount.textContent = `${visibleScheduled.length} ${visibleScheduled.length === 1 ? 'блок' : 'блока'}`;
       programList.innerHTML = visibleScheduled.map(item => renderProgramItem(item, view.nextItem?.id)).join('');
