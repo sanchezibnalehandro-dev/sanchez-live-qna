@@ -805,7 +805,8 @@ begin
     select 1
     from jsonb_to_recordset(p_items)
       as x(id bigint, kind text, room_id bigint, title text, session_order integer, starts_at timestamptz, duration_minutes integer)
-    where x.kind not in ('session', 'service')
+    where x.kind is null
+       or x.kind not in ('session', 'service')
        or x.session_order is null
        or x.session_order < 1
        or x.title is null
