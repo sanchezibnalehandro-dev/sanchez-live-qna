@@ -199,6 +199,15 @@
     }
     .program-add-option:hover, .program-add-option:focus-visible { background: var(--color-surface-hover); outline: none; }
     .program-add-option span { color: var(--muted); font-size: 9px; font-weight: 700; }
+    .program-session-confirm[hidden] { display: none; }
+    .program-session-confirm {
+      display: grid; gap: 9px; padding: 10px; border: 1px solid var(--color-warning-border);
+      border-radius: 10px; background: var(--color-warning-soft); color: var(--color-warning-text);
+    }
+    .program-session-confirm strong { color: var(--text); font-size: 11px; line-height: 1.35; }
+    .program-session-confirm span { font-size: 9px; line-height: 1.45; }
+    .program-session-confirm-actions { display: flex; gap: 7px; }
+    .program-session-confirm-actions .btn { min-height: 38px; flex: 1; padding: 7px 8px; font-size: 10px; }
     .program-list { min-height: 0; overflow: auto; display: grid; gap: 8px; padding: 12px; }
     .program-row {
       position: relative; display: grid; grid-template-columns: 72px minmax(260px,1fr) minmax(250px,300px);
@@ -635,6 +644,14 @@
             <button class="program-add-option" type="button" data-service-title="Обед" data-service-duration="60">Обед</button>
             <button class="program-add-option" type="button" data-service-title="Кофе-брейк" data-service-duration="20">Кофе-брейк</button>
             <button class="program-add-option" type="button" data-service-title="Другое" data-service-duration="30">Другое</button>
+            <div class="program-session-confirm" id="programSessionConfirm" hidden>
+              <strong id="programSessionConfirmTitle">Создать Q&amp;A-сессию?</strong>
+              <span>Сессия будет создана сразу в событии. Это действие не отменяется кнопкой закрытия программы.</span>
+              <div class="program-session-confirm-actions">
+                <button class="btn ghost" id="programSessionConfirmCancelBtn" type="button">Назад</button>
+                <button class="btn primary" id="programSessionConfirmCreateBtn" type="button">Создать сейчас</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -702,6 +719,10 @@
     const programStartPlusBtn = document.getElementById('programStartPlusBtn');
     const programAddBtn = document.getElementById('programAddBtn');
     const programAddMenu = document.getElementById('programAddMenu');
+    const programSessionConfirm = document.getElementById('programSessionConfirm');
+    const programSessionConfirmTitle = document.getElementById('programSessionConfirmTitle');
+    const programSessionConfirmCancelBtn = document.getElementById('programSessionConfirmCancelBtn');
+    const programSessionConfirmCreateBtn = document.getElementById('programSessionConfirmCreateBtn');
     const programSaveBtn = document.getElementById('programSaveBtn');
     const programCancelBtn = document.getElementById('programCancelBtn');
     const programCloseBtn = document.getElementById('programCloseBtn');
@@ -813,6 +834,8 @@
     let programAnchorStart = null;
     let programSaving = false;
     let programCreatingSession = false;
+    let pendingProgramSessionMode = null;
+    let programHasImmediateSessionWrite = false;
     let programDraftKey = 0;
     let pendingSpeakerDeletionId = null;
     let deletingSpeakerId = null;
@@ -1250,9 +1273,42 @@
       inputs[inputs.length - 1]?.focus();
     }
 
+    function setProgramSessionCreateConfirmation(mode = null) {
+      const confirming = mode === 'speaker' || mode === 'panel';
+      pendingProgramSessionMode = confirming ? mode : null;
+      programAddMenu.querySelectorAll('.program-add-option').forEach(button => {
+        button.hidden = confirming;
+      });
+      programSessionConfirm.hidden = !confirming;
+      if (confirming) {
+        programSessionConfirmTitle.textContent = mode === 'panel'
+          ? 'Создать панель прямо сейчас?'
+          : 'Создать выступление прямо сейчас?';
+        programSessionConfirmCreateBtn.textContent = mode === 'panel'
+          ? 'Создать панель'
+          : 'Создать выступление';
+        programSessionConfirmCreateBtn.focus();
+      }
+    }
+
+    function syncProgramCloseSemantics() {
+      const hasImmediateWrite = programHasImmediateSessionWrite;
+      programCancelBtn.textContent = hasImmediateWrite ? 'Закрыть' : 'Отмена';
+      programCancelBtn.title = hasImmediateWrite
+        ? 'Созданная Q&A-сессия уже сохранена и останется в событии'
+        : 'Закрыть без сохранения изменений программы';
+      programCloseBtn.setAttribute(
+        'aria-label',
+        hasImmediateWrite
+          ? 'Закрыть программу; созданная Q&A-сессия останется в событии'
+          : 'Закрыть программу'
+      );
+    }
+
     async function addSessionProgramItem(mode) {
       if (programSaving || programCreatingSession || !state.room?.event_key) return;
 
+      setProgramSessionCreateConfirmation(null);
       programCreatingSession = true;
       programAddBtn.disabled = true;
       programAddMenu.hidden = true;
@@ -1280,7 +1336,9 @@
           _program_key: `session:${item.room_id}`
         });
         renderProgramEditor();
-        setProgramStatus('Новая сессия создана. Она не в эфире, приём вопросов закрыт.');
+        programHasImmediateSessionWrite = true;
+        syncProgramCloseSemantics();
+        setProgramStatus('Q&A-сессия уже создана и сохранена в событии. «Закрыть» не удалит её; остальные изменения программы сохраняются отдельно.');
         programList.querySelector(`[data-program-key="session:${item.room_id}"] [data-program-title]`)?.focus();
       } catch (error) {
         setProgramStatus(error.message || 'Не удалось создать Q&A-сессию.', 'error');
@@ -1292,6 +1350,9 @@
 
     async function openProgramEditor() {
       if (!state.room?.event_key) return;
+      programHasImmediateSessionWrite = false;
+      syncProgramCloseSemantics();
+      setProgramSessionCreateConfirmation(null);
       programModal.hidden = false;
       programAddMenu.hidden = true;
       programAddBtn.setAttribute('aria-expanded', 'false');
@@ -1321,8 +1382,11 @@
       if (programSaving) return;
       programModal.hidden = true;
       programAddMenu.hidden = true;
+      setProgramSessionCreateConfirmation(null);
       programDraft = [];
       programAnchorStart = null;
+      programHasImmediateSessionWrite = false;
+      syncProgramCloseSemantics();
     }
 
     async function activateEventSession(room) {
@@ -1371,12 +1435,15 @@
 
     programAddBtn.addEventListener('click', event => {
       event.stopPropagation();
-      programAddMenu.hidden = !programAddMenu.hidden;
-      programAddBtn.setAttribute('aria-expanded', String(!programAddMenu.hidden));
+      const opening = programAddMenu.hidden;
+      if (opening) setProgramSessionCreateConfirmation(null);
+      programAddMenu.hidden = !opening;
+      programAddBtn.setAttribute('aria-expanded', String(opening));
     });
     programAddMenu.addEventListener('click', event => event.stopPropagation());
     document.addEventListener('click', () => {
       programAddMenu.hidden = true;
+      setProgramSessionCreateConfirmation(null);
       programAddBtn.setAttribute('aria-expanded', 'false');
     });
     programAddMenu.querySelectorAll('[data-service-title]').forEach(button => {
@@ -1386,8 +1453,18 @@
     });
     programAddMenu.querySelectorAll('[data-session-mode]').forEach(button => {
       button.addEventListener('click', () => {
-        void addSessionProgramItem(button.dataset.sessionMode);
+        setProgramSessionCreateConfirmation(button.dataset.sessionMode);
       });
+    });
+    programSessionConfirmCancelBtn.addEventListener('click', () => {
+      const mode = pendingProgramSessionMode;
+      setProgramSessionCreateConfirmation(null);
+      programAddMenu.querySelector(`[data-session-mode="${mode}"]`)?.focus();
+    });
+    programSessionConfirmCreateBtn.addEventListener('click', () => {
+      const mode = pendingProgramSessionMode;
+      if (!mode) return;
+      void addSessionProgramItem(mode);
     });
 
     programDateInput.addEventListener('change', updateProgramAnchorFromControls);
