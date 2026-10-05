@@ -59,9 +59,10 @@ export function deriveGuestProgramState(items, operationalCurrentRoom, now = Dat
     .map(item => withScheduleState(item, nowMs));
   const scheduledItems = orderedItems.filter(item => item.scheduleState !== PROGRAM_ITEM_STATE.UNSCHEDULED);
   const unscheduledItems = orderedItems.filter(item => item.scheduleState === PROGRAM_ITEM_STATE.UNSCHEDULED);
-  const currentItem = scheduledItems.find(item => item.scheduleState === PROGRAM_ITEM_STATE.NOW) || null;
+  const currentItem = orderedItems.find(item => item.is_current === true) || null;
+
   const nextItem = scheduledItems
-    .filter(item => item.scheduleState === PROGRAM_ITEM_STATE.FUTURE)
+    .filter(item => item.endMs > nowMs && (!currentItem || String(item.id) !== String(currentItem.id)))
     .sort((left, right) => left.startMs - right.startMs || compareProgramItems(left, right))[0] || null;
 
   let heroState = PROGRAM_HERO_STATE.EMPTY;
@@ -88,10 +89,11 @@ export function deriveGuestProgramState(items, operationalCurrentRoom, now = Dat
   );
 
   const transitionCandidates = scheduledItems.flatMap(item => {
-    if (item.scheduleState === PROGRAM_ITEM_STATE.NOW) return [item.endMs];
-    if (item.scheduleState === PROGRAM_ITEM_STATE.FUTURE) return [item.startMs];
-    return [];
-  }).filter(value => Number.isFinite(value) && value > nowMs);
+    const values = [];
+    if (item.startMs > nowMs) values.push(item.startMs);
+    if (item.endMs > nowMs) values.push(item.endMs);
+    return values;
+  }).filter(value => Number.isFinite(value));
 
   return {
     nowMs,
