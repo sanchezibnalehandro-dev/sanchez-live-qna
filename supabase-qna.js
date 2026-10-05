@@ -509,6 +509,12 @@ export function subscribeEvent(eventKey, onChange, onStatus) {
       table: 'qna_rooms',
       filter: `event_key=eq.${eventKey}`
     }, debounced)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'qna_event_program_items',
+      filter: `event_key=eq.${eventKey}`
+    }, debounced)
     .subscribe((status, error) => {
       if (!active) return;
       onStatus?.(status, error);
