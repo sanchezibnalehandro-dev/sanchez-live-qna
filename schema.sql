@@ -1158,9 +1158,16 @@ begin
   for update;
 
   update public.qna_event_program_items
-  set is_current = (id = p_program_item_id)
+  set is_current = false
   where event_key = v_event_key
-    and is_current is distinct from (id = p_program_item_id);
+    and is_current = true
+    and id <> p_program_item_id;
+
+  update public.qna_event_program_items
+  set is_current = true
+  where id = p_program_item_id
+    and event_key = v_event_key
+    and is_current = false;
 
   if v_kind = 'session' then
     if v_room_id is null then
@@ -1294,15 +1301,17 @@ begin
   for update;
 
   update public.qna_event_program_items
-  set is_current = (
-    kind = 'session'
-    and room_id = p_room_id
-  )
+  set is_current = false
   where event_key = v_event_key
-    and is_current is distinct from (
-      kind = 'session'
-      and room_id = p_room_id
-    );
+    and is_current = true
+    and not (kind = 'session' and room_id = p_room_id);
+
+  update public.qna_event_program_items
+  set is_current = true
+  where event_key = v_event_key
+    and kind = 'session'
+    and room_id = p_room_id
+    and is_current = false;
 
   update public.qna_rooms
   set is_current_session = false,
