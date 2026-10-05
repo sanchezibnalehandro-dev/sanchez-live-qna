@@ -83,6 +83,33 @@ grant usage, select
 on sequence public.qna_event_program_items_id_seq
 to authenticated, service_role;
 
+-- Legacy qna_rooms did not guarantee unique session_order values per event.
+-- Normalize only affected events before backfilling into the stricter Program v2 table.
+with duplicate_events as (
+  select event_key
+  from public.qna_rooms
+  where event_key is not null
+  group by event_key
+  having count(*) <> count(distinct session_order)
+),
+ranked_rooms as (
+  select
+    room.id,
+    (
+      row_number() over (
+        partition by room.event_key
+        order by room.session_order, room.id
+      ) * 10
+    )::integer as normalized_order
+  from public.qna_rooms room
+  join duplicate_events duplicate_event
+    on duplicate_event.event_key = room.event_key
+)
+update public.qna_rooms room
+set session_order = ranked.normalized_order
+from ranked_rooms ranked
+where room.id = ranked.id;
+
 insert into public.qna_event_program_items (
   event_key, room_id, kind, title, session_order, starts_at, duration_minutes
 )
