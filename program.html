@@ -274,6 +274,31 @@
         </article>`;
     }
 
+    function transitionRetryDelay(attempt) {
+      return Math.min(30_000, 2_000 * (2 ** Math.min(Math.max(0, attempt), 4)));
+    }
+
+    function scheduleTransitionRetry(generation, attempt) {
+      if (disposed || generation !== transitionGeneration) return;
+      clearTimeout(transitionTimer);
+      transitionTimer = setTimeout(() => {
+        transitionTimer = null;
+        if (disposed || generation !== transitionGeneration) return;
+        void refreshTransition(generation, attempt + 1);
+      }, transitionRetryDelay(attempt));
+    }
+
+    async function refreshTransition(generation, attempt = 0) {
+      if (disposed || generation !== transitionGeneration) return;
+      try {
+        await refresh();
+      } catch (error) {
+        reportRefreshError(error);
+      }
+      if (disposed || generation !== transitionGeneration) return;
+      scheduleTransitionRetry(generation, attempt);
+    }
+
     function armTransitionTimer(view) {
       clearTimeout(transitionTimer);
       transitionTimer = null;
@@ -281,8 +306,9 @@
       if (!view.nextTransitionAt) return;
       const delay = Math.max(50, Math.min(view.nextTransitionAt - Date.now() + 100, 2_147_000_000));
       transitionTimer = setTimeout(() => {
+        transitionTimer = null;
         if (disposed || generation !== transitionGeneration) return;
-        queueRefresh();
+        void refreshTransition(generation);
       }, delay);
     }
 
