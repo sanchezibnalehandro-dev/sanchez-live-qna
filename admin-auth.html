@@ -617,6 +617,10 @@
       .questions-actions { max-width: 72%; flex-wrap: wrap; }
       .live-brand-copy strong { font-size: 10px; letter-spacing: .035em; }
     }
+    .program-close-confirm[hidden] { display: none; }
+    .program-close-confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .program-close-confirm span { color: var(--color-warning-text); font-size: 12px; line-height: 1.4; }
+
   </style>
 </head>
 <body class="is-booting">
@@ -751,6 +755,11 @@
       <div class="program-list" id="programList"></div>
       <div class="program-dialog-foot">
         <div class="program-status" id="programStatus">Program v2 не меняет текущую live-сессию.</div>
+        <div class="program-close-confirm" id="programCloseConfirm" hidden>
+          <span>Закрыть без сохранения? Правки программы пропадут (уже созданные Q&amp;A-сессии останутся).</span>
+          <button class="btn danger" id="programCloseConfirmYes" type="button">Да, закрыть</button>
+          <button class="btn ghost" id="programCloseConfirmNo" type="button">Вернуться</button>
+        </div>
         <div class="program-dialog-actions">
           <button class="btn ghost" id="programClearCurrentBtn" type="button" hidden>Завершить текущий блок</button>
           <button class="btn ghost" id="programCancelBtn" type="button">Отмена</button>
@@ -835,6 +844,9 @@
     const programClearCurrentBtn = document.getElementById('programClearCurrentBtn');
     const programCancelBtn = document.getElementById('programCancelBtn');
     const programCloseBtn = document.getElementById('programCloseBtn');
+    const programCloseConfirm = document.getElementById('programCloseConfirm');
+    const programCloseConfirmYes = document.getElementById('programCloseConfirmYes');
+    const programCloseConfirmNo = document.getElementById('programCloseConfirmNo');
     const filterTabs      = Array.from(document.querySelectorAll('.filter-tab'));
 
     function finishBootstrap() {
@@ -1999,6 +2011,7 @@
 
     function closeProgramEditor() {
       if (programSaving || programCreatingSession) return;
+      programCloseConfirm.hidden = true;
       programModal.hidden = true;
       programAddMenu.hidden = true;
       setProgramSessionCreateConfirmation(null);
@@ -2008,6 +2021,19 @@
       programHasImmediateSessionWrite = false;
       syncProgramCloseSemantics();
     }
+
+    function requestCloseProgramEditor() {
+      if (programSaving || programCreatingSession) return;
+      if (programDirty) {
+        programCloseConfirm.hidden = false;
+        programCloseConfirmNo.focus();
+        return;
+      }
+      closeProgramEditor();
+    }
+
+    programCloseConfirmYes.addEventListener('click', closeProgramEditor);
+    programCloseConfirmNo.addEventListener('click', () => { programCloseConfirm.hidden = true; });
 
     async function activateEventSession(room) {
       if (!room || switchingEventSession) return false;
@@ -2040,10 +2066,10 @@
     liveCueIntakeBtn.addEventListener('click', () => { void toggleCurrentLiveCueIntake(); });
     eventProgramBtn.addEventListener('click', () => { void openProgramEditor(); });
     programClearCurrentBtn.addEventListener('click', () => { void clearProgramLiveItem(); });
-    programCancelBtn.addEventListener('click', closeProgramEditor);
-    programCloseBtn.addEventListener('click', closeProgramEditor);
+    programCancelBtn.addEventListener('click', requestCloseProgramEditor);
+    programCloseBtn.addEventListener('click', requestCloseProgramEditor);
     programModal.addEventListener('click', event => {
-      if (event.target === programModal) closeProgramEditor();
+      if (event.target === programModal) requestCloseProgramEditor();
     });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !programModal.hidden) {
@@ -2051,7 +2077,7 @@
           programAddMenu.hidden = true;
           programAddBtn.setAttribute('aria-expanded', 'false');
         } else {
-          closeProgramEditor();
+          requestCloseProgramEditor();
         }
       }
     });
@@ -2293,6 +2319,13 @@
       persistPanelState();
     });
     void boot().catch(showBootstrapError);
+
+    window.addEventListener('beforeunload', event => {
+      if ((!programModal.hidden && programDirty) || editorState.dirty) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    });
 
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
