@@ -34,7 +34,7 @@ test('A: past session remains in the schedule as PAST', () => {
 test('B: current panel matching operational LIVE room allows Q&A', () => {
   const view = deriveGuestProgramState([
     item({ mode: 'panel' })
-  ], { id: 11 }, NOW);
+  ], { id: 11, is_questions_open: true }, NOW);
 
   assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
   assert.equal(view.heroItem.mode, 'panel');
@@ -42,7 +42,13 @@ test('B: current panel matching operational LIVE room allows Q&A', () => {
 });
 
 test('C: current panel with another operational room does not allow Q&A', () => {
-  const view = deriveGuestProgramState([item({ mode: 'panel' })], { id: 12 }, NOW);
+  const view = deriveGuestProgramState([item({ mode: 'panel' })], { id: 12, is_questions_open: true }, NOW);
+  assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
+  assert.equal(view.canAskCurrent, false);
+});
+
+test('C2: matching operational room with closed intake does not allow Q&A', () => {
+  const view = deriveGuestProgramState([item()], { id: 11, is_questions_open: false }, NOW);
   assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
   assert.equal(view.canAskCurrent, false);
 });
