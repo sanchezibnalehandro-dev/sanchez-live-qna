@@ -16,6 +16,9 @@
     })();
   </script>
   <link rel="stylesheet" href="./theme.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" />
   <link rel="stylesheet" data-brand-stylesheet />
   <script>
     (() => {
@@ -104,7 +107,6 @@
     }
 
     /* ADMIN CONSOLE — desktop live-event workspace */
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
     .admin-console { font-family: var(--font-console); font-variant-numeric: tabular-nums lining-nums; }
     .admin-console h1, .admin-console h2, .admin-console .section-title, .admin-console .stat-value { font-family: inherit; }
     .admin-console .shell { max-width: 1480px; min-height: calc(100vh - 60px); grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
@@ -519,7 +521,6 @@
     .questions-summary { margin: 3px 0 0; font-size: 11px; color: var(--muted); }
     .questions-actions, .question-filter-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
     .responsive-question-body > .question-filter-row { padding: 12px 16px; border-bottom: 1px solid var(--border-2); }
-    .question-search { min-width: 180px; flex: 1; max-width: 300px; }
     .admin-console .filter-tab { min-height: 32px; padding: 0 11px; border-radius: 999px; font-size: 11px; }
     .new-questions-banner { align-self: center; margin: 8px 12px 0; padding: 6px 10px; font-size: 11px; }
     .question-feed { min-height: 0; flex: 1; overflow: auto; padding: 0; }
@@ -538,15 +539,10 @@
     .editor-dirty-status, .editor-background-status { max-width: 150px; padding: 4px 6px; border-radius: 7px; font-size: 9px; font-weight: 700; line-height: 1.25; text-align: right; }
     .editor-dirty-status { border: 1px solid color-mix(in srgb, var(--color-warning) 28%, transparent); background: var(--color-warning-soft); color: var(--color-warning-text); }
     .editor-background-status { border: 1px solid color-mix(in srgb, var(--color-accent-hover) 28%, transparent); background: color-mix(in srgb, var(--color-accent-hover) 10%, transparent); color: var(--color-info-strong); }
-    .editor-note { margin-bottom: 12px; padding: 10px; border: 1px solid color-mix(in srgb, var(--color-warning) 22%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--color-warning) 8%, transparent); color: var(--color-warning-text); font-size: 11px; line-height: 1.45; }
     .editor-actions { display: flex; gap: 8px; margin-top: 10px; }
     .editor-actions .btn { flex: 1; padding: 10px; font-size: 11px; }
     .utility-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
     .utility-grid .btn { min-height: 40px; padding: 8px; font-size: 11px; }
-    .editor-danger { margin-top: auto; padding: 12px; border-top: 1px solid color-mix(in srgb, var(--color-danger) 14%, transparent); background: color-mix(in srgb, var(--color-danger) 3.5%, transparent); }
-    .editor-danger .danger-zone-label { margin-bottom: 8px; }
-    .editor-danger .btn { width: 100%; padding: 10px; font-size: 11px; }
-    .editor-danger .btn + .btn { margin-top: 8px; }
     .admin-console .status { min-height: 0; }
     .responsive-section-head, .responsive-section-toggle, .responsive-summary { display: none; }
     .panel-head-actions { display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; }
@@ -623,6 +619,64 @@
       .questions-actions { max-width: 72%; flex-wrap: wrap; }
       .live-brand-copy strong { font-size: 10px; letter-spacing: .035em; }
     }
+    .program-close-confirm[hidden] { display: none; }
+    .program-close-confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .program-close-confirm span { color: var(--color-warning-text); font-size: 12px; line-height: 1.4; }
+
+    /* статус: зелёный только для LIVE */
+    .live-label[data-live="off"] { color: var(--muted); }
+    .live-label[data-live="off"]::before { background: currentColor; }
+    .live-intake-status[hidden] { display: none; }
+
+    /* заголовок не больше 2 строк */
+    .live-context h1 {
+      font-size: clamp(18px, 1.7vw, 24px);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* «Управление эфиром»: одна компактная строка */
+    .live-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 8px; padding: 8px 12px; }
+    .live-controls-label { white-space: nowrap; }
+    .live-control-list { display: flex; flex-wrap: wrap; flex: 1 1 320px; gap: 8px; }
+    .admin-console .live-toggle { flex: 0 1 340px; min-height: 52px; }
+
+    /* подсветка кнопки после смены блока */
+    .event-live-cue-actions .btn.is-attention {
+      background: var(--color-accent); border-color: transparent; color: var(--color-text-on-accent);
+      animation: intakeNudge 1.6s ease-in-out infinite;
+    }
+    @keyframes intakeNudge {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 55%, transparent); }
+      50% { box-shadow: 0 0 0 8px transparent; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .event-live-cue-actions .btn.is-attention { animation: none; outline: 2px solid var(--color-accent); outline-offset: 2px; }
+    }
+
+    #speakerSelectWrap { display: none; }
+    @media (max-width: 1024px) { #speakerSelectWrap { display: block; } }
+    .editor-dirty-status, .editor-background-status { max-width: 220px; }
+
+    .danger-footer-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+    .danger-footer-item { flex: 1 1 260px; min-width: 0; }
+    .danger-footer .btn { width: 100%; min-height: 44px; font-size: 12px; }
+
+    .admin-console .event-live-cue-kicker,
+    .admin-console .event-live-cue-clock,
+    .admin-console .event-session-label span { font-size: 11px; }
+    .admin-console .event-live-cue-meta,
+    .admin-console .event-live-cue-timing span,
+    .admin-console .live-toggle-title,
+    .admin-console .live-control-state { font-size: 12px; }
+    .admin-console .event-live-cue-timing strong { font-size: 18px; }
+    .admin-console .event-live-cue-actions .btn,
+    .admin-console .event-session-activate,
+    .admin-console .event-session-program { min-height: 44px; font-size: 12px; }
+
+    /* окно программы вынесено из .admin-console, поэтому селекторы без префикса */
+    .program-flag, .program-field, .program-toolbar-field, .program-add-option span { font-size: 11px; }
+    .program-configure, .program-remove { min-height: 36px; font-size: 11px; }
+
   </style>
 </head>
 <body class="is-booting">
@@ -644,15 +698,6 @@
               <div class="live-context"><div class="live-context-status-row"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><div class="live-intake-status" id="liveIntakeStatus" data-state="neutral">Загрузка…</div></div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
               <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;" aria-label="Обновить данные" title="Обновить данные"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5.5"/><path d="M20 4v7h-7"/></svg></button><div class="qr-menu" id="qrMenu"><button class="btn ghost" id="qrBtn" style="padding:8px 10px;" type="button" aria-expanded="false" aria-controls="qrPanel"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 15h2v2h-2zM19 15h1v5h-5v-2h2v-2h2z"/></svg>QR</button><div class="qr-panel" id="qrPanel" hidden><div class="qr-panel-head"><div class="qr-panel-title"><strong>Гостевой QR</strong><span>Ссылка для гостей и готовые файлы для технической службы</span></div><button class="qr-close" id="qrCloseBtn" type="button" aria-label="Закрыть QR">×</button></div><div class="qr-code-frame"><img id="qrImg" src="" width="640" height="640" alt="QR-код гостевой страницы"></div><div class="qr-url-row"><div class="qr-url" id="qrUrl"></div><button class="qr-copy" id="qrCopyBtn" type="button" aria-label="Скопировать гостевую ссылку" title="Скопировать ссылку"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></button></div><div class="qr-actions"><button class="btn primary" id="qrDownloadBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>Скачать QR · PNG 1000</button><button class="btn ghost" id="qrScreenBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Экран 16:9 · PNG</button></div><div class="qr-hint" id="qrHint">QR ведёт на production-гостевую страницу.</div></div></div><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Модератор</button></div>
             </div>
-            <div class="event-session-control" id="eventSessionControl" hidden>
-              <div class="event-session-label"><strong>Редактируемая Q&amp;A-сессия</strong><span>Навигация, не эфир</span></div>
-              <select class="event-session-select" id="eventSessionSelect" aria-label="Просматриваемая сессия"></select>
-              <span class="event-session-state" id="eventSessionState"></span>
-              <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
-              <button class="btn ghost event-session-program" id="eventProgramBtn" type="button">Эфир / программа</button>
-              <div class="event-live-program-state" id="eventLiveProgramState">Сейчас в эфире: загрузка…</div>
-            </div>
-            
             <div class="event-live-cue" id="eventLiveCue" hidden>
               <div class="event-live-cue-grid">
                 <div class="event-live-cue-block">
@@ -688,6 +733,14 @@
               </div>
               <div class="live-status-message" id="status"></div>
             </div>
+
+            <div class="event-session-control" id="eventSessionControl" hidden>
+              <div class="event-session-label"><strong>Просмотр сессии</strong><span>Не переключает эфир</span></div>
+              <select class="event-session-select" id="eventSessionSelect" aria-label="Просматриваемая сессия"></select>
+              <span class="event-session-state" id="eventSessionState"></span>
+              <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
+              <button class="btn ghost event-session-program" id="eventProgramBtn" type="button">Эфир / программа</button>
+            </div>
           </div>
         </div>
       </section>
@@ -708,9 +761,28 @@
 
         <button class="edge-rail" id="editorRail" type="button" aria-label="Свернуть редактор спикера" aria-expanded="true"><svg class="icon edge-rail-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><span class="edge-rail-label">Редактор</span></button>
         <aside class="card console-panel editor-panel" id="editorPanel" data-responsive-section="editor" data-accordion-collapsed="true"><div class="panel-body">
-          <div class="panel-head"><div><h2 id="editorTitle">Редактор спикера</h2><p id="editorSubtitle">Выберите спикера</p><span class="responsive-summary" id="editorAccordionSummary">Редактор · не выбран</span></div><div class="panel-head-actions"><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные спикера изменились в фоне</span><span class="badge pending">Черновик</span></div><button class="responsive-section-toggle" type="button" data-accordion-toggle="editor" aria-expanded="false" aria-controls="editorAccordionBody" aria-label="Развернуть редактор участника"><span class="responsive-chevron" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span></button></div></div>
-          <div class="responsive-section-body responsive-panel-body" id="editorAccordionBody"><div class="editor-card"><div class="editor-note">Realtime-обновления не заменят локальный черновик.</div><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><svg class="icon inline arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div><div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7l1-3h4l1 3M6 7l1 13h10l1-13"/></svg>Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button><div id="logoutConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Выйти из аккаунта?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" style="flex:1;">Отмена</button></div></div></div></div>
+          <div class="panel-head"><div><h2 id="editorTitle">Редактор спикера</h2><p id="editorSubtitle">Выберите спикера</p><span class="responsive-summary" id="editorAccordionSummary">Редактор · не выбран</span></div><div class="panel-head-actions"><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные изменились в фоне. «Сохранить» перезапишет их.</span></div><button class="responsive-section-toggle" type="button" data-accordion-toggle="editor" aria-expanded="false" aria-controls="editorAccordionBody" aria-label="Развернуть редактор участника"><span class="responsive-chevron" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span></button></div></div>
+          <div class="responsive-section-body responsive-panel-body" id="editorAccordionBody"><div class="editor-card"><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><svg class="icon inline arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" id="topicLabel" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div></div>
         </div></aside>
+      </section>
+      <section class="danger-zone danger-footer" aria-label="Опасные действия">
+        <div class="danger-zone-label">Опасная зона</div>
+        <div class="danger-footer-row">
+          <div class="danger-footer-item">
+            <button class="btn warn" id="clearQuestionsBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7l1-3h4l1 3M6 7l1 13h10l1-13"/></svg>Очистить вопросы этой сессии</button>
+            <div id="clearConfirmRow" style="display:none; margin-top:8px;">
+              <p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Удалить <strong id="clearCount">0</strong> вопросов и все голоса безвозвратно? Сначала можно скачать CSV через «Экспорт».</p>
+              <div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" type="button" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" type="button" style="flex:1;">Отмена</button></div>
+            </div>
+          </div>
+          <div class="danger-footer-item">
+            <button class="btn danger" id="logoutBtn" type="button">Выйти из аккаунта</button>
+            <div id="logoutConfirmRow" style="display:none; margin-top:8px;">
+              <p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Выйти из аккаунта?</p>
+              <div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" type="button" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" type="button" style="flex:1;">Отмена</button></div>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -757,6 +829,11 @@
       <div class="program-list" id="programList"></div>
       <div class="program-dialog-foot">
         <div class="program-status" id="programStatus">Program v2 не меняет текущую live-сессию.</div>
+        <div class="program-close-confirm" id="programCloseConfirm" hidden>
+          <span>Закрыть без сохранения? Правки программы пропадут (уже созданные Q&amp;A-сессии останутся).</span>
+          <button class="btn danger" id="programCloseConfirmYes" type="button">Да, закрыть</button>
+          <button class="btn ghost" id="programCloseConfirmNo" type="button">Вернуться</button>
+        </div>
         <div class="program-dialog-actions">
           <button class="btn ghost" id="programClearCurrentBtn" type="button" hidden>Завершить текущий блок</button>
           <button class="btn ghost" id="programCancelBtn" type="button">Отмена</button>
@@ -841,6 +918,9 @@
     const programClearCurrentBtn = document.getElementById('programClearCurrentBtn');
     const programCancelBtn = document.getElementById('programCancelBtn');
     const programCloseBtn = document.getElementById('programCloseBtn');
+    const programCloseConfirm = document.getElementById('programCloseConfirm');
+    const programCloseConfirmYes = document.getElementById('programCloseConfirmYes');
+    const programCloseConfirmNo = document.getElementById('programCloseConfirmNo');
     const filterTabs      = Array.from(document.querySelectorAll('.filter-tab'));
 
     function finishBootstrap() {
@@ -939,6 +1019,7 @@
     let unsubscribeEvent = null;
     let liveCueClockTimer = null;
     let liveCueBusy = false;
+    let intakeNudge = false;
     let _refreshing = false;
     let _pendingRefresh = false;
     let _pendingRealtimeRefresh = false;
@@ -1078,10 +1159,16 @@
       return new Date(nowMs).toLocaleTimeString('ru-RU', {
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit',
         hour12: false,
         timeZone: roomBrand.timeZone || undefined
       });
+    }
+
+    function eventTimeZoneLabel(nowMs = Date.now()) {
+      if (!roomBrand.timeZone) return '';
+      const part = new Intl.DateTimeFormat('ru-RU', { timeZone: roomBrand.timeZone, timeZoneName: 'short' })
+        .formatToParts(new Date(nowMs)).find(p => p.type === 'timeZoneName');
+      return part?.value || roomBrand.timeZone;
     }
 
     function renderEventLiveProgramState(programItems) {
@@ -1103,7 +1190,7 @@
 
       const model = buildEventLiveCueModel(programItems, nowMs);
       const { current, next } = model;
-      liveCueClock.textContent = formatEventClock(nowMs) + (roomBrand.timeZone ? ' · MSK' : '');
+      liveCueClock.textContent = formatEventClock(nowMs) + (roomBrand.timeZone ? ' · ' + eventTimeZoneLabel(nowMs) : '');
       liveCueTiming.dataset.state = model.timingState;
       liveCueTimingText.textContent = model.timingText;
       liveCueTimingHint.textContent = model.timingHint;
@@ -1132,6 +1219,10 @@
       if (canControlIntake) {
         liveCueIntakeBtn.textContent = current.is_questions_open ? 'Закрыть вопросы' : 'Включить вопросы';
       }
+      liveCueIntakeBtn.classList.toggle(
+        'is-attention',
+        intakeNudge && canControlIntake && current.is_questions_open !== true
+      );
 
       if (next) {
         liveCueNextKicker.textContent = 'Далее' + (next.starts_at ? ' · ' + formatProgramTime(next.starts_at) : '');
@@ -1229,6 +1320,7 @@
         } else {
           await setCurrentEventProgramItem(model.next.id);
         }
+        intakeNudge = action === 'next';
         await refresh();
         await refreshEventLiveContext();
         setStatus(
@@ -1262,6 +1354,7 @@
       setStatus(nextOpen ? 'Открываю приём вопросов…' : 'Закрываю приём вопросов…');
       try {
         await setRoomQuestionsOpen(current.room_id, nextOpen);
+        intakeNudge = false;
         await refresh();
         await refreshEventLiveContext();
         setStatus(
@@ -1828,6 +1921,7 @@
       setProgramStatus('Переключаю текущий блок…');
       try {
         await setCurrentEventProgramItem(item.id);
+        intakeNudge = item.kind === 'session';
         await refresh();
         await reloadProgramLiveState();
         setStatus('Текущий блок мероприятия переключён.', 'success');
@@ -1851,6 +1945,7 @@
       setProgramStatus('Завершаю текущий блок…');
       try {
         await clearCurrentEventProgramItem(state.room.event_key);
+        intakeNudge = false;
         await refresh();
         await reloadProgramLiveState();
         setStatus('Текущий блок снят. Q&A-сессия не активна.', 'success');
@@ -2005,6 +2100,7 @@
 
     function closeProgramEditor() {
       if (programSaving || programCreatingSession) return;
+      programCloseConfirm.hidden = true;
       programModal.hidden = true;
       programAddMenu.hidden = true;
       setProgramSessionCreateConfirmation(null);
@@ -2014,6 +2110,19 @@
       programHasImmediateSessionWrite = false;
       syncProgramCloseSemantics();
     }
+
+    function requestCloseProgramEditor() {
+      if (programSaving || programCreatingSession) return;
+      if (programDirty) {
+        programCloseConfirm.hidden = false;
+        programCloseConfirmNo.focus();
+        return;
+      }
+      closeProgramEditor();
+    }
+
+    programCloseConfirmYes.addEventListener('click', closeProgramEditor);
+    programCloseConfirmNo.addEventListener('click', () => { programCloseConfirm.hidden = true; });
 
     async function activateEventSession(room) {
       if (!room || switchingEventSession) return false;
@@ -2046,10 +2155,10 @@
     liveCueIntakeBtn.addEventListener('click', () => { void toggleCurrentLiveCueIntake(); });
     eventProgramBtn.addEventListener('click', () => { void openProgramEditor(); });
     programClearCurrentBtn.addEventListener('click', () => { void clearProgramLiveItem(); });
-    programCancelBtn.addEventListener('click', closeProgramEditor);
-    programCloseBtn.addEventListener('click', closeProgramEditor);
+    programCancelBtn.addEventListener('click', requestCloseProgramEditor);
+    programCloseBtn.addEventListener('click', requestCloseProgramEditor);
     programModal.addEventListener('click', event => {
-      if (event.target === programModal) closeProgramEditor();
+      if (event.target === programModal) requestCloseProgramEditor();
     });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !programModal.hidden) {
@@ -2057,7 +2166,7 @@
           programAddMenu.hidden = true;
           programAddBtn.setAttribute('aria-expanded', 'false');
         } else {
-          closeProgramEditor();
+          requestCloseProgramEditor();
         }
       }
     });
@@ -2299,6 +2408,13 @@
       persistPanelState();
     });
     void boot().catch(showBootstrapError);
+
+    window.addEventListener('beforeunload', event => {
+      if ((!programModal.hidden && programDirty) || editorState.dirty) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    });
 
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
@@ -2985,6 +3101,10 @@
         qrScreenBtn.setAttribute('aria-busy', 'true');
         setQrHint('Готовим экран 1920×1080…');
         try {
+          try {
+            await Promise.all(['700 28px Montserrat', '800 72px Montserrat', '600 30px Montserrat', '500 22px Montserrat']
+              .map(font => document.fonts.load(font)));
+          } catch {}
           const qrBlob = await fetchQrBlob(qrGuestUrl(), 1000);
           const qrDataUrl = await blobToDataUrl(qrBlob);
           const qrImage = await loadImage(qrDataUrl);
@@ -3196,12 +3316,17 @@
       });
       roomLabel.textContent = `Комната: ${state.room?.slug || roomSlug}`;
       const activeSpeaker = state.speakers.find(speaker => speaker.is_active);
-      document.getElementById('liveContextLabel').textContent = isPanel
-        ? (state.room?.event_key ? (state.room?.is_current_session ? 'Текущая сессия' : 'Сессия не в эфире') : 'Сессия')
-        : 'Сейчас в эфире';
+      const isEventRoom = Boolean(state.room?.event_key);
+      const isLiveSession = !isEventRoom || Boolean(state.room?.is_current_session);
+      const liveLabelEl = document.getElementById('liveContextLabel');
+      liveLabelEl.textContent = !isLiveSession
+        ? 'Сессия не в эфире'
+        : isPanel ? (isEventRoom ? 'Текущая сессия' : 'Сессия') : 'Сейчас в эфире';
+      liveLabelEl.dataset.live = isLiveSession ? 'on' : 'off';
       activeSpeakerName.textContent = isPanel
         ? (state.room?.title || state.room?.fallback_label || 'Сессия')
         : (activeSpeaker?.name || activeSpeaker?.fallback_label || 'Активный спикер не выбран');
+      activeSpeakerName.title = activeSpeakerName.textContent;
       document.getElementById('speakersPanelTitle').textContent = isPanel ? 'Участники сессии' : 'Спикеры';
       document.getElementById('speakersPanelSubtitle').textContent = isPanel ? 'Состав панели · порядок программы' : 'Участники · порядок программы';
       document.getElementById('editorTitle').textContent = isPanel ? 'Редактор участника' : 'Редактор спикера';
@@ -3209,6 +3334,8 @@
       document.getElementById('speakersAccordionSummary').textContent = `${isPanel ? 'Участники' : 'Спикеры'} · ${state.speakers.length}`;
       document.getElementById('questionsAccordionSummary').textContent = `Вопросы · ${state.questions.length}`;
       nameInput.placeholder = isPanel ? 'Имя участника' : 'Имя спикера';
+      document.getElementById('topicLabel').textContent = isPanel ? 'Тема / роль в панели' : 'Тема выступления';
+      topicInput.placeholder = isPanel ? 'Тема / роль в панели' : 'Тема выступления';
       if (!selectedSpeakerId) selectLabel.textContent = isPanel ? 'Выбрать участника' : 'Выбрать спикера';
       document.getElementById('activateBtn').style.display = isPanel ? 'none' : '';
       document.getElementById('speakerFilterFooter').style.display = isPanel ? 'none' : '';
@@ -3236,6 +3363,7 @@
       const liveIntakeStatus = document.getElementById('liveIntakeStatus');
       liveIntakeStatus.dataset.state = eventRoomInactive ? 'neutral' : state.room?.is_questions_open ? 'success' : 'warning';
       liveIntakeStatus.textContent = eventRoomInactive ? 'Не в эфире' : state.room?.is_questions_open ? 'Приём открыт' : 'Приём закрыт';
+      liveIntakeStatus.hidden = eventRoomInactive;
       document.getElementById('liveAccordionSummary').textContent = `Приём вопросов · ${eventRoomInactive ? 'не в эфире' : state.room?.is_questions_open ? 'открыт' : 'закрыт'}`;
       modSub.textContent = moderationPending
         ? 'Сохраняю…'
@@ -3266,6 +3394,7 @@
       } else {
         fillFormFromId(selectedSpeakerId);
       }
+      syncEditorEnabled();
 
       // Список спикеров
       speakersList.innerHTML = state.speakers.length
@@ -3381,6 +3510,8 @@
       document.getElementById('filterOpenCount').textContent   = state.questions.filter(q => q.status === 'open').length;
       document.getElementById('filterAskedCount').textContent  = state.questions.filter(q => q.status === 'asked').length;
       document.getElementById('filterHiddenCount').textContent = state.questions.filter(q => q.status === 'hidden').length;
+      document.getElementById('clearCount').textContent = state.questions.length;
+      document.getElementById('clearQuestionsBtn').disabled = state.questions.length === 0;
 
       // Вопросы с управлением
       const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
@@ -3559,6 +3690,14 @@
       editorState.backgroundChanged = false;
       editorState.savedSpeaker = data;
       updateEditorStatus();
+    }
+
+    function syncEditorEnabled() {
+      const hasSpeaker = Boolean(selectedSpeakerId && state.speakers.some(s => String(s.id) === String(selectedSpeakerId)));
+      [nameInput, regaliaInput, topicInput].forEach(input => { input.disabled = !hasSpeaker; });
+      const saveBtnEl = document.getElementById('saveBtn');
+      if (!hasSpeaker) saveBtnEl.disabled = true;
+      else if (saveBtnEl.getAttribute('aria-busy') !== 'true') saveBtnEl.disabled = false;
     }
 
     async function mutate(fn, successMsg) {
