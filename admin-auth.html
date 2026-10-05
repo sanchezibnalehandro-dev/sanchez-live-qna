@@ -136,6 +136,11 @@
     .event-session-state.inactive { color: var(--color-warning-text); }
     .event-session-activate { min-height: var(--control-height-touch); padding: 6px 12px; font-size: 11px; white-space: nowrap; }
     .event-session-program { min-height: var(--control-height-touch); padding: 6px 12px; font-size: 11px; white-space: nowrap; }
+    .event-live-program-state {
+      grid-column: 1 / -1; min-width: 0; padding-top: 2px; color: var(--muted);
+      font-size: 10px; font-weight: 750; line-height: 1.35; overflow-wrap: anywhere;
+    }
+    .event-live-program-state strong { color: var(--text); }
     .program-modal[hidden] { display: none; }
     .program-modal {
       position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 20px;
@@ -574,11 +579,12 @@
               <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;" aria-label="Обновить данные" title="Обновить данные"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5.5"/><path d="M20 4v7h-7"/></svg></button><div class="qr-menu" id="qrMenu"><button class="btn ghost" id="qrBtn" style="padding:8px 10px;" type="button" aria-expanded="false" aria-controls="qrPanel"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 15h2v2h-2zM19 15h1v5h-5v-2h2v-2h2z"/></svg>QR</button><div class="qr-panel" id="qrPanel" hidden><div class="qr-panel-head"><div class="qr-panel-title"><strong>Гостевой QR</strong><span>Ссылка для гостей и готовые файлы для технической службы</span></div><button class="qr-close" id="qrCloseBtn" type="button" aria-label="Закрыть QR">×</button></div><div class="qr-code-frame"><img id="qrImg" src="" width="640" height="640" alt="QR-код гостевой страницы"></div><div class="qr-url-row"><div class="qr-url" id="qrUrl"></div><button class="qr-copy" id="qrCopyBtn" type="button" aria-label="Скопировать гостевую ссылку" title="Скопировать ссылку"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></button></div><div class="qr-actions"><button class="btn primary" id="qrDownloadBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>Скачать QR · PNG 1000</button><button class="btn ghost" id="qrScreenBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Экран 16:9 · PNG</button></div><div class="qr-hint" id="qrHint">QR ведёт на production-гостевую страницу.</div></div></div><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Модератор</button></div>
             </div>
             <div class="event-session-control" id="eventSessionControl" hidden>
-              <div class="event-session-label"><strong>Просматриваемая сессия</strong><span>Навигация / эфир</span></div>
+              <div class="event-session-label"><strong>Редактируемая Q&amp;A-сессия</strong><span>Навигация, не эфир</span></div>
               <select class="event-session-select" id="eventSessionSelect" aria-label="Просматриваемая сессия"></select>
               <span class="event-session-state" id="eventSessionState"></span>
               <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
-              <button class="btn ghost event-session-program" id="eventProgramBtn" type="button">Программа</button>
+              <button class="btn ghost event-session-program" id="eventProgramBtn" type="button">Эфир / программа</button>
+              <div class="event-live-program-state" id="eventLiveProgramState">Сейчас в эфире: загрузка…</div>
             </div>
             
             <div class="live-controls">
@@ -619,7 +625,7 @@
   <div class="program-modal" id="programModal" hidden>
     <section class="program-dialog" role="dialog" aria-modal="true" aria-labelledby="programDialogTitle">
       <div class="program-dialog-head">
-        <div><h2 id="programDialogTitle">Программа мероприятия</h2><p>Сессии Q&A и организационные блоки живут в одном расписании. LIVE переключается отдельно.</p></div>
+        <div><h2 id="programDialogTitle">Эфир и программа мероприятия</h2><p>Любой блок программы можно явно сделать текущим. Q&amp;A открывается отдельным переключателем.</p></div>
         <button class="qr-close" id="programCloseBtn" type="button" aria-label="Закрыть программу">×</button>
       </div>
       <div class="program-toolbar">
@@ -659,6 +665,7 @@
       <div class="program-dialog-foot">
         <div class="program-status" id="programStatus">Program v2 не меняет текущую live-сессию.</div>
         <div class="program-dialog-actions">
+          <button class="btn ghost" id="programClearCurrentBtn" type="button" hidden>Завершить текущий блок</button>
           <button class="btn ghost" id="programCancelBtn" type="button">Отмена</button>
           <button class="btn primary" id="programSaveBtn" type="button">Сохранить программу</button>
         </div>
@@ -671,7 +678,7 @@
     import {
       supabase, DEFAULT_ROOM_SLUG, getRoomSlug, getRoomBySlug, listEventRooms, listEventProgramItems, listSpeakers, updateSpeaker,
       setActiveSpeaker, setRoomQuestionsOpen, setRoomModeration, saveEventProgram,
-      createEventProgramSession,
+      createEventProgramSession, setCurrentEventProgramItem, clearCurrentEventProgramItem,
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
       setCurrentEventSession, subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
@@ -709,6 +716,7 @@
     const eventSessionState = document.getElementById('eventSessionState');
     const eventSessionActivateBtn = document.getElementById('eventSessionActivateBtn');
     const eventProgramBtn = document.getElementById('eventProgramBtn');
+    const eventLiveProgramState = document.getElementById('eventLiveProgramState');
     const programModal = document.getElementById('programModal');
     const programList = document.getElementById('programList');
     const programStatus = document.getElementById('programStatus');
@@ -724,6 +732,7 @@
     const programSessionConfirmCancelBtn = document.getElementById('programSessionConfirmCancelBtn');
     const programSessionConfirmCreateBtn = document.getElementById('programSessionConfirmCreateBtn');
     const programSaveBtn = document.getElementById('programSaveBtn');
+    const programClearCurrentBtn = document.getElementById('programClearCurrentBtn');
     const programCancelBtn = document.getElementById('programCancelBtn');
     const programCloseBtn = document.getElementById('programCloseBtn');
     const filterTabs      = Array.from(document.querySelectorAll('.filter-tab'));
@@ -819,7 +828,7 @@
       });
     }
 
-    const state = { room: null, speakers: [], questions: [], eventRooms: [], filter: 'all', speakerFilter: null, sortMode: loadSortMode() };
+    const state = { room: null, speakers: [], questions: [], eventRooms: [], eventProgramItems: [], filter: 'all', speakerFilter: null, sortMode: loadSortMode() };
     let unsubscribe = null;
     let _refreshing = false;
     let _pendingRefresh = false;
@@ -834,6 +843,7 @@
     let programAnchorStart = null;
     let programSaving = false;
     let programCreatingSession = false;
+    let programActivatingLive = false;
     let programDirty = false;
     let pendingProgramSessionMode = null;
     let programHasImmediateSessionWrite = false;
@@ -853,8 +863,20 @@
       eventSessionActivateBtn.disabled = switchingEventSession;
     }
 
-    function renderEventSessionSelector(eventRooms) {
+    function renderEventLiveProgramState(programItems) {
+      const current = (programItems || []).find(item => item.is_current);
+      if (!eventLiveProgramState) return;
+      if (!current) {
+        eventLiveProgramState.innerHTML = '<strong>Сейчас в эфире:</strong> ничего не выбрано';
+        return;
+      }
+      const time = current.starts_at ? formatProgramTime(current.starts_at) + ' · ' : '';
+      eventLiveProgramState.innerHTML = '<strong>Сейчас в эфире:</strong> ' + escapeHtml(time + (current.title || 'Без названия'));
+    }
+
+    function renderEventSessionSelector(eventRooms, programItems = state.eventProgramItems) {
       state.eventRooms = eventRooms;
+      state.eventProgramItems = programItems || [];
       const showSelector = state.room?.event_key != null && eventRooms.length >= 1;
       eventSessionControl.hidden = !showSelector;
       eventProgramBtn.hidden = !showSelector;
@@ -862,6 +884,7 @@
         eventSessionSelect.replaceChildren();
         eventSessionState.textContent = '';
         eventSessionActivateBtn.hidden = true;
+        if (eventLiveProgramState) eventLiveProgramState.textContent = '';
         return;
       }
 
@@ -875,11 +898,15 @@
       }));
       eventSessionSelect.disabled = switchingEventSession;
       renderEventSessionState();
+      renderEventLiveProgramState(state.eventProgramItems);
     }
 
     async function loadEventSessionSelector() {
-      const eventRooms = await listEventRooms(state.room?.event_key);
-      renderEventSessionSelector(eventRooms);
+      const [eventRooms, programItems] = await Promise.all([
+        listEventRooms(state.room?.event_key),
+        listEventProgramItems(state.room?.event_key)
+      ]);
+      renderEventSessionSelector(eventRooms, programItems);
     }
     function setProgramStatus(message, type = '') {
       programStatus.textContent = message;
@@ -1184,7 +1211,10 @@
       programList.innerHTML = programDraft.map((item, index) => {
         const isService = item.kind === 'service';
         const typeLabel = isService ? 'Орг. блок' : (item.mode === 'panel' ? 'Панель' : 'Выступление');
-        const currentBadge = !isService && item.is_current_session ? '<span class="program-flag current">В эфире</span>' : '';
+        const currentBadge = item.is_current ? '<span class="program-flag current">Сейчас в эфире</span>' : '';
+        const activateLiveButton = item.is_current
+          ? ''
+          : `<button class="program-configure" type="button" data-program-activate="${index}">Сделать текущим</button>`;
         const removeButton = isService
           ? `<button class="program-remove" type="button" data-program-remove="${index}">Удалить</button>`
           : '';
@@ -1202,6 +1232,7 @@
                 <span class="program-flag ${isService ? 'service' : ''}">${typeLabel}</span>
                 <span class="program-flag time" data-program-time="${index}">${formatProgramRange(item)}</span>
                 ${currentBadge}
+                ${activateLiveButton}
                 ${configureButton}
                 ${removeButton}
               </div>
@@ -1327,6 +1358,72 @@
           location.href = `./admin-auth.html?room=${encodeURIComponent(item.slug)}`;
         });
       });
+      programList.querySelectorAll('[data-program-activate]').forEach(button => {
+        button.disabled = programActivatingLive || programSaving || programCreatingSession;
+        button.addEventListener('click', () => {
+          const item = programDraft[Number(button.dataset.programActivate)];
+          if (!item) return;
+          void activateProgramLiveItem(item);
+        });
+      });
+      programClearCurrentBtn.hidden = !programDraft.some(item => item.is_current);
+      programClearCurrentBtn.disabled = programActivatingLive || programSaving || programCreatingSession;
+    }
+
+    async function reloadProgramLiveState() {
+      if (!state.room?.event_key) return;
+      programDraft = await listEventProgramItems(state.room.event_key);
+      programDraft.forEach(ensureProgramItemKey);
+      programAnchorStart = programDraft[0]?.starts_at || null;
+      renderProgramAnchorControls();
+      renderProgramEditor();
+      await loadEventSessionSelector();
+    }
+
+    async function activateProgramLiveItem(item) {
+      if (!item?.id || programActivatingLive || programSaving || programCreatingSession) return;
+      if (programDirty) {
+        setProgramStatus('Сначала сохраните изменения программы, затем переключайте эфир.', 'error');
+        return;
+      }
+      programActivatingLive = true;
+      renderProgramEditor();
+      setProgramStatus('Переключаю текущий блок…');
+      try {
+        await setCurrentEventProgramItem(item.id);
+        await refresh();
+        await reloadProgramLiveState();
+        setStatus('Текущий блок мероприятия переключён.', 'success');
+        setProgramStatus('Текущий блок переключён. Приём вопросов включается отдельно.', 'success');
+      } catch (error) {
+        setProgramStatus(error.message || 'Не удалось переключить текущий блок.', 'error');
+      } finally {
+        programActivatingLive = false;
+        renderProgramEditor();
+      }
+    }
+
+    async function clearProgramLiveItem() {
+      if (!state.room?.event_key || programActivatingLive || programSaving || programCreatingSession) return;
+      if (programDirty) {
+        setProgramStatus('Сначала сохраните изменения программы, затем завершайте текущий блок.', 'error');
+        return;
+      }
+      programActivatingLive = true;
+      renderProgramEditor();
+      setProgramStatus('Завершаю текущий блок…');
+      try {
+        await clearCurrentEventProgramItem(state.room.event_key);
+        await refresh();
+        await reloadProgramLiveState();
+        setStatus('Текущий блок снят. Q&A-сессия не активна.', 'success');
+        setProgramStatus('Сейчас ни один блок не отмечен как текущий.', 'success');
+      } catch (error) {
+        setProgramStatus(error.message || 'Не удалось завершить текущий блок.', 'error');
+      } finally {
+        programActivatingLive = false;
+        renderProgramEditor();
+      }
     }
 
     function addServiceProgramItem(title, duration) {
@@ -1457,7 +1554,7 @@
         renderProgramAnchorControls();
         renderProgramEditor();
         programDirty = false;
-        setProgramStatus('Время начала каждого блока сохраняется отдельно. LIVE переключается отдельно.');
+        setProgramStatus('Выберите «Сделать текущим» у реального блока эфира. Приём вопросов включается отдельно.');
         programDateInput.focus();
       } catch (error) {
         programDraft = [];
@@ -1509,6 +1606,7 @@
     }
 
     eventProgramBtn.addEventListener('click', () => { void openProgramEditor(); });
+    programClearCurrentBtn.addEventListener('click', () => { void clearProgramLiveItem(); });
     programCancelBtn.addEventListener('click', closeProgramEditor);
     programCloseBtn.addEventListener('click', closeProgramEditor);
     programModal.addEventListener('click', event => {
