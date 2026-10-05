@@ -54,16 +54,39 @@ function withScheduleState(item, nowMs) {
 
 export function deriveGuestProgramState(items, operationalCurrentRoom, now = Date.now()) {
   const nowMs = toNowMs(now);
-  const orderedItems = [...(items || [])]
+  let orderedItems = [...(items || [])]
     .sort(compareProgramItems)
     .map(item => withScheduleState(item, nowMs));
+
+  const explicitCurrentIndex = orderedItems.findIndex(item => item.is_current === true);
+  if (explicitCurrentIndex >= 0) {
+    orderedItems = orderedItems.map((item, index) => {
+      if (index === explicitCurrentIndex) {
+        return { ...item, scheduleState: PROGRAM_ITEM_STATE.NOW };
+      }
+      if (item.scheduleState === PROGRAM_ITEM_STATE.UNSCHEDULED) return item;
+      return {
+        ...item,
+        scheduleState: index < explicitCurrentIndex
+          ? PROGRAM_ITEM_STATE.PAST
+          : PROGRAM_ITEM_STATE.FUTURE
+      };
+    });
+  }
+
   const scheduledItems = orderedItems.filter(item => item.scheduleState !== PROGRAM_ITEM_STATE.UNSCHEDULED);
   const unscheduledItems = orderedItems.filter(item => item.scheduleState === PROGRAM_ITEM_STATE.UNSCHEDULED);
-  const currentItem = orderedItems.find(item => item.is_current === true) || null;
+  const currentItem = explicitCurrentIndex >= 0
+    ? orderedItems[explicitCurrentIndex]
+    : null;
 
-  const nextItem = scheduledItems
-    .filter(item => item.endMs > nowMs && (!currentItem || String(item.id) !== String(currentItem.id)))
-    .sort((left, right) => left.startMs - right.startMs || compareProgramItems(left, right))[0] || null;
+  const nextItem = currentItem
+    ? scheduledItems
+      .filter(item => item.scheduleState === PROGRAM_ITEM_STATE.FUTURE)
+      .sort(compareProgramItems)[0] || null
+    : scheduledItems
+      .filter(item => item.endMs > nowMs)
+      .sort((left, right) => left.startMs - right.startMs || compareProgramItems(left, right))[0] || null;
 
   let heroState = PROGRAM_HERO_STATE.EMPTY;
   let heroItem = null;
@@ -88,12 +111,14 @@ export function deriveGuestProgramState(items, operationalCurrentRoom, now = Dat
     && operationalCurrentRoom?.is_questions_open === true
   );
 
-  const transitionCandidates = scheduledItems.flatMap(item => {
-    const values = [];
-    if (item.startMs > nowMs) values.push(item.startMs);
-    if (item.endMs > nowMs) values.push(item.endMs);
-    return values;
-  }).filter(value => Number.isFinite(value));
+  const transitionCandidates = currentItem
+    ? []
+    : scheduledItems.flatMap(item => {
+      const values = [];
+      if (item.startMs > nowMs) values.push(item.startMs);
+      if (item.endMs > nowMs) values.push(item.endMs);
+      return values;
+    }).filter(value => Number.isFinite(value));
 
   return {
     nowMs,
