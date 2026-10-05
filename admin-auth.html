@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title></title>
   <link rel="stylesheet" href="./theme.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" />
   <link rel="stylesheet" data-brand-stylesheet />
   <script>
     (() => {
@@ -96,7 +99,6 @@
     }
 
     /* ADMIN CONSOLE — desktop live-event workspace */
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
     .admin-console { font-family: var(--font-console); font-variant-numeric: tabular-nums lining-nums; }
     .admin-console h1, .admin-console h2, .admin-console .section-title, .admin-console .stat-value { font-family: inherit; }
     .admin-console .shell { max-width: 1480px; min-height: calc(100vh - 60px); grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
@@ -2977,6 +2979,10 @@
         qrScreenBtn.setAttribute('aria-busy', 'true');
         setQrHint('Готовим экран 1920×1080…');
         try {
+          try {
+            await Promise.all(['700 28px Montserrat', '800 72px Montserrat', '600 30px Montserrat', '500 22px Montserrat']
+              .map(font => document.fonts.load(font)));
+          } catch {}
           const qrBlob = await fetchQrBlob(qrGuestUrl(), 1000);
           const qrDataUrl = await blobToDataUrl(qrBlob);
           const qrImage = await loadImage(qrDataUrl);
