@@ -621,6 +621,36 @@
     .program-close-confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .program-close-confirm span { color: var(--color-warning-text); font-size: 12px; line-height: 1.4; }
 
+    /* статус: зелёный только для LIVE */
+    .live-label[data-live="off"] { color: var(--muted); }
+    .live-label[data-live="off"]::before { background: currentColor; }
+    .live-intake-status[hidden] { display: none; }
+
+    /* заголовок не больше 2 строк */
+    .live-context h1 {
+      font-size: clamp(18px, 1.7vw, 24px);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* «Управление эфиром»: одна компактная строка */
+    .live-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 8px; padding: 8px 12px; }
+    .live-controls-label { white-space: nowrap; }
+    .live-control-list { display: flex; flex-wrap: wrap; flex: 1 1 320px; gap: 8px; }
+    .admin-console .live-toggle { flex: 0 1 340px; min-height: 52px; }
+
+    /* подсветка кнопки после смены блока */
+    .event-live-cue-actions .btn.is-attention {
+      background: var(--color-accent); border-color: transparent; color: var(--color-text-on-accent);
+      animation: intakeNudge 1.6s ease-in-out infinite;
+    }
+    @keyframes intakeNudge {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 55%, transparent); }
+      50% { box-shadow: 0 0 0 8px transparent; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .event-live-cue-actions .btn.is-attention { animation: none; outline: 2px solid var(--color-accent); outline-offset: 2px; }
+    }
+
   </style>
 </head>
 <body class="is-booting">
@@ -642,14 +672,6 @@
               <div class="live-context"><div class="live-context-status-row"><div class="live-label" id="liveContextLabel">Сейчас в эфире</div><div class="live-intake-status" id="liveIntakeStatus" data-state="neutral">Загрузка…</div></div><h1 id="activeSpeakerName">Загрузка…</h1><p id="roomLabel">Загрузка…</p></div>
               <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;" aria-label="Обновить данные" title="Обновить данные"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5.5"/><path d="M20 4v7h-7"/></svg></button><div class="qr-menu" id="qrMenu"><button class="btn ghost" id="qrBtn" style="padding:8px 10px;" type="button" aria-expanded="false" aria-controls="qrPanel"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 15h2v2h-2zM19 15h1v5h-5v-2h2v-2h2z"/></svg>QR</button><div class="qr-panel" id="qrPanel" hidden><div class="qr-panel-head"><div class="qr-panel-title"><strong>Гостевой QR</strong><span>Ссылка для гостей и готовые файлы для технической службы</span></div><button class="qr-close" id="qrCloseBtn" type="button" aria-label="Закрыть QR">×</button></div><div class="qr-code-frame"><img id="qrImg" src="" width="640" height="640" alt="QR-код гостевой страницы"></div><div class="qr-url-row"><div class="qr-url" id="qrUrl"></div><button class="qr-copy" id="qrCopyBtn" type="button" aria-label="Скопировать гостевую ссылку" title="Скопировать ссылку"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></button></div><div class="qr-actions"><button class="btn primary" id="qrDownloadBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>Скачать QR · PNG 1000</button><button class="btn ghost" id="qrScreenBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Экран 16:9 · PNG</button></div><div class="qr-hint" id="qrHint">QR ведёт на production-гостевую страницу.</div></div></div><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Модератор</button></div>
             </div>
-            <div class="event-session-control" id="eventSessionControl" hidden>
-              <div class="event-session-label"><strong>Просмотр сессии</strong><span>Не переключает эфир</span></div>
-              <select class="event-session-select" id="eventSessionSelect" aria-label="Просматриваемая сессия"></select>
-              <span class="event-session-state" id="eventSessionState"></span>
-              <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
-              <button class="btn ghost event-session-program" id="eventProgramBtn" type="button">Эфир / программа</button>
-            </div>
-            
             <div class="event-live-cue" id="eventLiveCue" hidden>
               <div class="event-live-cue-grid">
                 <div class="event-live-cue-block">
@@ -684,6 +706,14 @@
                 <label class="live-toggle" id="moderationControl" data-state="neutral"><span class="live-toggle-copy"><span class="live-toggle-title">Премодерация</span><span class="live-toggle-sub" id="moderationSub">Загрузка…</span></span><span class="live-toggle-action"><span class="live-control-state" id="moderationState">—</span><span class="toggle-pill"><input type="checkbox" id="moderationToggle"><span class="toggle-track"></span></span></span></label>
               </div>
               <div class="live-status-message" id="status"></div>
+            </div>
+
+            <div class="event-session-control" id="eventSessionControl" hidden>
+              <div class="event-session-label"><strong>Просмотр сессии</strong><span>Не переключает эфир</span></div>
+              <select class="event-session-select" id="eventSessionSelect" aria-label="Просматриваемая сессия"></select>
+              <span class="event-session-state" id="eventSessionState"></span>
+              <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
+              <button class="btn ghost event-session-program" id="eventProgramBtn" type="button">Эфир / программа</button>
             </div>
           </div>
         </div>
