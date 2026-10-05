@@ -891,7 +891,7 @@
       eventSessionSelect.replaceChildren(...eventRooms.map(room => {
         const option = document.createElement('option');
         option.value = room.slug;
-        const sessionTime = room.starts_at ? new Date(room.starts_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+        const sessionTime = room.starts_at ? new Date(room.starts_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: roomBrand.timeZone || undefined }) : '';
         option.textContent = [sessionTime, room.title].filter(Boolean).join(' · ');
         option.selected = room.slug === state.room.slug;
         return option;
@@ -931,7 +931,7 @@
       if (!value) return '';
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return '';
-      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: roomBrand.timeZone || undefined });
     }
 
     function programDuration(item) {
@@ -943,11 +943,81 @@
       if (!value) return { date: '', hour: '', minute: '' };
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return { date: '', hour: '', minute: '' };
+
+      if (!roomBrand.timeZone) {
+        return {
+          date: [date.getFullYear(), padProgramNumber(date.getMonth() + 1), padProgramNumber(date.getDate())].join('-'),
+          hour: padProgramNumber(date.getHours()),
+          minute: padProgramNumber(date.getMinutes())
+        };
+      }
+
+      const parts = Object.fromEntries(
+        new Intl.DateTimeFormat('en-CA', {
+          timeZone: roomBrand.timeZone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23'
+        }).formatToParts(date)
+          .filter(part => part.type !== 'literal')
+          .map(part => [part.type, part.value])
+      );
       return {
-        date: [date.getFullYear(), padProgramNumber(date.getMonth() + 1), padProgramNumber(date.getDate())].join('-'),
-        hour: padProgramNumber(date.getHours()),
-        minute: padProgramNumber(date.getMinutes())
+        date: [parts.year, parts.month, parts.day].join('-'),
+        hour: parts.hour,
+        minute: parts.minute
       };
+    }
+
+    function programWallClockToIso(dateValue, hour, minute) {
+      const [year, month, day] = dateValue.split('-').map(Number);
+      if (![year, month, day, hour, minute].every(Number.isFinite)) {
+        throw new Error('Некорректная дата программы.');
+      }
+
+      if (!roomBrand.timeZone) {
+        const local = new Date(year, month - 1, day, hour, minute, 0, 0);
+        if (Number.isNaN(local.getTime())) throw new Error('Некорректная дата программы.');
+        return local.toISOString();
+      }
+
+      const wallClockUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: roomBrand.timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23'
+      });
+
+      const zoneOffsetAt = timestamp => {
+        const parts = Object.fromEntries(
+          formatter.formatToParts(new Date(timestamp))
+            .filter(part => part.type !== 'literal')
+            .map(part => [part.type, part.value])
+        );
+        const representedUtc = Date.UTC(
+          Number(parts.year),
+          Number(parts.month) - 1,
+          Number(parts.day),
+          Number(parts.hour),
+          Number(parts.minute),
+          Number(parts.second)
+        );
+        return representedUtc - timestamp;
+      };
+
+      let guess = wallClockUtc;
+      let offset = zoneOffsetAt(guess);
+      guess = wallClockUtc - offset;
+      offset = zoneOffsetAt(guess);
+      return new Date(wallClockUtc - offset).toISOString();
     }
 
     function renderProgramAnchorControls() {
@@ -976,10 +1046,7 @@
         throw new Error('Минуты должны быть от 00 до 59.');
       }
 
-      const [year, month, day] = dateValue.split('-').map(Number);
-      const date = new Date(year, month - 1, day, hour, minute, 0, 0);
-      if (Number.isNaN(date.getTime())) throw new Error('Некорректная дата программы.');
-      return date.toISOString();
+      return programWallClockToIso(dateValue, hour, minute);
     }
 
     function normalizeProgramClockField(input, max) {
@@ -1073,10 +1140,7 @@
       const dateValue = programDateInput.value || currentParts.date;
       if (!dateValue) throw new Error('Сначала укажите дату программы.');
 
-      const [year, month, day] = dateValue.split('-').map(Number);
-      const date = new Date(year, month - 1, day, hour, minute, 0, 0);
-      if (Number.isNaN(date.getTime())) throw new Error('Некорректное время блока.');
-      item.starts_at = date.toISOString();
+      item.starts_at = programWallClockToIso(dateValue, hour, minute);
     }
 
     function formatProgramRange(item) {
