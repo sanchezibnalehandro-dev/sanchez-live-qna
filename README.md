@@ -37,6 +37,21 @@ Live Q&A-инструмент для мероприятий: гости зада
 - RLS: гости читают публичные room/speaker/question-поля; отправка вопроса идёт через `submit_guest_question()`, добавление/снятие голоса через scoped RPC `add_vote()`/`remove_vote()`; прямой anon INSERT голосов закрыт; authenticated управляет комнатой, участниками и вопросами
 - Moderator live-actions: изменение status/pin выполняется через room-aware RPC и отклоняется, если event-сессия уже перестала быть текущей
 
+## Граница Program v2 / Event Companion
+
+Текущий Program v2 в этом репозитории поддерживается как стабилизированный compatibility/event-day слой вокруг Q&A-сессий. Его наличие не означает, что `sanchez-live-qna` становится общей event-платформой или источником истины для всей программы мероприятия.
+
+Правила границы:
+
+- LIVE Q&A остаётся владельцем Q&A-current session, intake, moderation, questions, votes и speaker/panel live behavior;
+- общая программа мероприятия и общий event-current state относятся к отдельному Event Companion;
+- текущий Program v2 в Q&A не расширять новыми областями People, Meetings, Messaging, locations или другой общей event-функциональностью;
+- не использовать Q&A Program как архитектурный precedent для Event Companion;
+- интеграция между продуктами остаётся явной; для гостя базовый контракт — стабильный LIVE route `ask.html?event=<event_key>`;
+- дальнейшее расширение Program внутри этого репозитория требует отдельного архитектурного решения, а не обычного feature PR.
+
+До отдельного решения существующий Program v2 сохраняется и поддерживается ради текущего Q&A event-flow, но считается frozen compatibility surface.
+
 ## Backend
 
 Supabase. Таблицы: `qna_rooms`, `qna_event_program_items`, `qna_speakers`, `qna_questions`, `qna_question_votes`.
