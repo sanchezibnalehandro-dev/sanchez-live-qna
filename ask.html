@@ -19,6 +19,29 @@
     /* Страница гостя — центрированная, максимум 680px */
     .guest-shell { max-width: 680px; }
 
+    .guest-event-nav[hidden] { display: none; }
+    .guest-event-nav {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+    .guest-event-nav a {
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 11px;
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      background: var(--color-surface-subtle);
+      color: var(--color-text);
+      text-decoration: none;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
     /* Кнопка отправки — полная ширина */
     #submitBtn { width: 100%; padding: 14px; font-size: 15px; }
 
@@ -363,6 +386,8 @@
     .toast-item { border-radius: var(--radius-md); box-shadow: var(--shadow-card); }
     @media (max-width: 520px) {
       .guest-shell > .card:first-of-type .card-inner { padding: 18px; }
+      .guest-event-nav { justify-content: stretch; }
+      .guest-event-nav a { flex: 1 1 0; }
       .question-header-actions, .question-sort { width: 100%; }
       .question-sort-btn { flex: 1; }
     }
@@ -396,6 +421,10 @@
               <span id="receptionLabel">Приём открыт</span>
             </span>
           </div>
+          <nav class="guest-event-nav" id="guestEventNav" aria-label="Разделы мероприятия" hidden>
+            <a id="guestHomeLink" href="#">Главная</a>
+            <a id="guestProgramLink" href="#">Программа</a>
+          </nav>
           <h1 id="speakerName" style="margin-top:4px;">Задать вопрос</h1>
           <p class="subcopy" id="speakerMeta">Загрузка данных спикера…</p>
           <div id="panelParticipants" style="display:none; margin-top:16px;">
@@ -491,9 +520,19 @@
     const appShell = document.getElementById('appShell');
     const bootstrapScreen = document.getElementById('bootstrapScreen');
     const bootstrapMessage = document.getElementById('bootstrapMessage');
+    const guestEventNav = document.getElementById('guestEventNav');
+    const guestHomeLink = document.getElementById('guestHomeLink');
+    const guestProgramLink = document.getElementById('guestProgramLink');
     const sortButtons = Array.from(document.querySelectorAll('[data-sort]'));
     const sortScope = eventKey ? `event:${eventKey}` : `room:${requestedRoomSlug}`;
     const sortModeKey = `sanchez-live-sort:guest:${sortScope}`;
+
+    if (eventKey) {
+      const eventQuery = '?event=' + encodeURIComponent(eventKey);
+      guestHomeLink.href = './welcome.html' + eventQuery;
+      guestProgramLink.href = './program.html' + eventQuery;
+      guestEventNav.hidden = false;
+    }
 
     function finishBootstrap() {
       appShell.removeAttribute('inert');
