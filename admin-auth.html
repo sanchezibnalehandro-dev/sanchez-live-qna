@@ -141,6 +141,64 @@
       font-size: 10px; font-weight: 750; line-height: 1.35; overflow-wrap: anywhere;
     }
     .event-live-program-state strong { color: var(--text); }
+
+    .event-live-cue[hidden] { display: none; }
+    .event-live-cue {
+      margin-top: 12px; padding: 12px;
+      border: 1px solid var(--color-border-subtle); border-radius: 14px;
+      background: var(--color-surface-subtle);
+    }
+    .event-live-cue-grid {
+      display: grid; grid-template-columns: minmax(0, 1.15fr) 210px minmax(0, 1fr);
+      gap: 10px; align-items: stretch;
+    }
+    .event-live-cue-block {
+      min-width: 0; display: grid; align-content: center; gap: 5px;
+      padding: 11px 12px; border: 1px solid var(--color-border-subtle);
+      border-radius: 11px; background: var(--color-surface-raised);
+    }
+    .event-live-cue-kicker {
+      color: var(--muted); font-size: 8px; font-weight: 900;
+      letter-spacing: .12em; text-transform: uppercase;
+    }
+    .event-live-cue-title {
+      color: var(--text); font-size: 13px; font-weight: 850; line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
+    .event-live-cue-meta {
+      color: var(--muted); font-size: 9px; font-weight: 700; line-height: 1.4;
+    }
+    .event-live-cue-timing {
+      display: grid; align-content: center; gap: 7px; padding: 8px 6px; text-align: center;
+    }
+    .event-live-cue-clock {
+      color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    }
+    .event-live-cue-timing strong { color: var(--text); font-size: 15px; line-height: 1.25; }
+    .event-live-cue-timing span { color: var(--muted); font-size: 9px; line-height: 1.35; }
+    .event-live-cue-timing[data-state="soon"] strong { color: var(--color-warning-text); }
+    .event-live-cue-timing[data-state="late"] strong { color: var(--color-danger-text); }
+    .event-live-cue-progress {
+      height: 4px; overflow: hidden; border-radius: 999px; background: var(--color-neutral-soft);
+    }
+    .event-live-cue-progress > span {
+      display: block; width: 0; height: 100%; border-radius: inherit;
+      background: var(--color-accent); transition: width .2s ease, background .2s ease;
+    }
+    .event-live-cue-timing[data-state="soon"] .event-live-cue-progress > span { background: var(--color-warning); }
+    .event-live-cue-timing[data-state="late"] .event-live-cue-progress > span { background: var(--color-danger); }
+    .event-live-cue-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+    .event-live-cue-actions .btn { min-height: 38px; padding: 7px 10px; font-size: 9px; }
+    .event-live-cue-switch[data-state="soon"] {
+      background: var(--color-warning); border-color: var(--color-warning); color: var(--color-text-on-accent);
+    }
+    .event-live-cue-switch[data-state="late"] {
+      background: var(--color-danger); border-color: var(--color-danger); color: #fff;
+    }
+    @media (max-width: 1024px) {
+      .event-live-cue-grid { grid-template-columns: 1fr; }
+      .event-live-cue-timing { order: 3; text-align: left; }
+    }
     .program-modal[hidden] { display: none; }
     .program-modal {
       position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 20px;
@@ -587,6 +645,33 @@
               <div class="event-live-program-state" id="eventLiveProgramState">Сейчас в эфире: загрузка…</div>
             </div>
             
+            <div class="event-live-cue" id="eventLiveCue" hidden>
+              <div class="event-live-cue-grid">
+                <div class="event-live-cue-block">
+                  <div class="event-live-cue-kicker">Сейчас в эфире</div>
+                  <div class="event-live-cue-title" id="liveCueCurrentTitle">Загрузка…</div>
+                  <div class="event-live-cue-meta" id="liveCueCurrentMeta"></div>
+                  <div class="event-live-cue-actions">
+                    <button class="btn ghost" id="liveCueIntakeBtn" type="button" hidden>Включить вопросы</button>
+                  </div>
+                </div>
+                <div class="event-live-cue-timing" id="liveCueTiming" data-state="neutral">
+                  <div class="event-live-cue-clock" id="liveCueClock">— MSK</div>
+                  <strong id="liveCueTimingText">—</strong>
+                  <div class="event-live-cue-progress"><span id="liveCueProgress"></span></div>
+                  <span id="liveCueTimingHint">Часы только подсказывают.</span>
+                </div>
+                <div class="event-live-cue-block">
+                  <div class="event-live-cue-kicker" id="liveCueNextKicker">Далее</div>
+                  <div class="event-live-cue-title" id="liveCueNextTitle">—</div>
+                  <div class="event-live-cue-meta" id="liveCueNextMeta"></div>
+                  <div class="event-live-cue-actions">
+                    <button class="btn primary event-live-cue-switch" id="liveCueSwitchBtn" type="button" hidden>Начать следующий блок</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="live-controls">
               <div class="live-controls-label">Управление эфиром</div>
               <div class="live-control-list">
@@ -681,7 +766,7 @@
       createEventProgramSession, setCurrentEventProgramItem, clearCurrentEventProgramItem,
       listQuestions, setQuestionStatus, setQuestionPinned, deleteAllQuestions, approveQuestion,
       submitQuestion, addVote, getActiveSpeaker, getGuestSessionId,
-      setCurrentEventSession, subscribeRoom, escapeHtml, formatClock, normalizeQuestion,
+      setCurrentEventSession, subscribeRoom, subscribeEvent, escapeHtml, formatClock, normalizeQuestion,
       createSpeaker, deleteSpeaker, updateSpeakerOrder
     } from './supabase-qna.js';
 
@@ -717,6 +802,19 @@
     const eventSessionActivateBtn = document.getElementById('eventSessionActivateBtn');
     const eventProgramBtn = document.getElementById('eventProgramBtn');
     const eventLiveProgramState = document.getElementById('eventLiveProgramState');
+    const eventLiveCue = document.getElementById('eventLiveCue');
+    const liveCueCurrentTitle = document.getElementById('liveCueCurrentTitle');
+    const liveCueCurrentMeta = document.getElementById('liveCueCurrentMeta');
+    const liveCueTiming = document.getElementById('liveCueTiming');
+    const liveCueClock = document.getElementById('liveCueClock');
+    const liveCueTimingText = document.getElementById('liveCueTimingText');
+    const liveCueTimingHint = document.getElementById('liveCueTimingHint');
+    const liveCueProgress = document.getElementById('liveCueProgress');
+    const liveCueNextKicker = document.getElementById('liveCueNextKicker');
+    const liveCueNextTitle = document.getElementById('liveCueNextTitle');
+    const liveCueNextMeta = document.getElementById('liveCueNextMeta');
+    const liveCueSwitchBtn = document.getElementById('liveCueSwitchBtn');
+    const liveCueIntakeBtn = document.getElementById('liveCueIntakeBtn');
     const programModal = document.getElementById('programModal');
     const programList = document.getElementById('programList');
     const programStatus = document.getElementById('programStatus');
@@ -830,6 +928,9 @@
 
     const state = { room: null, speakers: [], questions: [], eventRooms: [], eventProgramItems: [], filter: 'all', speakerFilter: null, sortMode: loadSortMode() };
     let unsubscribe = null;
+    let unsubscribeEvent = null;
+    let liveCueClockTimer = null;
+    let liveCueBusy = false;
     let _refreshing = false;
     let _pendingRefresh = false;
     let _pendingRealtimeRefresh = false;
@@ -863,6 +964,88 @@
       eventSessionActivateBtn.disabled = switchingEventSession;
     }
 
+    function compareLiveProgramItems(left, right) {
+      const orderDiff = Number(left?.session_order || 0) - Number(right?.session_order || 0);
+      if (orderDiff) return orderDiff;
+      return Number(left?.id || 0) - Number(right?.id || 0);
+    }
+
+    function liveProgramItemEndMs(item) {
+      const startMs = Date.parse(item?.starts_at);
+      const duration = Number(item?.duration_minutes);
+      if (!Number.isFinite(startMs) || !Number.isFinite(duration) || duration <= 0) return null;
+      return startMs + duration * 60000;
+    }
+
+    function liveProgramItemType(item) {
+      if (!item) return '';
+      if (item.kind === 'service') return 'Организационный блок';
+      return item.mode === 'panel' ? 'Панель · Q&A' : 'Выступление · Q&A';
+    }
+
+    function buildEventLiveCueModel(programItems, nowMs = Date.now()) {
+      const ordered = [...(programItems || [])].sort(compareLiveProgramItems);
+      const currentIndex = ordered.findIndex(item => item.is_current === true);
+      const current = currentIndex >= 0 ? ordered[currentIndex] : null;
+      let next = currentIndex >= 0 ? (ordered[currentIndex + 1] || null) : null;
+
+      if (!current) {
+        next = ordered.find(item => {
+          const endMs = liveProgramItemEndMs(item);
+          return endMs != null && endMs > nowMs;
+        }) || ordered.find(item => {
+          const startMs = Date.parse(item?.starts_at);
+          return Number.isFinite(startMs) && startMs > nowMs;
+        }) || null;
+      }
+
+      let timingState = 'neutral';
+      let timingText = current ? 'Время не задано' : 'Ожидание запуска';
+      let timingHint = current
+        ? 'Переключение только по подтверждению оператора.'
+        : 'Расписание не переключает эфир автоматически.';
+      let progress = 0;
+
+      if (current) {
+        const startMs = Date.parse(current.starts_at);
+        const endMs = liveProgramItemEndMs(current);
+        if (Number.isFinite(startMs) && endMs != null) {
+          const totalMs = Math.max(1, endMs - startMs);
+          progress = Math.max(0, Math.min(100, ((nowMs - startMs) / totalMs) * 100));
+          const diffMinutes = Math.round((endMs - nowMs) / 60000);
+          if (diffMinutes > 5) {
+            timingText = diffMinutes + ' мин до планового завершения';
+            timingHint = 'Пока ничего делать не нужно.';
+          } else if (diffMinutes > 0) {
+            timingState = 'soon';
+            timingText = 'Через ' + diffMinutes + ' мин по плану';
+            timingHint = 'Следующий блок уже можно держать в поле зрения.';
+          } else if (diffMinutes === 0) {
+            timingState = 'soon';
+            timingText = 'По плану сейчас';
+            timingHint = 'Текущий блок останется в эфире до подтверждения.';
+          } else {
+            timingState = 'late';
+            timingText = '+' + Math.abs(diffMinutes) + ' мин к плану';
+            timingHint = 'Ничего не переключается автоматически.';
+            progress = 100;
+          }
+        }
+      }
+
+      return { ordered, current, next, timingState, timingText, timingHint, progress };
+    }
+
+    function formatEventClock(nowMs = Date.now()) {
+      return new Date(nowMs).toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: roomBrand.timeZone || undefined
+      });
+    }
+
     function renderEventLiveProgramState(programItems) {
       const current = (programItems || []).find(item => item.is_current);
       if (!eventLiveProgramState) return;
@@ -872,6 +1055,76 @@
       }
       const time = current.starts_at ? formatProgramTime(current.starts_at) + ' · ' : '';
       eventLiveProgramState.innerHTML = '<strong>Сейчас в эфире:</strong> ' + escapeHtml(time + (current.title || 'Без названия'));
+    }
+
+    function renderEventLiveCue(programItems = state.eventProgramItems, nowMs = Date.now()) {
+      if (!eventLiveCue) return;
+      const isEventRoom = Boolean(state.room?.event_key);
+      eventLiveCue.hidden = !isEventRoom;
+      if (!isEventRoom) return;
+
+      const model = buildEventLiveCueModel(programItems, nowMs);
+      const { current, next } = model;
+      liveCueClock.textContent = formatEventClock(nowMs) + (roomBrand.timeZone ? ' · MSK' : '');
+      liveCueTiming.dataset.state = model.timingState;
+      liveCueTimingText.textContent = model.timingText;
+      liveCueTimingHint.textContent = model.timingHint;
+      liveCueProgress.style.width = model.progress.toFixed(1) + '%';
+
+      if (current) {
+        liveCueCurrentTitle.textContent = current.title || 'Без названия';
+        const currentRange = current.starts_at
+          ? formatProgramTime(current.starts_at) + (liveProgramItemEndMs(current) != null ? '–' + formatProgramTime(new Date(liveProgramItemEndMs(current)).toISOString()) : '')
+          : 'Время не задано';
+        const qnaState = current.kind === 'session'
+          ? (current.is_questions_open ? 'Вопросы открыты' : 'Вопросы закрыты')
+          : 'Q&A неактивно';
+        liveCueCurrentMeta.textContent = [currentRange, liveProgramItemType(current), qnaState].filter(Boolean).join(' · ');
+      } else {
+        liveCueCurrentTitle.textContent = 'Эфир не запущен';
+        liveCueCurrentMeta.textContent = 'Выберите первый фактический блок одной кнопкой справа.';
+      }
+
+      const canOpenIntake = Boolean(
+        current?.kind === 'session'
+        && current.room_id != null
+        && current.is_questions_open !== true
+      );
+      liveCueIntakeBtn.hidden = !canOpenIntake;
+      liveCueIntakeBtn.disabled = liveCueBusy;
+
+      if (next) {
+        liveCueNextKicker.textContent = 'Далее' + (next.starts_at ? ' · ' + formatProgramTime(next.starts_at) : '');
+        liveCueNextTitle.textContent = next.title || 'Без названия';
+        liveCueNextMeta.textContent = [
+          next.duration_minutes ? Number(next.duration_minutes) + ' мин' : '',
+          liveProgramItemType(next)
+        ].filter(Boolean).join(' · ');
+        liveCueSwitchBtn.hidden = false;
+        liveCueSwitchBtn.textContent = current ? 'Начать следующий блок' : 'Начать этот блок';
+        liveCueSwitchBtn.dataset.action = 'next';
+      } else if (current) {
+        liveCueNextKicker.textContent = 'Далее';
+        liveCueNextTitle.textContent = 'Конец программы';
+        liveCueNextMeta.textContent = 'Последний текущий блок';
+        liveCueSwitchBtn.hidden = false;
+        liveCueSwitchBtn.textContent = 'Завершить эфир';
+        liveCueSwitchBtn.dataset.action = 'finish';
+      } else {
+        liveCueNextKicker.textContent = 'Далее';
+        liveCueNextTitle.textContent = model.ordered.length ? 'Программа завершена' : 'Программа не заполнена';
+        liveCueNextMeta.textContent = '';
+        liveCueSwitchBtn.hidden = true;
+        liveCueSwitchBtn.dataset.action = '';
+      }
+
+      liveCueSwitchBtn.disabled = liveCueBusy;
+      liveCueSwitchBtn.dataset.state = model.timingState;
+    }
+
+    function startEventLiveCueClock() {
+      clearInterval(liveCueClockTimer);
+      liveCueClockTimer = setInterval(() => renderEventLiveCue(state.eventProgramItems), 1000);
     }
 
     function renderEventSessionSelector(eventRooms, programItems = state.eventProgramItems) {
@@ -885,6 +1138,7 @@
         eventSessionState.textContent = '';
         eventSessionActivateBtn.hidden = true;
         if (eventLiveProgramState) eventLiveProgramState.textContent = '';
+        if (eventLiveCue) eventLiveCue.hidden = true;
         return;
       }
 
@@ -899,6 +1153,7 @@
       eventSessionSelect.disabled = switchingEventSession;
       renderEventSessionState();
       renderEventLiveProgramState(state.eventProgramItems);
+      renderEventLiveCue(state.eventProgramItems);
     }
 
     async function loadEventSessionSelector() {
@@ -908,6 +1163,75 @@
       ]);
       renderEventSessionSelector(eventRooms, programItems);
     }
+    async function refreshEventLiveContext() {
+      await loadEventSessionSelector();
+      renderEventLiveCue(state.eventProgramItems);
+    }
+
+    async function runEventLiveCueSwitch() {
+      if (liveCueBusy || !state.room?.event_key) return;
+      if (editorState.dirty) {
+        setStatus('Сохраните изменения участника перед переключением live-блока.', 'error');
+        return;
+      }
+
+      const model = buildEventLiveCueModel(state.eventProgramItems);
+      const action = liveCueSwitchBtn.dataset.action;
+      if (action === 'next' && !model.next) return;
+      if (action === 'finish' && !model.current) return;
+
+      liveCueBusy = true;
+      renderEventLiveCue(state.eventProgramItems);
+      setStatus(action === 'finish' ? 'Завершаю эфир…' : 'Переключаю следующий блок…');
+      try {
+        if (action === 'finish') {
+          await clearCurrentEventProgramItem(state.room.event_key);
+        } else {
+          await setCurrentEventProgramItem(model.next.id);
+        }
+        await refresh();
+        await refreshEventLiveContext();
+        setStatus(
+          action === 'finish'
+            ? 'Эфир завершён.'
+            : 'Текущий блок переключён. Приём вопросов у новой Q&A-сессии включается отдельно.',
+          'success'
+        );
+      } catch (error) {
+        setStatus(error.message || 'Не удалось переключить live-блок.', 'error');
+      } finally {
+        liveCueBusy = false;
+        renderEventLiveCue(state.eventProgramItems);
+      }
+    }
+
+    async function openCurrentLiveCueIntake() {
+      if (liveCueBusy || !state.room?.event_key) return;
+      if (editorState.dirty) {
+        setStatus('Сохраните изменения участника перед изменением live-состояния.', 'error');
+        return;
+      }
+
+      const model = buildEventLiveCueModel(state.eventProgramItems);
+      const current = model.current;
+      if (current?.kind !== 'session' || current.room_id == null || current.is_questions_open) return;
+
+      liveCueBusy = true;
+      renderEventLiveCue(state.eventProgramItems);
+      setStatus('Открываю приём вопросов…');
+      try {
+        await setRoomQuestionsOpen(current.room_id, true);
+        await refresh();
+        await refreshEventLiveContext();
+        setStatus('Приём вопросов открыт для текущей Q&A-сессии.', 'success');
+      } catch (error) {
+        setStatus(error.message || 'Не удалось открыть приём вопросов.', 'error');
+      } finally {
+        liveCueBusy = false;
+        renderEventLiveCue(state.eventProgramItems);
+      }
+    }
+
     function setProgramStatus(message, type = '') {
       programStatus.textContent = message;
       programStatus.className = `program-status ${type}`.trim();
@@ -1669,6 +1993,8 @@
       }
     }
 
+    liveCueSwitchBtn.addEventListener('click', () => { void runEventLiveCueSwitch(); });
+    liveCueIntakeBtn.addEventListener('click', () => { void openCurrentLiveCueIntake(); });
     eventProgramBtn.addEventListener('click', () => { void openProgramEditor(); });
     programClearCurrentBtn.addEventListener('click', () => { void clearProgramLiveItem(); });
     programCancelBtn.addEventListener('click', closeProgramEditor);
@@ -1924,6 +2250,14 @@
       persistPanelState();
     });
     void boot().catch(showBootstrapError);
+
+    window.addEventListener('pagehide', event => {
+      if (event.persisted) return;
+      clearInterval(liveCueClockTimer);
+      liveCueClockTimer = null;
+      unsubscribeEvent?.();
+      unsubscribeEvent = null;
+    });
 
     async function boot() {
       const { data, error: authError } = await supabase.auth.getSession();
@@ -2445,6 +2779,15 @@
         }
         if (unsubscribe) unsubscribe();
         unsubscribe = subscribeRoom(state.room.id, () => queueRefresh({ realtime: true }), setRealtimeStatus);
+        if (unsubscribeEvent) unsubscribeEvent();
+        if (state.room?.event_key) {
+          unsubscribeEvent = subscribeEvent(state.room.event_key, () => {
+            void refreshEventLiveContext().catch(error => {
+              console.error('Event live cue refresh failed', error);
+            });
+          });
+        }
+        startEventLiveCueClock();
       } catch (error) {
         showBootstrapError(error);
         return;
