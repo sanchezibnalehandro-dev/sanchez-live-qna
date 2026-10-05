@@ -477,7 +477,7 @@
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
     import {
-      getRoomSlug, getEventKey, getGuestSessionId, getRoomBySlug, getCurrentEventRoom, listEventRooms, getActiveSpeaker,
+      getRoomSlug, getEventKey, getGuestSessionId, getRoomBySlug, getCurrentEventRoom, listEventRooms, listEventProgramItems, getActiveSpeaker,
       listSpeakers, listQuestions, submitGuestQuestion, addVote, removeVote, subscribeRoom, subscribeEvent,
       escapeHtml, formatClock, normalizeQuestion
     } from './supabase-qna.js';
@@ -693,19 +693,36 @@
       if (!eventKey) return getRoomBySlug(requestedRoomSlug);
       const room = await getCurrentEventRoom(eventKey);
       if (room) return room;
-      const eventRooms = await listEventRooms(eventKey);
-      const error = new Error(eventRooms.length
-        ? 'Для мероприятия не выбрана текущая сессия.'
-        : 'Мероприятие не найдено.');
-      error.code = eventRooms.length ? 'CURRENT_SESSION_NOT_SET' : 'EVENT_NOT_FOUND';
+
+      const [eventRooms, programItems] = await Promise.all([
+        listEventRooms(eventKey),
+        listEventProgramItems(eventKey)
+      ]);
+      if (!eventRooms.length) {
+        const error = new Error('Мероприятие не найдено.');
+        error.code = 'EVENT_NOT_FOUND';
+        throw error;
+      }
+
+      const currentProgramItem = programItems.find(item => item.is_current);
+      if (currentProgramItem?.kind === 'service') {
+        const error = new Error('Q&A временно неактивно.');
+        error.code = 'CURRENT_SERVICE_BLOCK';
+        error.currentTitle = currentProgramItem.title || 'Организационный блок';
+        throw error;
+      }
+
+      const error = new Error('Q&A сейчас неактивно.');
+      error.code = 'CURRENT_SESSION_NOT_SET';
       throw error;
     }
 
     function renderTerminalRouteError(error) {
       const noCurrentSession = error?.code === 'CURRENT_SESSION_NOT_SET';
+      const serviceBlock = error?.code === 'CURRENT_SERVICE_BLOCK';
       const invalidEvent = error?.code === 'EVENT_NOT_FOUND';
       const invalidRoom = error?.code === 'PGRST116' || String(error?.message || '').includes('JSON object requested');
-      if (!noCurrentSession && !invalidEvent && !invalidRoom) return false;
+      if (!noCurrentSession && !serviceBlock && !invalidEvent && !invalidRoom) return false;
 
       if (activeRoomSlug) saveDraft(activeRoomSlug);
       unsubscribeRoom?.();
@@ -721,12 +738,16 @@
 
       speakerNameEl.textContent = invalidEvent
         ? 'Мероприятие не найдено'
-        : noCurrentSession ? 'Сессия ещё не выбрана' : 'Комната не найдена';
+        : serviceBlock
+          ? (error.currentTitle || 'Организационный блок')
+          : noCurrentSession ? 'Q&A сейчас неактивно' : 'Комната не найдена';
       speakerMetaEl.textContent = invalidEvent
         ? `Мероприятие «${eventKey}» не существует. Проверьте QR-код или ссылку.`
-        : noCurrentSession
-          ? 'Для этого мероприятия пока не назначена текущая сессия.'
-          : `Комната «${requestedRoomSlug}» не существует. Проверьте QR-код или ссылку.`;
+        : serviceBlock
+          ? 'Сейчас идёт организационный блок. Вопросы и новые голоса временно недоступны.'
+          : noCurrentSession
+            ? 'Оператор ещё не выбрал текущий Q&A-блок мероприятия.'
+            : `Комната «${requestedRoomSlug}» не существует. Проверьте QR-код или ссылку.`;
 
       panelParticipants.style.display = 'none';
       mobilePanelParticipants.hidden = true;
