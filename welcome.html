@@ -7,44 +7,36 @@
   <link rel="stylesheet" href="./theme.css" />
   <link rel="stylesheet" data-brand-stylesheet href="./brands/sanchez.css" />
   <style>
-    .event-entry { min-height: 100vh; display: grid; place-items: center; padding: max(20px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom)); }
-    .event-entry-shell { width: min(760px, 100%); display: grid; gap: 14px; }
-    .event-entry-hero { padding: clamp(24px, 6vw, 46px); }
-    .event-entry-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 34px; }
-    .event-entry-brand .brand-logo-mark { width: 40px; height: 40px; border-radius: 12px; }
-    .event-entry-brand-copy { min-width: 0; display: grid; gap: 2px; }
-    .event-entry-brand-copy strong { font-size: 13px; font-weight: 800; letter-spacing: .05em; }
-    .event-entry-brand-copy span { color: var(--color-text-secondary); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-    .event-entry-kicker { color: var(--color-accent-text); font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
-    .event-entry-title { margin: 9px 0 12px; color: var(--color-text); font-family: var(--font-display); font-size: clamp(32px, 8vw, 58px); line-height: 1.02; letter-spacing: -.035em; }
-    .event-entry-copy { max-width: 580px; margin: 0; color: var(--color-text-secondary); font-size: 14px; line-height: 1.55; }
-    .event-entry-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-top: 30px; }
-    .event-entry-actions.single { grid-template-columns: 1fr; }
-    .event-entry-action { min-height: 74px; display: grid; align-content: center; gap: 4px; padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 16px; text-decoration: none; background: var(--color-surface-subtle); color: var(--color-text); transition: border-color .15s ease, transform .15s ease, background .15s ease; }
+    .event-entry { min-height: 100vh; display: grid; align-items: start; justify-items: center; padding: max(18px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom)); }
+    .event-entry-shell { width: min(620px, 100%); display: grid; gap: 16px; }
+    .event-entry-brand { display: flex; align-items: center; gap: 14px; padding: 8px 2px 4px; }
+    .event-entry-brand .brand-logo-mark { width: 54px; height: 54px; border-radius: 17px; flex: 0 0 auto; box-shadow: 0 0 24px color-mix(in srgb, var(--color-accent) 22%, transparent); }
+    .event-entry-brand-copy { min-width: 0; display: grid; gap: 5px; }
+    .event-entry-brand-copy strong { color: var(--color-text); font-family: var(--font-display); font-size: clamp(16px, 4vw, 20px); font-weight: 800; line-height: 1.15; letter-spacing: .01em; }
+    .event-entry-brand-copy span { color: var(--color-text-secondary); font-size: 10px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    .event-program { position: relative; overflow: hidden; padding: clamp(22px, 6vw, 34px); display: grid; gap: 0; background: radial-gradient(circle at 92% 6%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 38%), var(--color-surface-raised); }
+    .event-program-label { color: var(--color-accent-text); font-size: 10px; font-weight: 850; letter-spacing: .2em; text-transform: uppercase; }
+    .event-program-time { margin-top: 14px; color: var(--color-text); font-size: clamp(24px, 6vw, 34px); font-weight: 850; line-height: 1; font-variant-numeric: tabular-nums; }
+    .event-program-title { margin-top: 17px; color: var(--color-text); font-family: var(--font-display); font-size: clamp(28px, 7vw, 42px); font-weight: 800; line-height: 1.08; letter-spacing: -.03em; overflow-wrap: anywhere; }
+    .event-program-type { margin-top: 15px; color: var(--color-text-secondary); font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .event-entry-actions { display: grid; gap: 10px; margin-top: 26px; }
+    .event-entry-action { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: 18px; text-decoration: none; background: var(--color-surface-subtle); color: var(--color-text); transition: border-color .15s ease, transform .15s ease, background .15s ease; }
     .event-entry-action:hover { border-color: var(--color-border-strong); transform: translateY(-1px); }
     .event-entry-action.primary { background: var(--color-accent); color: var(--color-accent-contrast, #fff); border-color: transparent; }
-    .event-entry-action strong { font-size: 15px; font-weight: 800; }
-    .event-entry-action span { font-size: 10px; line-height: 1.4; opacity: .76; }
-    .event-program { position: relative; overflow: hidden; min-height: 210px; padding: clamp(22px, 5vw, 34px); display: grid; align-content: end; gap: 8px; background: radial-gradient(circle at 90% 14%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent 40%), var(--color-surface-raised); }
-    .event-program-label { color: var(--color-accent-text); font-size: 9px; font-weight: 850; letter-spacing: .15em; text-transform: uppercase; }
-    .event-program-time { color: var(--color-text); font-size: clamp(21px, 5vw, 32px); font-weight: 850; line-height: 1; font-variant-numeric: tabular-nums; }
-    .event-program-title { color: var(--color-text); font-family: var(--font-display); font-size: clamp(24px, 5vw, 38px); font-weight: 800; line-height: 1.08; letter-spacing: -.03em; }
-    .event-program-type { color: var(--color-text-secondary); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-    .event-live { padding: 18px 20px; display: grid; gap: 7px; }
-    .event-live-label { color: var(--color-success-text); font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
-    .event-live-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: currentColor; }
-    .event-live-title { color: var(--color-text); font-size: 16px; font-weight: 800; line-height: 1.35; }
-    .event-live-meta { color: var(--color-text-secondary); font-size: 10px; }
-    .event-entry-foot { min-height: 20px; padding: 0 8px; color: var(--color-text-secondary); font-size: 10px; text-align: center; }
+    .event-entry-action strong { font-size: 16px; font-weight: 850; }
+    .event-entry-action .event-entry-arrow { flex: 0 0 auto; font-size: 20px; line-height: 1; }
+    .event-entry-foot { min-height: 18px; padding: 0 8px; color: var(--color-text-secondary); font-size: 10px; text-align: center; }
     .event-entry-realtime { display: inline-flex; align-items: center; gap: 6px; }
     .event-entry-realtime::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
     .event-entry-realtime[data-state="offline"] { color: var(--color-danger-text); }
     @media (max-width: 560px) {
-      .event-entry { align-items: start; padding-top: max(16px, env(safe-area-inset-top)); }
-      .event-entry-actions { grid-template-columns: 1fr; }
-      .event-entry-action { min-height: 68px; }
-      .event-entry-brand { margin-bottom: 28px; }
-      .event-program { min-height: 190px; }
+      .event-entry { padding-top: max(14px, env(safe-area-inset-top)); }
+      .event-entry-shell { gap: 13px; }
+      .event-entry-brand { padding-bottom: 2px; }
+      .event-entry-brand .brand-logo-mark { width: 50px; height: 50px; border-radius: 16px; }
+      .event-program { padding: 22px 20px 20px; }
+      .event-program-title { font-size: clamp(27px, 8vw, 34px); }
+      .event-entry-action { min-height: 62px; }
     }
     @media (prefers-reduced-motion: reduce) {
       .event-entry-action { transition: none; }
@@ -62,43 +54,30 @@
 
   <main class="event-entry app" id="appShell" inert aria-hidden="true">
     <div class="event-entry-shell">
-      <section class="card">
-        <div class="event-entry-hero">
-          <div class="event-entry-brand">
-            <div class="brand-logo-mark" data-brand-mark></div>
-            <div class="event-entry-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div>
-          </div>
-          <div class="event-entry-kicker">LIVE EVENT</div>
-          <h1 class="event-entry-title">Добро пожаловать</h1>
-          <p class="event-entry-copy">Следите за программой мероприятия и подключайтесь к LIVE Q&amp;A, когда текущая сессия открыта для вопросов.</p>
-          <div class="event-entry-actions single" id="entryActions">
-            <a class="event-entry-action" id="askLink" href="#" hidden>
-              <strong>Задать вопрос</strong>
-              <span>Перейти в LIVE Q&amp;A текущей сессии</span>
-            </a>
-            <a class="event-entry-action primary" id="programLink" href="#">
-              <strong>Программа дня</strong>
-              <span>Все выступления, панели и перерывы</span>
-            </a>
-          </div>
-        </div>
-      </section>
+      <header class="event-entry-brand">
+        <div class="brand-logo-mark" data-brand-mark></div>
+        <div class="event-entry-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div>
+      </header>
 
       <section class="card event-program" id="programCard" aria-live="polite">
         <div class="event-program-label" id="programLabel"></div>
         <div class="event-program-time" id="programTime"></div>
         <div class="event-program-title" id="programTitle"></div>
         <div class="event-program-type" id="programType" hidden></div>
-      </section>
 
-      <section class="card event-live" id="liveSessionCard" hidden>
-        <div class="event-live-label">LIVE Q&amp;A</div>
-        <div class="event-live-title" id="liveSessionTitle"></div>
-        <div class="event-live-meta" id="liveSessionMeta"></div>
+        <div class="event-entry-actions" id="entryActions">
+          <a class="event-entry-action primary" id="askLink" href="#" hidden>
+            <strong>Задать вопрос</strong>
+            <span class="event-entry-arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="event-entry-action" id="programLink" href="#">
+            <strong>Программа дня</strong>
+            <span class="event-entry-arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
       </section>
 
       <div class="event-entry-foot">
-        Одна ссылка на всё мероприятие · программа и LIVE Q&amp;A
         <span class="event-entry-realtime" id="realtimeStatus" data-state="connecting" role="status">подключение</span>
       </div>
     </div>
@@ -124,9 +103,6 @@
     const programTime = document.getElementById('programTime');
     const programTitle = document.getElementById('programTitle');
     const programType = document.getElementById('programType');
-    const liveSessionCard = document.getElementById('liveSessionCard');
-    const liveSessionTitle = document.getElementById('liveSessionTitle');
-    const liveSessionMeta = document.getElementById('liveSessionMeta');
     const realtimeStatus = document.getElementById('realtimeStatus');
 
     let unsubscribeEvent = null;
@@ -186,7 +162,7 @@
     }
 
     function itemType(item) {
-      if (item.kind === 'service') return 'Организационный блок';
+      if (item.kind === 'service') return 'Перерыв';
       return item.mode === 'panel' ? 'Панель' : 'Выступление';
     }
 
@@ -205,11 +181,11 @@
     function renderProgram(view) {
       const item = view.heroItem;
       const labels = {
-        [PROGRAM_HERO_STATE.NOW]: 'Сейчас по программе',
-        [PROGRAM_HERO_STATE.NEXT]: 'Далее',
-        [PROGRAM_HERO_STATE.COMPLETE]: 'Программа завершена',
-        [PROGRAM_HERO_STATE.UNSCHEDULED]: 'Расписание уточняется',
-        [PROGRAM_HERO_STATE.EMPTY]: 'Программа пока не опубликована'
+        [PROGRAM_HERO_STATE.NOW]: 'СЕЙЧАС',
+        [PROGRAM_HERO_STATE.NEXT]: 'ДАЛЕЕ',
+        [PROGRAM_HERO_STATE.COMPLETE]: 'ПРОГРАММА ЗАВЕРШЕНА',
+        [PROGRAM_HERO_STATE.UNSCHEDULED]: 'РАСПИСАНИЕ УТОЧНЯЕТСЯ',
+        [PROGRAM_HERO_STATE.EMPTY]: 'ПРОГРАММА'
       };
       programCard.dataset.mode = view.heroState.toLowerCase();
       programLabel.textContent = labels[view.heroState];
@@ -235,17 +211,7 @@
       const view = deriveGuestProgramState(snapshot.items, snapshot.operationalCurrentRoom);
       renderProgram(view);
 
-      const liveRoom = snapshot.operationalCurrentRoom;
-      liveSessionCard.hidden = !liveRoom;
-      liveSessionTitle.textContent = liveRoom?.title || '';
-      liveSessionMeta.textContent = liveRoom
-        ? `${liveRoom.mode === 'panel' ? 'Панель' : 'Выступление'} · активная Q&A-сессия`
-        : '';
-
       askLink.hidden = !view.canAskCurrent;
-      entryActions.classList.toggle('single', !view.canAskCurrent);
-      askLink.classList.toggle('primary', view.canAskCurrent);
-      programLink.classList.toggle('primary', !view.canAskCurrent);
       armTransitionTimer(view);
     }
 
