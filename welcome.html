@@ -23,6 +23,10 @@
     .event-entry-action { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: 18px; text-decoration: none; background: var(--color-surface-subtle); color: var(--color-text); transition: border-color .15s ease, transform .15s ease, background .15s ease; }
     .event-entry-action:hover { border-color: var(--color-border-strong); transform: translateY(-1px); }
     .event-entry-action.primary { background: var(--color-accent); color: var(--color-accent-contrast, #fff); border-color: transparent; }
+    .event-entry-qna-state { min-height: 66px; display: grid; align-content: center; gap: 4px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-surface-subtle); color: var(--color-text); }
+    .event-entry-qna-state[hidden] { display: none; }
+    .event-entry-qna-state strong { font-size: 16px; font-weight: 850; }
+    .event-entry-qna-state span { color: var(--color-text-secondary); font-size: 12px; line-height: 1.45; }
     .event-entry-action strong { font-size: 16px; font-weight: 850; }
     .event-entry-action .event-entry-arrow { flex: 0 0 auto; font-size: 20px; line-height: 1; }
     .event-entry-foot { min-height: 18px; padding: 0 8px; color: var(--color-text-secondary); font-size: 10px; text-align: center; }
@@ -36,7 +40,7 @@
       .event-entry-brand .brand-logo-mark { width: 50px; height: 50px; border-radius: 16px; }
       .event-program { padding: 22px 20px 20px; }
       .event-program-title { font-size: clamp(27px, 8vw, 34px); }
-      .event-entry-action { min-height: 62px; }
+      .event-entry-action, .event-entry-qna-state { min-height: 62px; }
     }
     @media (prefers-reduced-motion: reduce) {
       .event-entry-action { transition: none; }
@@ -70,6 +74,10 @@
             <strong>Задать вопрос</strong>
             <span class="event-entry-arrow" aria-hidden="true">→</span>
           </a>
+          <div class="event-entry-qna-state" id="askClosedState" role="status">
+            <strong>Q&amp;A пока закрыт</strong>
+            <span>Когда Q&amp;A откроется, здесь появится кнопка «Задать вопрос».</span>
+          </div>
           <a class="event-entry-action" id="programLink" href="#">
             <strong>Программа дня</strong>
             <span class="event-entry-arrow" aria-hidden="true">→</span>
@@ -97,6 +105,7 @@
     const bootstrapMessage = document.getElementById('bootstrapMessage');
     const entryActions = document.getElementById('entryActions');
     const askLink = document.getElementById('askLink');
+    const askClosedState = document.getElementById('askClosedState');
     const programLink = document.getElementById('programLink');
     const programCard = document.getElementById('programCard');
     const programLabel = document.getElementById('programLabel');
@@ -238,6 +247,7 @@
       renderProgram(view);
 
       askLink.hidden = !view.canAskCurrent;
+      askClosedState.hidden = view.canAskCurrent;
       armTransitionTimer(view);
     }
 
