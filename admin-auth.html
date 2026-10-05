@@ -983,6 +983,29 @@
       return item.mode === 'panel' ? 'Панель · Q&A' : 'Выступление · Q&A';
     }
 
+    function eventLocalDateKey(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      if (!roomBrand.timeZone) {
+        return [
+          date.getFullYear(),
+          String(date.getMonth() + 1).padStart(2, '0'),
+          String(date.getDate()).padStart(2, '0')
+        ].join('-');
+      }
+      const parts = Object.fromEntries(
+        new Intl.DateTimeFormat('en-CA', {
+          timeZone: roomBrand.timeZone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).formatToParts(date)
+          .filter(part => part.type !== 'literal')
+          .map(part => [part.type, part.value])
+      );
+      return [parts.year, parts.month, parts.day].join('-');
+    }
+
     function buildEventLiveCueModel(programItems, nowMs = Date.now()) {
       const ordered = [...(programItems || [])].sort(compareLiveProgramItems);
       const currentIndex = ordered.findIndex(item => item.is_current === true);
@@ -1010,25 +1033,32 @@
         const startMs = Date.parse(current.starts_at);
         const endMs = liveProgramItemEndMs(current);
         if (Number.isFinite(startMs) && endMs != null) {
-          const totalMs = Math.max(1, endMs - startMs);
-          progress = Math.max(0, Math.min(100, ((nowMs - startMs) / totalMs) * 100));
-          const diffMinutes = Math.round((endMs - nowMs) / 60000);
-          if (diffMinutes > 5) {
-            timingText = diffMinutes + ' мин до планового завершения';
-            timingHint = 'Пока ничего делать не нужно.';
-          } else if (diffMinutes > 0) {
-            timingState = 'soon';
-            timingText = 'Через ' + diffMinutes + ' мин по плану';
-            timingHint = 'Следующий блок уже можно держать в поле зрения.';
-          } else if (diffMinutes === 0) {
-            timingState = 'soon';
-            timingText = 'По плану сейчас';
-            timingHint = 'Текущий блок останется в эфире до подтверждения.';
+          const sameEventDay = eventLocalDateKey(startMs) === eventLocalDateKey(nowMs);
+          if (!sameEventDay) {
+            timingText = 'По плану ' + formatProgramTime(current.starts_at) + '–' + formatProgramTime(new Date(endMs).toISOString());
+            timingHint = 'Отсчёт появится в день мероприятия.';
+            progress = 0;
           } else {
-            timingState = 'late';
-            timingText = '+' + Math.abs(diffMinutes) + ' мин к плану';
-            timingHint = 'Ничего не переключается автоматически.';
-            progress = 100;
+            const totalMs = Math.max(1, endMs - startMs);
+            progress = Math.max(0, Math.min(100, ((nowMs - startMs) / totalMs) * 100));
+            const diffMinutes = Math.round((endMs - nowMs) / 60000);
+            if (diffMinutes > 5) {
+              timingText = diffMinutes + ' мин до планового завершения';
+              timingHint = 'Пока ничего делать не нужно.';
+            } else if (diffMinutes > 0) {
+              timingState = 'soon';
+              timingText = 'Через ' + diffMinutes + ' мин по плану';
+              timingHint = 'Следующий блок уже можно держать в поле зрения.';
+            } else if (diffMinutes === 0) {
+              timingState = 'soon';
+              timingText = 'По плану сейчас';
+              timingHint = 'Текущий блок останется в эфире до подтверждения.';
+            } else {
+              timingState = 'late';
+              timingText = '+' + Math.abs(diffMinutes) + ' мин к плану';
+              timingHint = 'Ничего не переключается автоматически.';
+              progress = 100;
+            }
           }
         }
       }
@@ -1085,13 +1115,15 @@
         liveCueCurrentMeta.textContent = 'Выберите первый фактический блок одной кнопкой справа.';
       }
 
-      const canOpenIntake = Boolean(
+      const canControlIntake = Boolean(
         current?.kind === 'session'
         && current.room_id != null
-        && current.is_questions_open !== true
       );
-      liveCueIntakeBtn.hidden = !canOpenIntake;
+      liveCueIntakeBtn.hidden = !canControlIntake;
       liveCueIntakeBtn.disabled = liveCueBusy;
+      if (canControlIntake) {
+        liveCueIntakeBtn.textContent = current.is_questions_open ? 'Закрыть вопросы' : 'Включить вопросы';
+      }
 
       if (next) {
         liveCueNextKicker.textContent = 'Далее' + (next.starts_at ? ' · ' + formatProgramTime(next.starts_at) : '');
@@ -1205,7 +1237,7 @@
       }
     }
 
-    async function openCurrentLiveCueIntake() {
+    async function toggleCurrentLiveCueIntake() {
       if (liveCueBusy || !state.room?.event_key) return;
       if (editorState.dirty) {
         setStatus('Сохраните изменения участника перед изменением live-состояния.', 'error');
@@ -1214,18 +1246,27 @@
 
       const model = buildEventLiveCueModel(state.eventProgramItems);
       const current = model.current;
-      if (current?.kind !== 'session' || current.room_id == null || current.is_questions_open) return;
+      if (current?.kind !== 'session' || current.room_id == null) return;
 
+      const nextOpen = current.is_questions_open !== true;
       liveCueBusy = true;
       renderEventLiveCue(state.eventProgramItems);
-      setStatus('Открываю приём вопросов…');
+      setStatus(nextOpen ? 'Открываю приём вопросов…' : 'Закрываю приём вопросов…');
       try {
-        await setRoomQuestionsOpen(current.room_id, true);
+        await setRoomQuestionsOpen(current.room_id, nextOpen);
         await refresh();
         await refreshEventLiveContext();
-        setStatus('Приём вопросов открыт для текущей Q&A-сессии.', 'success');
+        setStatus(
+          nextOpen
+            ? 'Приём вопросов открыт для текущей Q&A-сессии.'
+            : 'Приём вопросов закрыт для текущей Q&A-сессии.',
+          'success'
+        );
       } catch (error) {
-        setStatus(error.message || 'Не удалось открыть приём вопросов.', 'error');
+        setStatus(
+          error.message || (nextOpen ? 'Не удалось открыть приём вопросов.' : 'Не удалось закрыть приём вопросов.'),
+          'error'
+        );
       } finally {
         liveCueBusy = false;
         renderEventLiveCue(state.eventProgramItems);
@@ -1994,7 +2035,7 @@
     }
 
     liveCueSwitchBtn.addEventListener('click', () => { void runEventLiveCueSwitch(); });
-    liveCueIntakeBtn.addEventListener('click', () => { void openCurrentLiveCueIntake(); });
+    liveCueIntakeBtn.addEventListener('click', () => { void toggleCurrentLiveCueIntake(); });
     eventProgramBtn.addEventListener('click', () => { void openProgramEditor(); });
     programClearCurrentBtn.addEventListener('click', () => { void clearProgramLiveItem(); });
     programCancelBtn.addEventListener('click', closeProgramEditor);
@@ -3182,6 +3223,7 @@
           ? 'Сначала сделайте сессию текущей'
           : state.room?.is_questions_open ? 'Гости могут отправлять вопросы' : 'Закрыт для гостей';
       const questionsOpenControl = document.getElementById('questionsOpenControl');
+      questionsOpenControl.hidden = Boolean(state.room?.event_key);
       questionsOpenControl.dataset.state = questionsOpenPending ? 'neutral' : eventRoomInactive ? 'warning' : state.room?.is_questions_open ? 'success' : 'warning';
       const liveIntakeStatus = document.getElementById('liveIntakeStatus');
       liveIntakeStatus.dataset.state = eventRoomInactive ? 'neutral' : state.room?.is_questions_open ? 'success' : 'warning';
