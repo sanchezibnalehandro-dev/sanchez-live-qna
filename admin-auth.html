@@ -1243,7 +1243,9 @@
         });
       });
       programList.querySelectorAll('[data-program-configure]').forEach(button => {
+        button.disabled = programCreatingSession;
         button.addEventListener('click', () => {
+          if (programCreatingSession || programSaving) return;
           const item = programDraft[Number(button.dataset.programConfigure)];
           if (!item?.slug) return;
           location.href = `./admin-auth.html?room=${encodeURIComponent(item.slug)}`;
@@ -1305,15 +1307,26 @@
       );
     }
 
+    function setProgramCreatingSession(isCreating) {
+      programCreatingSession = isCreating;
+      programAddBtn.disabled = isCreating;
+      programSaveBtn.disabled = isCreating;
+      programCancelBtn.disabled = isCreating;
+      programCloseBtn.disabled = isCreating;
+      programModal.toggleAttribute('aria-busy', isCreating);
+      programList.querySelectorAll('[data-program-configure]').forEach(button => {
+        button.disabled = isCreating;
+      });
+    }
+
     async function addSessionProgramItem(mode) {
       if (programSaving || programCreatingSession || !state.room?.event_key) return;
 
       setProgramSessionCreateConfirmation(null);
-      programCreatingSession = true;
-      programAddBtn.disabled = true;
+      setProgramCreatingSession(true);
       programAddMenu.hidden = true;
       programAddBtn.setAttribute('aria-expanded', 'false');
-      setProgramStatus('Создаю Q&A-сессию…');
+      setProgramStatus('Создаю Q&A-сессию… дождитесь завершения.');
 
       try {
         const item = await createEventProgramSession(state.room.event_key, mode);
@@ -1343,8 +1356,7 @@
       } catch (error) {
         setProgramStatus(error.message || 'Не удалось создать Q&A-сессию.', 'error');
       } finally {
-        programCreatingSession = false;
-        programAddBtn.disabled = false;
+        setProgramCreatingSession(false);
       }
     }
 
@@ -1379,7 +1391,7 @@
     }
 
     function closeProgramEditor() {
-      if (programSaving) return;
+      if (programSaving || programCreatingSession) return;
       programModal.hidden = true;
       programAddMenu.hidden = true;
       setProgramSessionCreateConfirmation(null);
@@ -1478,7 +1490,7 @@
     programStartPlusBtn.addEventListener('click', () => shiftProgramAnchor(5));
 
     programSaveBtn.addEventListener('click', async () => {
-      if (programSaving || !state.room?.event_key || !programDraft.length) return;
+      if (programSaving || programCreatingSession || !state.room?.event_key || !programDraft.length) return;
 
       try {
         programAnchorStart = readProgramAnchorControls();
