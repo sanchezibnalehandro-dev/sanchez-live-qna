@@ -655,6 +655,10 @@
     @media (max-width: 1024px) { #speakerSelectWrap { display: block; } }
     .editor-dirty-status, .editor-background-status { max-width: 220px; }
 
+    .danger-footer-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+    .danger-footer-item { flex: 1 1 260px; min-width: 0; }
+    .danger-footer .btn { width: 100%; min-height: 44px; font-size: 12px; }
+
   </style>
 </head>
 <body class="is-booting">
@@ -740,8 +744,27 @@
         <button class="edge-rail" id="editorRail" type="button" aria-label="Свернуть редактор спикера" aria-expanded="true"><svg class="icon edge-rail-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><span class="edge-rail-label">Редактор</span></button>
         <aside class="card console-panel editor-panel" id="editorPanel" data-responsive-section="editor" data-accordion-collapsed="true"><div class="panel-body">
           <div class="panel-head"><div><h2 id="editorTitle">Редактор спикера</h2><p id="editorSubtitle">Выберите спикера</p><span class="responsive-summary" id="editorAccordionSummary">Редактор · не выбран</span></div><div class="panel-head-actions"><div class="editor-header-status"><span class="editor-dirty-status" id="editorDirtyStatus" hidden>Есть несохранённые изменения</span><span class="editor-background-status" id="editorBackgroundStatus" hidden>Данные изменились в фоне. «Сохранить» перезапишет их.</span></div><button class="responsive-section-toggle" type="button" data-accordion-toggle="editor" aria-expanded="false" aria-controls="editorAccordionBody" aria-label="Развернуть редактор участника"><span class="responsive-chevron" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span></button></div></div>
-          <div class="responsive-section-body responsive-panel-body" id="editorAccordionBody"><div class="editor-card"><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><svg class="icon inline arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" id="topicLabel" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div><div class="editor-danger"><div class="danger-zone-label">Опасная зона</div><button class="btn warn" id="clearQuestionsBtn"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7l1-3h4l1 3M6 7l1 13h10l1-13"/></svg>Очистить все вопросы</button><div id="clearConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Это удалит все вопросы и голоса безвозвратно. Продолжить?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" style="flex:1;">Отмена</button></div></div><button class="btn danger" id="logoutBtn">Выйти из аккаунта</button><div id="logoutConfirmRow" style="display:none; margin-top:8px;"><p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Выйти из аккаунта?</p><div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" style="flex:1;">Отмена</button></div></div></div></div>
+          <div class="responsive-section-body responsive-panel-body" id="editorAccordionBody"><div class="editor-card"><div class="custom-select-wrap" id="speakerSelectWrap"><button class="custom-select-btn" id="speakerSelectBtn" type="button"><span id="speakerSelectLabel">Выбрать спикера</span><svg class="icon inline arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="custom-select-dropdown" id="speakerDropdown"></div></div><label class="section-title" style="display:block;margin-top:10px;">Имя</label><input class="input" id="nameInput" placeholder="Имя спикера"><label class="section-title" style="display:block;margin-top:10px;">Должность / регалии</label><input class="input" id="regaliaInput" placeholder="Должность / регалии"><label class="section-title" id="topicLabel" style="display:block;margin-top:10px;">Тема выступления</label><input class="input" id="topicInput" placeholder="Тема выступления"><div class="editor-actions"><button class="btn primary" id="saveBtn">Сохранить</button><button class="btn ghost" id="activateBtn">Сделать активным</button></div></div></div>
         </div></aside>
+      </section>
+      <section class="danger-zone danger-footer" aria-label="Опасные действия">
+        <div class="danger-zone-label">Опасная зона</div>
+        <div class="danger-footer-row">
+          <div class="danger-footer-item">
+            <button class="btn warn" id="clearQuestionsBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7l1-3h4l1 3M6 7l1 13h10l1-13"/></svg>Очистить вопросы этой сессии</button>
+            <div id="clearConfirmRow" style="display:none; margin-top:8px;">
+              <p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Удалить <strong id="clearCount">0</strong> вопросов и все голоса безвозвратно? Сначала можно скачать CSV через «Экспорт».</p>
+              <div style="display:flex; gap:8px;"><button class="btn danger" id="clearConfirmBtn" type="button" style="flex:1;">Да, удалить всё</button><button class="btn ghost" id="clearCancelBtn" type="button" style="flex:1;">Отмена</button></div>
+            </div>
+          </div>
+          <div class="danger-footer-item">
+            <button class="btn danger" id="logoutBtn" type="button">Выйти из аккаунта</button>
+            <div id="logoutConfirmRow" style="display:none; margin-top:8px;">
+              <p style="font-size:12px; color:var(--color-warning-text); margin:0 0 8px;">Выйти из аккаунта?</p>
+              <div style="display:flex; gap:8px;"><button class="btn danger" id="logoutConfirmBtn" type="button" style="flex:1;">Да, выйти</button><button class="btn ghost" id="logoutCancelBtn" type="button" style="flex:1;">Отмена</button></div>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -3469,6 +3492,8 @@
       document.getElementById('filterOpenCount').textContent   = state.questions.filter(q => q.status === 'open').length;
       document.getElementById('filterAskedCount').textContent  = state.questions.filter(q => q.status === 'asked').length;
       document.getElementById('filterHiddenCount').textContent = state.questions.filter(q => q.status === 'hidden').length;
+      document.getElementById('clearCount').textContent = state.questions.length;
+      document.getElementById('clearQuestionsBtn').disabled = state.questions.length === 0;
 
       // Вопросы с управлением
       const speakerMap = new Map(state.speakers.map(s => [String(s.id), s]));
