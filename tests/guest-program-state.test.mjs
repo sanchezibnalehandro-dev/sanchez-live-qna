@@ -42,26 +42,26 @@ test('B: current panel matching operational LIVE room allows Q&A', () => {
 });
 
 test('C: current panel with another operational room does not allow Q&A', () => {
-  const view = deriveGuestProgramState([item({ mode: 'panel' })], { id: 12, is_questions_open: true }, NOW);
+  const view = deriveGuestProgramState([item({ mode: 'panel', is_current: true })], { id: 12, is_questions_open: true }, NOW);
   assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
   assert.equal(view.canAskCurrent, false);
 });
 
 test('C2: matching operational room with closed intake does not allow Q&A', () => {
-  const view = deriveGuestProgramState([item()], { id: 11, is_questions_open: false }, NOW);
+  const view = deriveGuestProgramState([item({ is_current: true })], { id: 11, is_questions_open: false }, NOW);
   assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
   assert.equal(view.canAskCurrent, false);
 });
 
 test('I: current program session without operational current room does not allow Q&A', () => {
-  const view = deriveGuestProgramState([item()], null, NOW);
+  const view = deriveGuestProgramState([item({ is_current: true })], null, NOW);
   assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
   assert.equal(view.canAskCurrent, false);
 });
 
 test('D: current service block never allows Q&A', () => {
   const view = deriveGuestProgramState([
-    item({ kind: 'service', room_id: null, title: 'Кофе-брейк' })
+    item({ kind: 'service', room_id: null, title: 'Кофе-брейк', is_current: true })
   ], { id: 11 }, NOW);
 
   assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
@@ -114,4 +114,20 @@ test('empty program has no hero item and no CTA', () => {
   assert.equal(view.heroState, PROGRAM_HERO_STATE.EMPTY);
   assert.equal(view.heroItem, null);
   assert.equal(view.canAskCurrent, false);
+});
+
+test('scheduled NOW block without explicit live cursor is shown as NEXT, not NOW', () => {
+  const view = deriveGuestProgramState([item()], { id: 11, is_questions_open: true }, NOW);
+  assert.equal(view.heroState, PROGRAM_HERO_STATE.NEXT);
+  assert.equal(view.heroItem.id, 1);
+  assert.equal(view.canAskCurrent, false);
+});
+
+test('explicit current block stays NOW even after its scheduled end', () => {
+  const view = deriveGuestProgramState([
+    item({ starts_at: '2026-10-05T07:00:00Z', duration_minutes: 20, is_current: true })
+  ], { id: 11, is_questions_open: true }, NOW);
+  assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
+  assert.equal(view.heroItem.id, 1);
+  assert.equal(view.canAskCurrent, true);
 });
