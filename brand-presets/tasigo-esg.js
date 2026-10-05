@@ -3,6 +3,7 @@ export const TASIGO_ESG_BRAND = {
   name: 'Маршрут устойчивого развития',
   mark: 'М',
   productName: 'Форум ESG',
+  timeZone: 'Europe/Moscow',
   csvPrefix: 'tasigo-esg-qna',
   logoUrl: null,
   faviconUrl: null,
