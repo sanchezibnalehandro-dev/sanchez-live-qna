@@ -769,7 +769,6 @@ declare
   v_distinct_session_rooms integer;
   v_event_total integer;
   v_matching_sessions integer;
-  v_anchor timestamptz;
   v_item record;
 begin
   if auth.uid() is null then
@@ -821,6 +820,7 @@ begin
        or x.title is null
        or btrim(x.title) = ''
        or (x.duration_minutes is not null and x.duration_minutes <= 0)
+       or (x.starts_at is not null and x.duration_minutes is null)
        or (x.kind = 'session' and (x.room_id is null or x.id is null))
        or (x.kind = 'service' and x.room_id is not null)
   ) then
@@ -864,32 +864,16 @@ begin
   end if;
 
   perform 1
-  from public.qna_rooms
-  where event_key = p_event_key
-  order by id
-  for update;
-
-  perform 1
   from public.qna_event_program_items
   where event_key = p_event_key
   order by id
   for update;
 
-  select x.starts_at
-  into v_anchor
-  from jsonb_to_recordset(p_items)
-    as x(id bigint, kind text, room_id bigint, title text, session_order integer, starts_at timestamptz, duration_minutes integer)
-  order by x.session_order
-  limit 1;
-
-  if v_anchor is not null and exists (
-    select 1
-    from jsonb_to_recordset(p_items)
-      as x(id bigint, kind text, room_id bigint, title text, session_order integer, starts_at timestamptz, duration_minutes integer)
-    where x.duration_minutes is null
-  ) then
-    raise exception 'Every scheduled program block requires a duration' using errcode = '22023';
-  end if;
+  perform 1
+  from public.qna_rooms
+  where event_key = p_event_key
+  order by id
+  for update;
 
   set constraints qna_event_program_items_event_order_key deferred;
 
@@ -905,37 +889,16 @@ begin
     );
 
   for v_item in
-    with input as (
-      select *
-      from jsonb_to_recordset(p_items)
-        as x(id bigint, kind text, room_id bigint, title text, session_order integer, starts_at timestamptz, duration_minutes integer)
-    ),
-    computed as (
-      select
-        input.*,
-        case
-          when v_anchor is null then null::timestamptz
-          else v_anchor + make_interval(
-            mins => coalesce(
-              sum(input.duration_minutes) over (
-                order by input.session_order
-                rows between unbounded preceding and 1 preceding
-              ),
-              0
-            )::integer
-          )
-        end as computed_starts_at
-      from input
-    )
     select *
-    from computed
+    from jsonb_to_recordset(p_items)
+      as x(id bigint, kind text, room_id bigint, title text, session_order integer, starts_at timestamptz, duration_minutes integer)
     order by session_order
   loop
     if v_item.kind = 'session' then
       update public.qna_rooms room
       set title = btrim(v_item.title),
           session_order = v_item.session_order,
-          starts_at = v_item.computed_starts_at,
+          starts_at = v_item.starts_at,
           duration_minutes = v_item.duration_minutes,
           updated_at = now()
       where room.id = v_item.room_id
@@ -944,7 +907,7 @@ begin
       update public.qna_event_program_items item
       set title = null,
           session_order = v_item.session_order,
-          starts_at = v_item.computed_starts_at,
+          starts_at = v_item.starts_at,
           duration_minutes = v_item.duration_minutes,
           updated_at = now()
       where item.id = v_item.id
@@ -957,13 +920,13 @@ begin
       )
       values (
         p_event_key, null, 'service', btrim(v_item.title),
-        v_item.session_order, v_item.computed_starts_at, v_item.duration_minutes
+        v_item.session_order, v_item.starts_at, v_item.duration_minutes
       );
     else
       update public.qna_event_program_items item
       set title = btrim(v_item.title),
           session_order = v_item.session_order,
-          starts_at = v_item.computed_starts_at,
+          starts_at = v_item.starts_at,
           duration_minutes = v_item.duration_minutes,
           updated_at = now()
       where item.id = v_item.id
@@ -976,9 +939,8 @@ $$;
 
 revoke execute on function public.save_qna_event_program(text, jsonb)
 from public, anon;
-
 grant execute on function public.save_qna_event_program(text, jsonb)
-to authenticated;
+to authenticated, service_role;
 
 create or replace function public.create_qna_event_program_session(
   p_event_key text,
