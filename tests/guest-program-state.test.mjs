@@ -33,7 +33,7 @@ test('A: past session remains in the schedule as PAST', () => {
 
 test('B: current panel matching operational LIVE room allows Q&A', () => {
   const view = deriveGuestProgramState([
-    item({ mode: 'panel' })
+    item({ mode: 'panel', is_current: true })
   ], { id: 11, is_questions_open: true }, NOW);
 
   assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
@@ -100,13 +100,14 @@ test('invalid duration and missing time are grouped as UNSCHEDULED', () => {
   assert.deepEqual(view.unscheduledItems.map(entry => entry.id), [1, 2]);
 });
 
-test('overlap chooses the first NOW item in Program v2 order', () => {
+test('explicit current item wins even when scheduled blocks overlap', () => {
   const view = deriveGuestProgramState([
-    item({ id: 2, session_order: 20 }),
+    item({ id: 2, session_order: 20, is_current: true }),
     item({ id: 1, session_order: 10 })
   ], { id: 11 }, NOW);
 
-  assert.equal(view.currentItem.id, 1);
+  assert.equal(view.currentItem.id, 2);
+  assert.equal(view.heroState, PROGRAM_HERO_STATE.NOW);
 });
 
 test('empty program has no hero item and no CTA', () => {
