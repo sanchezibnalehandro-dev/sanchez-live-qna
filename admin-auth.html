@@ -635,7 +635,7 @@
             <button class="program-clock-step" id="programStartPlusBtn" type="button" aria-label="Сдвинуть старт на 5 минут вперёд">+5</button>
           </div>
         </div>
-        <div class="program-toolbar-note">Порядок и длительность автоматически пересчитывают время всех следующих блоков.</div>
+        <div class="program-toolbar-note">Время начала каждого блока задаётся отдельно. Сдвиг старта всей программы сохраняет паузы.</div>
         <div class="program-add-wrap">
           <button class="program-add-btn" id="programAddBtn" type="button" aria-expanded="false">+ Добавить блок</button>
           <div class="program-add-menu" id="programAddMenu" hidden>
@@ -965,14 +965,35 @@
       input.value = padProgramNumber(value);
     }
 
+    function shiftScheduledProgramItems(deltaMs) {
+      if (!Number.isFinite(deltaMs) || deltaMs === 0) return;
+      programDraft.forEach(item => {
+        if (!item.starts_at) return;
+        const current = new Date(item.starts_at);
+        if (Number.isNaN(current.getTime())) return;
+        item.starts_at = new Date(current.getTime() + deltaMs).toISOString();
+      });
+    }
+
     function updateProgramAnchorFromControls() {
       try {
         normalizeProgramClockField(programHourInput, 23);
         normalizeProgramClockField(programMinuteInput, 59);
-        programAnchorStart = readProgramAnchorControls();
+        const nextAnchor = readProgramAnchorControls();
+        if (!nextAnchor) throw new Error('Укажите дату и время старта программы.');
+
+        const nextMs = new Date(nextAnchor).getTime();
+        const previousMs = programAnchorStart ? new Date(programAnchorStart).getTime() : NaN;
+        if (Number.isFinite(previousMs)) {
+          shiftScheduledProgramItems(nextMs - previousMs);
+        } else if (programDraft[0]) {
+          programDraft[0].starts_at = nextAnchor;
+        }
+
+        programAnchorStart = nextAnchor;
         markProgramDirty();
         renderProgramEditor();
-        setProgramStatus('Старт изменён, расписание пересчитано.');
+        setProgramStatus('Старт программы изменён, существующие паузы сохранены.');
       } catch (error) {
         setProgramStatus(error.message || 'Проверьте время старта.', 'error');
       }
@@ -980,16 +1001,20 @@
 
     function shiftProgramAnchor(minutes) {
       try {
-        programAnchorStart = readProgramAnchorControls();
         if (!programAnchorStart) {
-          throw new Error('Сначала задайте дату и время старта.');
+          programAnchorStart = readProgramAnchorControls();
         }
-        const next = new Date(new Date(programAnchorStart).getTime() + minutes * 60000);
-        programAnchorStart = next.toISOString();
+        if (!programAnchorStart) throw new Error('Сначала задайте дату и время старта.');
+
+        const current = new Date(programAnchorStart);
+        if (Number.isNaN(current.getTime())) throw new Error('Некорректное время старта.');
+        const deltaMs = minutes * 60000;
+        shiftScheduledProgramItems(deltaMs);
+        programAnchorStart = new Date(current.getTime() + deltaMs).toISOString();
         markProgramDirty();
         renderProgramAnchorControls();
         renderProgramEditor();
-        setProgramStatus('Старт сдвинут на ' + (minutes > 0 ? '+' : '') + minutes + ' мин.');
+        setProgramStatus('Программа сдвинута на ' + (minutes > 0 ? '+' : '') + minutes + ' мин., паузы сохранены.');
       } catch (error) {
         setProgramStatus(error.message || 'Не удалось изменить старт.', 'error');
       }
@@ -997,29 +1022,38 @@
 
     function recalculateProgramTimes() {
       syncProgramOrder();
-      if (!programDraft.length) return;
+    }
 
-      if (!programAnchorStart) {
-        programDraft.forEach(item => { item.starts_at = null; });
+    function programStartInputValue(item) {
+      if (!item?.starts_at) return '';
+      const date = new Date(item.starts_at);
+      if (Number.isNaN(date.getTime())) return '';
+      return padProgramNumber(date.getHours()) + ':' + padProgramNumber(date.getMinutes());
+    }
+
+    function setProgramItemStartTime(item, value) {
+      if (!value) {
+        item.starts_at = null;
         return;
       }
 
-      let cursor = new Date(programAnchorStart);
-      if (Number.isNaN(cursor.getTime())) return;
-
-      for (const item of programDraft) {
-        if (!cursor) {
-          item.starts_at = null;
-          continue;
-        }
-        item.starts_at = cursor.toISOString();
-        const duration = programDuration(item);
-        cursor = duration ? new Date(cursor.getTime() + duration * 60000) : null;
+      const [hour, minute] = value.split(':').map(Number);
+      if (!Number.isInteger(hour) || !Number.isInteger(minute)) {
+        throw new Error('Некорректное время блока.');
       }
+
+      const currentParts = programAnchorParts(item.starts_at);
+      const dateValue = programDateInput.value || currentParts.date;
+      if (!dateValue) throw new Error('Сначала укажите дату программы.');
+
+      const [year, month, day] = dateValue.split('-').map(Number);
+      const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+      if (Number.isNaN(date.getTime())) throw new Error('Некорректное время блока.');
+      item.starts_at = date.toISOString();
     }
 
     function formatProgramRange(item) {
-      if (!item?.starts_at) return 'Время не рассчитано';
+      if (!item?.starts_at) return 'Время не задано';
       const start = formatProgramTime(item.starts_at);
       const duration = programDuration(item);
       if (!duration) return start + '–?';
@@ -1127,7 +1161,7 @@
         programDraft = order.map(key => byKey.get(key)).filter(Boolean);
         markProgramDirty();
         renderProgramEditor();
-        setProgramStatus('Порядок изменён перетаскиванием, время пересчитано.');
+        setProgramStatus('Порядок изменён перетаскиванием. Время блоков сохранено.');
       };
 
       window.addEventListener('pointermove', move, { passive: false });
@@ -1143,7 +1177,7 @@
       markProgramDirty();
       renderProgramEditor();
       programList.querySelector(`[data-program-index="${target}"] .program-drag-handle`)?.focus();
-      setProgramStatus('Порядок изменён, время пересчитано.');
+      setProgramStatus('Порядок изменён. Время блоков сохранено.');
     }
     function renderProgramEditor() {
       recalculateProgramTimes();
@@ -1173,6 +1207,9 @@
               </div>
               <label class="program-field">Название
                 <input type="text" maxlength="180" data-program-title="${index}" value="${escapeHtml(item.title || '')}">
+              </label>
+              <label class="program-field">Начало
+                <input type="time" step="300" data-program-start="${index}" value="${programStartInputValue(item)}">
               </label>
             </div>
             <div class="program-duration">
@@ -1210,6 +1247,27 @@
         });
       });
 
+      programList.querySelectorAll('[data-program-start]').forEach(input => {
+        input.addEventListener('change', () => {
+          const index = Number(input.dataset.programStart);
+          const item = programDraft[index];
+          if (!item) return;
+          try {
+            setProgramItemStartTime(item, input.value);
+            if (index === 0) {
+              programAnchorStart = item.starts_at || null;
+              renderProgramAnchorControls();
+            }
+            markProgramDirty();
+            refreshProgramTimingInDom();
+            setProgramStatus('Время начала блока изменено. Остальные блоки не сдвигались.');
+          } catch (error) {
+            input.value = programStartInputValue(item);
+            setProgramStatus(error.message || 'Не удалось изменить время блока.', 'error');
+          }
+        });
+      });
+
       programList.querySelectorAll('[data-program-duration-slider]').forEach(slider => {
         slider.addEventListener('input', () => {
           const index = Number(slider.dataset.programDurationSlider);
@@ -1220,7 +1278,7 @@
           const number = programList.querySelector(`[data-program-duration-number="${index}"]`);
           if (number) number.value = slider.value;
           refreshProgramTimingInDom();
-          setProgramStatus('Длительность изменена, время пересчитано.');
+          setProgramStatus('Длительность изменена. Время следующих блоков не менялось.');
         });
       });
 
@@ -1239,7 +1297,7 @@
             slider.value = String(Math.max(5, value));
           }
           refreshProgramTimingInDom();
-          setProgramStatus('Длительность изменена, время пересчитано.');
+          setProgramStatus('Длительность изменена. Время следующих блоков не менялось.');
         });
         input.addEventListener('change', () => {
           const value = input.value === '' ? null : Math.max(1, Math.round(Number(input.value)));
@@ -1399,7 +1457,7 @@
         renderProgramAnchorControls();
         renderProgramEditor();
         programDirty = false;
-        setProgramStatus('Program v2: организационные блоки пока не отображаются на гостевой странице до следующего этапа.');
+        setProgramStatus('Время начала каждого блока сохраняется отдельно. LIVE переключается отдельно.');
         programDateInput.focus();
       } catch (error) {
         programDraft = [];
@@ -1514,18 +1572,11 @@
     programSaveBtn.addEventListener('click', async () => {
       if (programSaving || programCreatingSession || !state.room?.event_key || !programDraft.length) return;
 
-      try {
-        programAnchorStart = readProgramAnchorControls();
-        renderProgramAnchorControls();
-        recalculateProgramTimes();
-      } catch (error) {
-        setProgramStatus(error.message || 'Проверьте старт программы.', 'error');
-        return;
-      }
+      syncProgramOrder();
 
       let payload;
       try {
-        if (programAnchorStart && programDraft.some(item => !programDuration(item))) {
+        if (programDraft.some(item => item.starts_at && !programDuration(item))) {
           throw new Error('Для расписания задайте длительность каждого блока.');
         }
 
