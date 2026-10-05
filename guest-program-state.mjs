@@ -84,6 +84,7 @@ export function deriveGuestProgramState(items, operationalCurrentRoom, now = Dat
     && currentItem.room_id != null
     && operationalRoomId != null
     && String(currentItem.room_id) === String(operationalRoomId)
+    && operationalCurrentRoom?.is_questions_open === true
   );
 
   const transitionCandidates = scheduledItems.flatMap(item => {
