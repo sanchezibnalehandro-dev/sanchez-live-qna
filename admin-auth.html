@@ -643,12 +643,11 @@
               <div class="live-statuses"><span class="live-chip"><i class="dot"></i><span id="realtimeStatus">Подключение…</span></span><button class="btn ghost" id="refreshBtn" style="padding:8px 10px;" aria-label="Обновить данные" title="Обновить данные"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5.5"/><path d="M20 4v7h-7"/></svg></button><div class="qr-menu" id="qrMenu"><button class="btn ghost" id="qrBtn" style="padding:8px 10px;" type="button" aria-expanded="false" aria-controls="qrPanel"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 15h2v2h-2zM19 15h1v5h-5v-2h2v-2h2z"/></svg>QR</button><div class="qr-panel" id="qrPanel" hidden><div class="qr-panel-head"><div class="qr-panel-title"><strong>Гостевой QR</strong><span>Ссылка для гостей и готовые файлы для технической службы</span></div><button class="qr-close" id="qrCloseBtn" type="button" aria-label="Закрыть QR">×</button></div><div class="qr-code-frame"><img id="qrImg" src="" width="640" height="640" alt="QR-код гостевой страницы"></div><div class="qr-url-row"><div class="qr-url" id="qrUrl"></div><button class="qr-copy" id="qrCopyBtn" type="button" aria-label="Скопировать гостевую ссылку" title="Скопировать ссылку"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></button></div><div class="qr-actions"><button class="btn primary" id="qrDownloadBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>Скачать QR · PNG 1000</button><button class="btn ghost" id="qrScreenBtn" type="button"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Экран 16:9 · PNG</button></div><div class="qr-hint" id="qrHint">QR ведёт на production-гостевую страницу.</div></div></div><button class="btn ghost" id="openGuestBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Гостевая</button><button class="btn ghost" id="openModBtn" style="padding:8px 10px;"><svg class="icon inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></svg>Модератор</button></div>
             </div>
             <div class="event-session-control" id="eventSessionControl" hidden>
-              <div class="event-session-label"><strong>Редактируемая Q&amp;A-сессия</strong><span>Навигация, не эфир</span></div>
+              <div class="event-session-label"><strong>Просмотр сессии</strong><span>Не переключает эфир</span></div>
               <select class="event-session-select" id="eventSessionSelect" aria-label="Просматриваемая сессия"></select>
               <span class="event-session-state" id="eventSessionState"></span>
               <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
               <button class="btn ghost event-session-program" id="eventProgramBtn" type="button">Эфир / программа</button>
-              <div class="event-live-program-state" id="eventLiveProgramState">Сейчас в эфире: загрузка…</div>
             </div>
             
             <div class="event-live-cue" id="eventLiveCue" hidden>
@@ -945,6 +944,7 @@
     let unsubscribeEvent = null;
     let liveCueClockTimer = null;
     let liveCueBusy = false;
+    let intakeNudge = false;
     let _refreshing = false;
     let _pendingRefresh = false;
     let _pendingRealtimeRefresh = false;
@@ -1084,10 +1084,16 @@
       return new Date(nowMs).toLocaleTimeString('ru-RU', {
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit',
         hour12: false,
         timeZone: roomBrand.timeZone || undefined
       });
+    }
+
+    function eventTimeZoneLabel(nowMs = Date.now()) {
+      if (!roomBrand.timeZone) return '';
+      const part = new Intl.DateTimeFormat('ru-RU', { timeZone: roomBrand.timeZone, timeZoneName: 'short' })
+        .formatToParts(new Date(nowMs)).find(p => p.type === 'timeZoneName');
+      return part?.value || roomBrand.timeZone;
     }
 
     function renderEventLiveProgramState(programItems) {
@@ -1109,7 +1115,7 @@
 
       const model = buildEventLiveCueModel(programItems, nowMs);
       const { current, next } = model;
-      liveCueClock.textContent = formatEventClock(nowMs) + (roomBrand.timeZone ? ' · MSK' : '');
+      liveCueClock.textContent = formatEventClock(nowMs) + (roomBrand.timeZone ? ' · ' + eventTimeZoneLabel(nowMs) : '');
       liveCueTiming.dataset.state = model.timingState;
       liveCueTimingText.textContent = model.timingText;
       liveCueTimingHint.textContent = model.timingHint;
@@ -1138,6 +1144,10 @@
       if (canControlIntake) {
         liveCueIntakeBtn.textContent = current.is_questions_open ? 'Закрыть вопросы' : 'Включить вопросы';
       }
+      liveCueIntakeBtn.classList.toggle(
+        'is-attention',
+        intakeNudge && canControlIntake && current.is_questions_open !== true
+      );
 
       if (next) {
         liveCueNextKicker.textContent = 'Далее' + (next.starts_at ? ' · ' + formatProgramTime(next.starts_at) : '');
@@ -1235,6 +1245,7 @@
         } else {
           await setCurrentEventProgramItem(model.next.id);
         }
+        intakeNudge = action === 'next';
         await refresh();
         await refreshEventLiveContext();
         setStatus(
@@ -1268,6 +1279,7 @@
       setStatus(nextOpen ? 'Открываю приём вопросов…' : 'Закрываю приём вопросов…');
       try {
         await setRoomQuestionsOpen(current.room_id, nextOpen);
+        intakeNudge = false;
         await refresh();
         await refreshEventLiveContext();
         setStatus(
@@ -1834,6 +1846,7 @@
       setProgramStatus('Переключаю текущий блок…');
       try {
         await setCurrentEventProgramItem(item.id);
+        intakeNudge = item.kind === 'session';
         await refresh();
         await reloadProgramLiveState();
         setStatus('Текущий блок мероприятия переключён.', 'success');
@@ -1857,6 +1870,7 @@
       setProgramStatus('Завершаю текущий блок…');
       try {
         await clearCurrentEventProgramItem(state.room.event_key);
+        intakeNudge = false;
         await refresh();
         await reloadProgramLiveState();
         setStatus('Текущий блок снят. Q&A-сессия не активна.', 'success');
@@ -3227,12 +3241,17 @@
       });
       roomLabel.textContent = `Комната: ${state.room?.slug || roomSlug}`;
       const activeSpeaker = state.speakers.find(speaker => speaker.is_active);
-      document.getElementById('liveContextLabel').textContent = isPanel
-        ? (state.room?.event_key ? (state.room?.is_current_session ? 'Текущая сессия' : 'Сессия не в эфире') : 'Сессия')
-        : 'Сейчас в эфире';
+      const isEventRoom = Boolean(state.room?.event_key);
+      const isLiveSession = !isEventRoom || Boolean(state.room?.is_current_session);
+      const liveLabelEl = document.getElementById('liveContextLabel');
+      liveLabelEl.textContent = !isLiveSession
+        ? 'Сессия не в эфире'
+        : isPanel ? (isEventRoom ? 'Текущая сессия' : 'Сессия') : 'Сейчас в эфире';
+      liveLabelEl.dataset.live = isLiveSession ? 'on' : 'off';
       activeSpeakerName.textContent = isPanel
         ? (state.room?.title || state.room?.fallback_label || 'Сессия')
         : (activeSpeaker?.name || activeSpeaker?.fallback_label || 'Активный спикер не выбран');
+      activeSpeakerName.title = activeSpeakerName.textContent;
       document.getElementById('speakersPanelTitle').textContent = isPanel ? 'Участники сессии' : 'Спикеры';
       document.getElementById('speakersPanelSubtitle').textContent = isPanel ? 'Состав панели · порядок программы' : 'Участники · порядок программы';
       document.getElementById('editorTitle').textContent = isPanel ? 'Редактор участника' : 'Редактор спикера';
@@ -3267,6 +3286,7 @@
       const liveIntakeStatus = document.getElementById('liveIntakeStatus');
       liveIntakeStatus.dataset.state = eventRoomInactive ? 'neutral' : state.room?.is_questions_open ? 'success' : 'warning';
       liveIntakeStatus.textContent = eventRoomInactive ? 'Не в эфире' : state.room?.is_questions_open ? 'Приём открыт' : 'Приём закрыт';
+      liveIntakeStatus.hidden = eventRoomInactive;
       document.getElementById('liveAccordionSummary').textContent = `Приём вопросов · ${eventRoomInactive ? 'не в эфире' : state.room?.is_questions_open ? 'открыт' : 'закрыт'}`;
       modSub.textContent = moderationPending
         ? 'Сохраняю…'
