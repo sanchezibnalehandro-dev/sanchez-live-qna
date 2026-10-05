@@ -132,3 +132,30 @@ test('explicit current block stays NOW even after its scheduled end', () => {
   assert.equal(view.heroItem.id, 1);
   assert.equal(view.canAskCurrent, true);
 });
+
+test('live cursor defines completed and upcoming blocks by program order, not clock', () => {
+  const view = deriveGuestProgramState([
+    item({ id: 1, session_order: 10, starts_at: '2026-10-05T12:00:00Z' }),
+    item({ id: 2, session_order: 20, starts_at: '2026-10-05T08:00:00Z', is_current: true }),
+    item({ id: 3, session_order: 30, starts_at: '2026-10-05T07:00:00Z' })
+  ], { id: 11, is_questions_open: false }, NOW);
+
+  assert.equal(view.orderedItems[0].scheduleState, PROGRAM_ITEM_STATE.PAST);
+  assert.equal(view.orderedItems[1].scheduleState, PROGRAM_ITEM_STATE.NOW);
+  assert.equal(view.orderedItems[2].scheduleState, PROGRAM_ITEM_STATE.FUTURE);
+  assert.equal(view.nextItem.id, 3);
+});
+
+test('without live cursor clock still handles before-start and after-event states', () => {
+  const before = deriveGuestProgramState([
+    item({ starts_at: '2026-10-05T10:00:00Z' })
+  ], null, Date.parse('2026-10-05T09:00:00Z'));
+  assert.equal(before.orderedItems[0].scheduleState, PROGRAM_ITEM_STATE.FUTURE);
+  assert.equal(before.heroState, PROGRAM_HERO_STATE.NEXT);
+
+  const after = deriveGuestProgramState([
+    item({ starts_at: '2026-10-05T07:00:00Z', duration_minutes: 30 })
+  ], null, NOW);
+  assert.equal(after.orderedItems[0].scheduleState, PROGRAM_ITEM_STATE.PAST);
+  assert.equal(after.heroState, PROGRAM_HERO_STATE.COMPLETE);
+});
