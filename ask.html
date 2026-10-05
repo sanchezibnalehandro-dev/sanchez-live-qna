@@ -12,6 +12,7 @@
       const room = (params.get('room') || '').trim();
       const event = (params.get('event') || '').trim();
       const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
+      document.documentElement.classList.toggle('event-route', Boolean(event));
       document.querySelector('[data-brand-stylesheet]').href = isTasigo ? './brands/tasigo-esg.css' : './brands/sanchez.css';
     })();
   </script>
@@ -41,6 +42,123 @@
       font-size: 10px;
       font-weight: 800;
     }
+
+    .guest-session-inner { padding: 24px; }
+
+    .event-route .guest-shell {
+      width: min(880px, 100%);
+      max-width: 880px;
+      margin: 0 auto;
+      padding: max(16px, env(safe-area-inset-top)) 14px max(34px, env(safe-area-inset-bottom));
+    }
+    .event-route .guest-event-top {
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .event-route .guest-event-brand {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .event-route .guest-event-brand .brand-logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+    }
+    .event-route .guest-event-brand-copy {
+      min-width: 0;
+      display: grid;
+      gap: 1px;
+    }
+    .event-route .guest-event-brand-copy strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .event-route .guest-event-brand-copy span {
+      color: var(--color-text-secondary);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .event-route .guest-event-nav {
+      margin-top: 0;
+      flex: 0 0 auto;
+    }
+    .event-route .guest-event-nav a[aria-current="page"] {
+      border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+      background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface-subtle));
+    }
+    .event-route .guest-session-card {
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent 38%),
+        var(--color-surface-raised);
+    }
+    .event-route .guest-session-card::after {
+      content: '';
+      position: absolute;
+      top: 28px;
+      right: 30px;
+      width: 70px;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--color-accent);
+      opacity: .75;
+      pointer-events: none;
+    }
+    .event-route .guest-session-card .guest-session-inner {
+      padding: clamp(24px, 6vw, 46px);
+    }
+    .event-route .guest-session-brand { display: none; }
+    .event-route .guest-session-head {
+      justify-content: flex-end !important;
+      margin-bottom: 10px;
+    }
+    .event-route .guest-session-card .surface-kicker {
+      margin-bottom: 8px;
+      color: var(--color-accent-text);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .18em;
+    }
+    .event-route .guest-session-card #speakerName {
+      max-width: 720px;
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 6vw, 52px);
+      line-height: 1.04;
+      letter-spacing: -.04em;
+    }
+    .event-route .guest-session-card #speakerMeta {
+      max-width: 720px;
+      margin-top: 12px;
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .event-route .guest-session-card #panelParticipants {
+      max-width: 720px;
+      margin-top: 18px !important;
+    }
+    .event-route #receptionIndicator {
+      position: relative;
+      z-index: 1;
+    }
+    .event-route .closed-banner { display: none !important; }
+    .event-route #formCard .card-inner {
+      width: min(720px, 100%);
+      margin-inline: auto;
+    }
+    .event-route .mobile-intake-status { display: none !important; }
 
     /* Кнопка отправки — полная ширина */
     #submitBtn { width: 100%; padding: 14px; font-size: 15px; }
@@ -391,6 +509,33 @@
       .question-header-actions, .question-sort { width: 100%; }
       .question-sort-btn { flex: 1; }
     }
+    @media (max-width: 767px) {
+      .event-route .guest-event-top {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .event-route .guest-event-nav {
+        width: 100%;
+        justify-content: stretch;
+      }
+      .event-route .guest-event-nav a {
+        flex: 1 1 0;
+      }
+      .event-route .guest-session-card::after { display: none; }
+      .event-route .guest-session-head {
+        justify-content: flex-start !important;
+      }
+      .event-route #receptionIndicator {
+        display: inline-flex !important;
+      }
+      .event-route #panelParticipants {
+        display: none !important;
+      }
+      .event-route .guest-session-card .guest-session-inner {
+        padding: 22px 20px;
+      }
+    }
+
     @media (hover: hover) {
       .participant-chip:hover { border-color: var(--color-border-strong); color: var(--color-text); }
       .vote-btn-circle:hover { background: color-mix(in srgb, var(--color-accent-hover) 22%, transparent); transform: scale(1.08); }
@@ -407,12 +552,23 @@
   <div class="app" id="appShell" inert aria-hidden="true">
     <main class="shell guest-shell">
 
-      <!-- Шапка -->
-      <section class="card">
-        <div class="card-inner" style="padding:24px;">
+      <section class="card guest-event-top" id="guestEventHeader" hidden>
+        <div class="guest-event-brand">
+          <div class="brand-logo-mark" data-brand-mark></div>
+          <div class="guest-event-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div>
+        </div>
+        <nav class="guest-event-nav" id="guestEventNav" aria-label="Разделы мероприятия">
+          <a id="guestHomeLink" href="#">Главная</a>
+          <a id="guestProgramLink" href="#">Программа</a>
+        </nav>
+      </section>
+
+      <!-- Текущая сессия -->
+      <section class="card guest-session-card">
+        <div class="card-inner guest-session-inner">
           <div class="surface-kicker">LIVE Q&amp;A</div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div class="brand-logo">
+          <div class="guest-session-head" style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div class="brand-logo guest-session-brand">
               <div class="brand-logo-mark" data-brand-mark></div>
               <span class="brand-logo-text"><span data-brand-name></span> · <span data-brand-product></span></span>
             </div>
@@ -421,10 +577,6 @@
               <span id="receptionLabel">Приём открыт</span>
             </span>
           </div>
-          <nav class="guest-event-nav" id="guestEventNav" aria-label="Разделы мероприятия" hidden>
-            <a id="guestHomeLink" href="#">Главная</a>
-            <a id="guestProgramLink" href="#">Программа</a>
-          </nav>
           <h1 id="speakerName" style="margin-top:4px;">Задать вопрос</h1>
           <p class="subcopy" id="speakerMeta">Загрузка данных спикера…</p>
           <div id="panelParticipants" style="display:none; margin-top:16px;">
@@ -520,6 +672,7 @@
     const appShell = document.getElementById('appShell');
     const bootstrapScreen = document.getElementById('bootstrapScreen');
     const bootstrapMessage = document.getElementById('bootstrapMessage');
+    const guestEventHeader = document.getElementById('guestEventHeader');
     const guestEventNav = document.getElementById('guestEventNav');
     const guestHomeLink = document.getElementById('guestHomeLink');
     const guestProgramLink = document.getElementById('guestProgramLink');
@@ -531,7 +684,7 @@
       const eventQuery = '?event=' + encodeURIComponent(eventKey);
       guestHomeLink.href = './welcome.html' + eventQuery;
       guestProgramLink.href = './program.html' + eventQuery;
-      guestEventNav.hidden = false;
+      guestEventHeader.hidden = false;
     }
 
     function finishBootstrap() {
