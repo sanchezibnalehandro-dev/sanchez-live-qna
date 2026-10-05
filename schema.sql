@@ -610,6 +610,8 @@ begin
     raise exception 'Program payload must be an array' using errcode = '22023';
   end if;
 
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_event_key));
+
   if exists (
     select 1
     from public.qna_event_program_items
@@ -776,6 +778,8 @@ begin
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
     raise exception 'Program payload must be a non-empty array' using errcode = '22023';
   end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_event_key));
 
   select count(*),
          count(distinct session_order),
