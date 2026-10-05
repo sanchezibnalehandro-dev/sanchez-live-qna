@@ -43,6 +43,8 @@
       font-weight: 800;
     }
 
+    .guest-session-inner { padding: 24px; }
+
     .event-route .guest-shell {
       width: min(880px, 100%);
       max-width: 880px;
@@ -558,13 +560,12 @@
         <nav class="guest-event-nav" id="guestEventNav" aria-label="Разделы мероприятия">
           <a id="guestHomeLink" href="#">Главная</a>
           <a id="guestProgramLink" href="#">Программа</a>
-          <a href="#" aria-current="page" onclick="return false;">Задать вопрос</a>
         </nav>
       </section>
 
       <!-- Текущая сессия -->
       <section class="card guest-session-card">
-        <div class="card-inner guest-session-inner" style="padding:24px;">
+        <div class="card-inner guest-session-inner">
           <div class="surface-kicker">LIVE Q&amp;A</div>
           <div class="guest-session-head" style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div class="brand-logo guest-session-brand">
