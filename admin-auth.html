@@ -1136,6 +1136,7 @@
     }
 
     function moveProgramItemByKeyboard(index, direction) {
+      if (programSaving) return;
       const target = index + direction;
       if (target < 0 || target >= programDraft.length) return;
       [programDraft[index], programDraft[target]] = [programDraft[target], programDraft[index]];
