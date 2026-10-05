@@ -834,6 +834,7 @@
     let programAnchorStart = null;
     let programSaving = false;
     let programCreatingSession = false;
+    let programDirty = false;
     let pendingProgramSessionMode = null;
     let programHasImmediateSessionWrite = false;
     let programDraftKey = 0;
@@ -883,6 +884,10 @@
     function setProgramStatus(message, type = '') {
       programStatus.textContent = message;
       programStatus.className = `program-status ${type}`.trim();
+    }
+
+    function markProgramDirty() {
+      programDirty = true;
     }
 
     function padProgramNumber(value) {
@@ -965,6 +970,7 @@
         normalizeProgramClockField(programHourInput, 23);
         normalizeProgramClockField(programMinuteInput, 59);
         programAnchorStart = readProgramAnchorControls();
+        markProgramDirty();
         renderProgramEditor();
         setProgramStatus('Старт изменён, расписание пересчитано.');
       } catch (error) {
@@ -980,6 +986,7 @@
         }
         const next = new Date(new Date(programAnchorStart).getTime() + minutes * 60000);
         programAnchorStart = next.toISOString();
+        markProgramDirty();
         renderProgramAnchorControls();
         renderProgramEditor();
         setProgramStatus('Старт сдвинут на ' + (minutes > 0 ? '+' : '') + minutes + ' мин.');
@@ -1118,6 +1125,7 @@
         const order = [...programList.querySelectorAll('.program-row')].map(row => row.dataset.programKey);
         const byKey = new Map(programDraft.map(item => [ensureProgramItemKey(item), item]));
         programDraft = order.map(key => byKey.get(key)).filter(Boolean);
+        markProgramDirty();
         renderProgramEditor();
         setProgramStatus('Порядок изменён перетаскиванием, время пересчитано.');
       };
@@ -1131,6 +1139,7 @@
       const target = index + direction;
       if (target < 0 || target >= programDraft.length) return;
       [programDraft[index], programDraft[target]] = [programDraft[target], programDraft[index]];
+      markProgramDirty();
       renderProgramEditor();
       programList.querySelector(`[data-program-index="${target}"] .program-drag-handle`)?.focus();
       setProgramStatus('Порядок изменён, время пересчитано.');
@@ -1195,6 +1204,7 @@
           const item = programDraft[Number(input.dataset.programTitle)];
           if (!item) return;
           item.title = input.value;
+          markProgramDirty();
           setProgramStatus('Есть несохранённые изменения.');
         });
       });
@@ -1205,6 +1215,7 @@
           const item = programDraft[index];
           if (!item) return;
           item.duration_minutes = Number(slider.value);
+          markProgramDirty();
           const number = programList.querySelector(`[data-program-duration-number="${index}"]`);
           if (number) number.value = slider.value;
           refreshProgramTimingInDom();
@@ -1220,6 +1231,7 @@
           const value = input.value === '' ? null : Math.max(1, Math.round(Number(input.value)));
           if (value !== null && !Number.isFinite(value)) return;
           item.duration_minutes = value;
+          markProgramDirty();
           const slider = programList.querySelector(`[data-program-duration-slider="${index}"]`);
           if (slider && value !== null) {
             slider.max = String(Math.max(180, Math.ceil(value / 60) * 60));
@@ -1238,6 +1250,7 @@
           const index = Number(button.dataset.programRemove);
           if (programDraft[index]?.kind !== 'service') return;
           programDraft.splice(index, 1);
+          markProgramDirty();
           renderProgramEditor();
           setProgramStatus('Организационный блок удалён из черновика.');
         });
@@ -1248,12 +1261,17 @@
           if (programCreatingSession || programSaving) return;
           const item = programDraft[Number(button.dataset.programConfigure)];
           if (!item?.slug) return;
+          if (programDirty) {
+            setProgramStatus('Есть несохранённые изменения программы. Сохраните программу перед настройкой сессии.', 'error');
+            return;
+          }
           location.href = `./admin-auth.html?room=${encodeURIComponent(item.slug)}`;
         });
       });
     }
 
     function addServiceProgramItem(title, duration) {
+      markProgramDirty();
       programDraft.push({
         id: null,
         event_key: state.room.event_key,
@@ -1363,6 +1381,7 @@
     async function openProgramEditor() {
       if (!state.room?.event_key) return;
       programHasImmediateSessionWrite = false;
+      programDirty = false;
       syncProgramCloseSemantics();
       setProgramSessionCreateConfirmation(null);
       programModal.hidden = false;
@@ -1378,6 +1397,7 @@
         programAnchorStart = programDraft[0]?.starts_at || null;
         renderProgramAnchorControls();
         renderProgramEditor();
+        programDirty = false;
         setProgramStatus('Program v2: организационные блоки пока не отображаются на гостевой странице до следующего этапа.');
         programDateInput.focus();
       } catch (error) {
@@ -1397,6 +1417,7 @@
       setProgramSessionCreateConfirmation(null);
       programDraft = [];
       programAnchorStart = null;
+      programDirty = false;
       programHasImmediateSessionWrite = false;
       syncProgramCloseSemantics();
     }
@@ -1545,6 +1566,7 @@
         programModal.hidden = true;
         programDraft = [];
         programAnchorStart = null;
+        programDirty = false;
       } catch (error) {
         setProgramStatus(error.message || 'Не удалось сохранить программу.', 'error');
       } finally {
