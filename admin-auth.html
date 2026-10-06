@@ -1019,7 +1019,10 @@
     let unsubscribeEvent = null;
     let liveCueClockTimer = null;
     let liveCueBusy = false;
+    let eventLiveContextUnavailable = false;
     let intakeNudge = false;
+    let completedProgramCursor = null;
+    let loggingOut = false;
     let _refreshing = false;
     let _pendingRefresh = false;
     let _pendingRealtimeRefresh = false;
@@ -1097,18 +1100,37 @@
 
     function buildEventLiveCueModel(programItems, nowMs = Date.now()) {
       const ordered = [...(programItems || [])].sort(compareLiveProgramItems);
+      const programContextKey = ordered.map(item => `${item.id}:${item.session_order}`).join('|');
       const currentIndex = ordered.findIndex(item => item.is_current === true);
       const current = currentIndex >= 0 ? ordered[currentIndex] : null;
       let next = currentIndex >= 0 ? (ordered[currentIndex + 1] || null) : null;
 
       if (!current) {
-        next = ordered.find(item => {
+        let candidates = ordered;
+        if (
+          completedProgramCursor?.eventKey === state.room?.event_key
+          && completedProgramCursor.programContextKey === programContextKey
+        ) {
+          const completedIndex = ordered.findIndex(item => String(item.id) === String(completedProgramCursor.itemId));
+          if (completedIndex >= 0) {
+            candidates = ordered.slice(completedIndex + 1);
+          } else {
+            completedProgramCursor = null;
+          }
+        } else if (completedProgramCursor) {
+          completedProgramCursor = null;
+        }
+
+        next = candidates.find(item => {
+          if (!item?.starts_at) return true;
           const endMs = liveProgramItemEndMs(item);
           return endMs != null && endMs > nowMs;
-        }) || ordered.find(item => {
+        }) || candidates.find(item => {
           const startMs = Date.parse(item?.starts_at);
           return Number.isFinite(startMs) && startMs > nowMs;
         }) || null;
+      } else {
+        completedProgramCursor = null;
       }
 
       let timingState = 'neutral';
@@ -1152,7 +1174,7 @@
         }
       }
 
-      return { ordered, current, next, timingState, timingText, timingHint, progress };
+      return { ordered, current, next, timingState, timingText, timingHint, progress, programContextKey };
     }
 
     function formatEventClock(nowMs = Date.now()) {
@@ -1185,8 +1207,8 @@
     function renderEventLiveCue(programItems = state.eventProgramItems, nowMs = Date.now()) {
       if (!eventLiveCue) return;
       const isEventRoom = Boolean(state.room?.event_key);
-      eventLiveCue.hidden = !isEventRoom;
-      if (!isEventRoom) return;
+      eventLiveCue.hidden = !isEventRoom || eventLiveContextUnavailable;
+      if (!isEventRoom || eventLiveContextUnavailable) return;
 
       const model = buildEventLiveCueModel(programItems, nowMs);
       const { current, next } = model;
@@ -1288,11 +1310,22 @@
     }
 
     async function loadEventSessionSelector() {
-      const [eventRooms, programItems] = await Promise.all([
-        listEventRooms(state.room?.event_key),
-        listEventProgramItems(state.room?.event_key)
-      ]);
+      let eventRooms;
+      let programItems;
+      try {
+        [eventRooms, programItems] = await Promise.all([
+          listEventRooms(state.room?.event_key),
+          listEventProgramItems(state.room?.event_key)
+        ]);
+      } catch (error) {
+        eventLiveContextUnavailable = true;
+        if (eventLiveCue) eventLiveCue.hidden = true;
+        render();
+        throw error;
+      }
+      eventLiveContextUnavailable = false;
       renderEventSessionSelector(eventRooms, programItems);
+      render();
     }
     async function refreshEventLiveContext() {
       await loadEventSessionSelector();
@@ -1317,8 +1350,14 @@
       try {
         if (action === 'finish') {
           await clearCurrentEventProgramItem(state.room.event_key);
+          completedProgramCursor = {
+            eventKey: state.room.event_key,
+            itemId: model.current.id,
+            programContextKey: model.programContextKey
+          };
         } else {
           await setCurrentEventProgramItem(model.next.id);
+          completedProgramCursor = null;
         }
         intakeNudge = action === 'next';
         await refresh();
@@ -1921,6 +1960,7 @@
       setProgramStatus('Переключаю текущий блок…');
       try {
         await setCurrentEventProgramItem(item.id);
+        completedProgramCursor = null;
         intakeNudge = item.kind === 'session';
         await refresh();
         await reloadProgramLiveState();
@@ -1941,10 +1981,19 @@
         return;
       }
       programActivatingLive = true;
+      const liveModel = buildEventLiveCueModel(programDraft);
+      const currentItem = liveModel.current || state.eventProgramItems.find(item => item.is_current);
       renderProgramEditor();
       setProgramStatus('Завершаю текущий блок…');
       try {
         await clearCurrentEventProgramItem(state.room.event_key);
+        completedProgramCursor = currentItem?.id == null
+          ? null
+          : {
+              eventKey: state.room.event_key,
+              itemId: currentItem.id,
+              programContextKey: liveModel.programContextKey
+            };
         intakeNudge = false;
         await refresh();
         await reloadProgramLiveState();
@@ -2068,6 +2117,7 @@
 
     async function openProgramEditor() {
       if (!state.room?.event_key) return;
+      programCloseConfirm.hidden = true;
       programHasImmediateSessionWrite = false;
       programDirty = false;
       syncProgramCloseSemantics();
@@ -2257,6 +2307,7 @@
       setProgramStatus('Сохраняю Program v2…');
       try {
         await saveEventProgram(state.room.event_key, payload);
+        completedProgramCursor = null;
         await refresh();
         await loadEventSessionSelector();
         setStatus('Программа сохранена.', 'success');
@@ -2410,7 +2461,7 @@
     void boot().catch(showBootstrapError);
 
     window.addEventListener('beforeunload', event => {
-      if ((!programModal.hidden && programDirty) || editorState.dirty) {
+      if (!loggingOut && ((!programModal.hidden && programDirty) || editorState.dirty)) {
         event.preventDefault();
         event.returnValue = '';
       }
@@ -2464,7 +2515,6 @@
       });
       document.getElementById('logoutCancelBtn').addEventListener('click', resetLogoutUI);
       const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
-      let loggingOut = false;
       logoutConfirmBtn.addEventListener('click', async () => {
         if (loggingOut) return;
         loggingOut = true;
@@ -3354,7 +3404,12 @@
           ? 'Сначала сделайте сессию текущей'
           : state.room?.is_questions_open ? 'Гости могут отправлять вопросы' : 'Закрыт для гостей';
       const questionsOpenControl = document.getElementById('questionsOpenControl');
-      questionsOpenControl.hidden = Boolean(state.room?.event_key);
+      const showEventIntakeFallback = Boolean(
+        state.room?.event_key
+        && eventLiveContextUnavailable
+        && !eventRoomInactive
+      );
+      questionsOpenControl.hidden = Boolean(state.room?.event_key) && !showEventIntakeFallback;
       questionsOpenControl.dataset.state = questionsOpenPending ? 'neutral' : eventRoomInactive ? 'warning' : state.room?.is_questions_open ? 'success' : 'warning';
       const liveIntakeStatus = document.getElementById('liveIntakeStatus');
       liveIntakeStatus.dataset.state = eventRoomInactive ? 'neutral' : state.room?.is_questions_open ? 'success' : 'warning';
