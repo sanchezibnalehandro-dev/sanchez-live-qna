@@ -2569,9 +2569,9 @@
             : `room=${encodeURIComponent(roomSlug)}`;
           location.href = `./login-auth.html?${route}&next=admin`;
         } catch (error) {
+          loggingOut = false;
           setStatus(error?.message || 'Не удалось выйти из аккаунта.', 'error');
         } finally {
-          loggingOut = false;
           if (logoutConfirmBtn.isConnected) {
             logoutConfirmBtn.disabled = false;
             logoutConfirmBtn.removeAttribute('aria-busy');
