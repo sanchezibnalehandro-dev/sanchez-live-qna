@@ -2969,17 +2969,13 @@
       const qrDownloadBtn = document.getElementById('qrDownloadBtn');
       const qrScreenBtn = document.getElementById('qrScreenBtn');
       const qrHint = document.getElementById('qrHint');
-      const QR_PRODUCTION_ORIGIN = 'https://sanchez-live-qna.vercel.app';
+      const QR_PRODUCTION_ORIGIN = 'https://qna.sanchez-ai.ru';
 
       function qrGuestUrl() {
-        const host = location.hostname;
-        const isLocal = host === 'localhost' || host === '127.0.0.1';
-        const isVercelPreview = host.endsWith('.vercel.app') && host !== 'sanchez-live-qna.vercel.app';
-        const origin = isLocal || isVercelPreview ? QR_PRODUCTION_ORIGIN : location.origin;
         const path = state.room?.event_key
           ? '/welcome.html?event=' + encodeURIComponent(state.room.event_key)
           : '/ask.html?room=' + encodeURIComponent(roomSlug);
-        return origin + path;
+        return QR_PRODUCTION_ORIGIN + path;
       }
 
       function qrImageUrl(url, size = 640) {
