@@ -1022,6 +1022,7 @@
     let eventLiveContextUnavailable = false;
     let intakeNudge = false;
     let completedProgramCursor = null;
+    const completedProgramCursorStorageKey = 'sanchez-live-admin-program-completion';
     let loggingOut = false;
     let _refreshing = false;
     let _pendingRefresh = false;
@@ -1060,6 +1061,42 @@
       const orderDiff = Number(left?.session_order || 0) - Number(right?.session_order || 0);
       if (orderDiff) return orderDiff;
       return Number(left?.id || 0) - Number(right?.id || 0);
+    }
+
+    function setCompletedProgramCursor(cursor) {
+      completedProgramCursor = cursor;
+      try {
+        if (cursor) {
+          sessionStorage.setItem(completedProgramCursorStorageKey, JSON.stringify(cursor));
+        } else {
+          sessionStorage.removeItem(completedProgramCursorStorageKey);
+        }
+      } catch {}
+    }
+
+    function restoreCompletedProgramCursor() {
+      if (completedProgramCursor) return;
+      try {
+        const raw = sessionStorage.getItem(completedProgramCursorStorageKey);
+        if (!raw) return;
+        const stored = JSON.parse(raw);
+        if (
+          stored
+          && typeof stored.eventKey === 'string'
+          && stored.itemId != null
+          && typeof stored.programContextKey === 'string'
+        ) {
+          completedProgramCursor = {
+            eventKey: stored.eventKey,
+            itemId: stored.itemId,
+            programContextKey: stored.programContextKey
+          };
+        } else {
+          setCompletedProgramCursor(null);
+        }
+      } catch {
+        setCompletedProgramCursor(null);
+      }
     }
 
     function liveProgramItemEndMs(item) {
@@ -1106,6 +1143,7 @@
       let next = currentIndex >= 0 ? (ordered[currentIndex + 1] || null) : null;
 
       if (!current) {
+        restoreCompletedProgramCursor();
         let candidates = ordered;
         if (
           completedProgramCursor?.eventKey === state.room?.event_key
@@ -1115,10 +1153,10 @@
           if (completedIndex >= 0) {
             candidates = ordered.slice(completedIndex + 1);
           } else {
-            completedProgramCursor = null;
+            setCompletedProgramCursor(null);
           }
         } else if (completedProgramCursor) {
-          completedProgramCursor = null;
+          setCompletedProgramCursor(null);
         }
 
         next = candidates.find(item => {
@@ -1130,7 +1168,7 @@
           return Number.isFinite(startMs) && startMs > nowMs;
         }) || null;
       } else {
-        completedProgramCursor = null;
+        setCompletedProgramCursor(null);
       }
 
       let timingState = 'neutral';
@@ -1350,14 +1388,14 @@
       try {
         if (action === 'finish') {
           await clearCurrentEventProgramItem(state.room.event_key);
-          completedProgramCursor = {
+          setCompletedProgramCursor({
             eventKey: state.room.event_key,
             itemId: model.current.id,
             programContextKey: model.programContextKey
-          };
+          });
         } else {
           await setCurrentEventProgramItem(model.next.id);
-          completedProgramCursor = null;
+          setCompletedProgramCursor(null);
         }
         intakeNudge = action === 'next';
         await refresh();
@@ -1960,7 +1998,7 @@
       setProgramStatus('Переключаю текущий блок…');
       try {
         await setCurrentEventProgramItem(item.id);
-        completedProgramCursor = null;
+        setCompletedProgramCursor(null);
         intakeNudge = item.kind === 'session';
         await refresh();
         await reloadProgramLiveState();
@@ -1987,13 +2025,13 @@
       setProgramStatus('Завершаю текущий блок…');
       try {
         await clearCurrentEventProgramItem(state.room.event_key);
-        completedProgramCursor = currentItem?.id == null
+        setCompletedProgramCursor(currentItem?.id == null
           ? null
           : {
               eventKey: state.room.event_key,
               itemId: currentItem.id,
               programContextKey: liveModel.programContextKey
-            };
+            });
         intakeNudge = false;
         await refresh();
         await reloadProgramLiveState();
@@ -2307,7 +2345,7 @@
       setProgramStatus('Сохраняю Program v2…');
       try {
         await saveEventProgram(state.room.event_key, payload);
-        completedProgramCursor = null;
+        setCompletedProgramCursor(null);
         await refresh();
         await loadEventSessionSelector();
         setStatus('Программа сохранена.', 'success');
