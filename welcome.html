@@ -99,6 +99,10 @@
             <strong>Программа дня</strong>
             <span class="event-entry-arrow" aria-hidden="true">→</span>
           </a>
+          <a class="event-entry-action" id="telegramLink" href="https://t.me/+XxDl9Plfr3I2ZjE6" target="_blank" rel="noopener noreferrer" hidden>
+            <strong>Telegram мероприятия</strong>
+            <span class="event-entry-arrow" aria-hidden="true">↗</span>
+          </a>
         </div>
       </section>
 
@@ -124,6 +128,7 @@
     const askLink = document.getElementById('askLink');
     const askClosedState = document.getElementById('askClosedState');
     const programLink = document.getElementById('programLink');
+    const telegramLink = document.getElementById('telegramLink');
     const programCard = document.getElementById('programCard');
     const programLabel = document.getElementById('programLabel');
     const programTime = document.getElementById('programTime');
@@ -302,6 +307,7 @@
       const route = encodeURIComponent(eventKey);
       askLink.href = `./ask.html?event=${route}`;
       programLink.href = `./program.html?event=${route}`;
+      telegramLink.hidden = eventKey !== 'tasigo-esg-2026';
       unsubscribeEvent = subscribeGuestEventProgram(eventKey, () => relevantRoomIds, queueRefresh, setRealtimeStatus);
       try {
         await refresh();
