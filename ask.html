@@ -531,6 +531,10 @@
       .event-route .guest-event-nav a {
         flex: 1 1 0;
       }
+      .event-route .guest-event-nav .guest-telegram-link {
+        min-height: 44px;
+        flex: 1 0 100%;
+      }
       .event-route .guest-session-card::after { display: none; }
       .event-route .guest-session-head {
         justify-content: flex-start !important;
@@ -570,6 +574,7 @@
         <nav class="guest-event-nav" id="guestEventNav" aria-label="Разделы мероприятия">
           <a id="guestHomeLink" href="#">Главная</a>
           <a id="guestProgramLink" href="#">Программа</a>
+          <a class="guest-telegram-link" id="guestTelegramLink" href="https://t.me/+XxDl9Plfr3I2ZjE6" target="_blank" rel="noopener noreferrer" hidden>Telegram мероприятия ↗</a>
         </nav>
       </section>
 
@@ -686,6 +691,7 @@
     const guestEventNav = document.getElementById('guestEventNav');
     const guestHomeLink = document.getElementById('guestHomeLink');
     const guestProgramLink = document.getElementById('guestProgramLink');
+    const guestTelegramLink = document.getElementById('guestTelegramLink');
     const sortButtons = Array.from(document.querySelectorAll('[data-sort]'));
     const sortScope = eventKey ? `event:${eventKey}` : `room:${requestedRoomSlug}`;
     const sortModeKey = `sanchez-live-sort:guest:${sortScope}`;
@@ -694,6 +700,7 @@
       const eventQuery = '?event=' + encodeURIComponent(eventKey);
       guestHomeLink.href = './welcome.html' + eventQuery;
       guestProgramLink.href = './program.html' + eventQuery;
+      guestTelegramLink.hidden = eventKey !== 'tasigo-esg-2026';
       guestEventHeader.hidden = false;
     }
 
