@@ -7,5 +7,7 @@ export const TASIGO_ESG_BRAND = {
   csvPrefix: 'tasigo-esg-qna',
   logoUrl: null,
   faviconUrl: null,
+  heroImageUrl: './assets/tasigo/guest-hero.webp',
+  guestStylesheetHref: './brands/tasigo-esg-guest.css',
   coBrand: 'TASIGO × РБК Татарстан'
 };
