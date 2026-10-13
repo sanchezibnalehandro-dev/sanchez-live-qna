@@ -1,4 +1,5 @@
 import { TASIGO_ESG_BRAND } from './brand-presets/tasigo-esg.js';
+import { KDW_2026_BRAND } from './brand-presets/kdw-2026.js';
 
 export const SANCHEZ_BRAND = {
   key: 'sanchez',
@@ -12,6 +13,12 @@ export const SANCHEZ_BRAND = {
 };
 
 export const BRAND = SANCHEZ_BRAND;
+
+const KDW_2026_ROOM_PREFIX = 'kdw-2026-';
+const KDW_2026_ROOM_BRAND = {
+  ...KDW_2026_BRAND,
+  stylesheetHref: './brands/kdw-2026.css'
+};
 
 const TASIGO_ESG_ROOM_PREFIX = 'tasigo-esg-';
 const TASIGO_ESG_ROOM_BRAND = {
@@ -49,6 +56,9 @@ function initAdminAccordionInertGuard() {
 }
 
 export function getBrandForRoute(roomSlug, eventKey = null) {
+  if (roomSlug?.startsWith(KDW_2026_ROOM_PREFIX) || eventKey?.startsWith(KDW_2026_ROOM_PREFIX)) {
+    return KDW_2026_ROOM_BRAND;
+  }
   if (roomSlug?.startsWith(TASIGO_ESG_ROOM_PREFIX) || eventKey?.startsWith(TASIGO_ESG_ROOM_PREFIX)) {
     return TASIGO_ESG_ROOM_BRAND;
   }
