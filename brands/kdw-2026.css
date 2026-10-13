@@ -199,3 +199,15 @@ body.kdw-network-enabled[data-kdw-surface="questions"] .kdw-guest-network {
 body.kdw-network-enabled[data-kdw-surface="questions"] .kdw-guest-network-veil {
   background: linear-gradient(180deg, rgba(3, 23, 27, .20), rgba(3, 23, 27, .36));
 }
+
+/* The guest program shares KDW's network, while the schedule stays legible. */
+body.kdw-network-enabled[data-kdw-surface="program"] .kdw-guest-network {
+  opacity: .72;
+}
+body.kdw-network-enabled[data-kdw-surface="program"] .kdw-guest-network-veil {
+  background: linear-gradient(180deg, rgba(3, 23, 27, .14), rgba(3, 23, 27, .26));
+}
+body.kdw-network-enabled[data-kdw-surface="program"] .program-page .card,
+body.kdw-network-enabled[data-kdw-surface="program"] .program-page .program-item {
+  background-color: rgba(7, 38, 42, .96);
+}
