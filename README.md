@@ -4,7 +4,7 @@ Live Q&A-инструмент для мероприятий: гости зада
 
 ## Стек
 
-Ванильный HTML/CSS/JS (ES-модули, без сборщиков), Supabase JS v2 через CDN (esm.sh), деплой на Vercel.
+Ванильный HTML/CSS/JS (ES-модули, без сборщиков), Supabase JS v2 через CDN (esm.sh). Основной статический фронтенд — Timeweb App Platform, резервный — Vercel.
 
 ## Рабочий контур
 
@@ -12,12 +12,14 @@ Live Q&A-инструмент для мероприятий: гости зада
 
 Маршруты:
 
-- `/` → редирект на `login-auth.html?room=sanchez-live`
+- `/` → `index.html` перенаправляет на `login-auth.html?room=sanchez-live` (совместимо с обоими хостингами)
 - `login-auth.html` — вход через Supabase Auth
 - `admin-auth.html?room=sanchez-live` — админка (управление комнатой, спикерами, вопросами, god-mode)
 - `mod-auth.html?room=sanchez-live` — окно модератора на сцене (фильтры, статусы, pin, одобрение)
 - `ask.html?room=sanchez-live` — гостевая страница отдельной комнаты (вопросы + голосование ±1)
-- `ask.html?event=<event_key>` — стабильная гостевая ссылка мероприятия; автоматически следует за текущей сессией
+- `welcome.html?event=<event_key>` — стартовая страница мероприятия и основной QR-вход гостей
+- `program.html?event=<event_key>` — гостевая программа мероприятия (существующий Program v2)
+- `ask.html?event=<event_key>` — стабильная гостевая ссылка Q&A мероприятия; автоматически следует за текущей сессией
 - `mod-auth.html?event=<event_key>` — стабильное окно модератора мероприятия; автоматически следует за текущей сессией
 
 ## Основные файлы
@@ -25,7 +27,8 @@ Live Q&A-инструмент для мероприятий: гости зада
 - `supabase-qna.js` — весь слой работы с Supabase (запросы, подписки, утилиты)
 - `supabase-qna-config.js` — URL и publishable key проекта Supabase (публичный клиентский ключ; secret key в репозитории отсутствует)
 - `theme.css` — дизайн-система: тёмно-синий фон, электрик-синие акценты
-- `vercel.json` — редирект корня на login-auth
+- `index.html` — нейтральная к хостингу точка входа (`/` → `login-auth.html`)
+- `vercel.json` — Vercel-специфичный редирект корня на login-auth; не управляет Timeweb
 
 ## Возможности
 
@@ -62,6 +65,13 @@ Realtime Publication: все 5 Q&A/program-таблиц добавлены в `s
 
 ## Деплой
 
-Vercel автодеплой из GitHub (`main` ветка). Статический сайт, без серверных функций.
+**Основной фронтенд:** Timeweb App Platform, статический HTML/CSS/JS, автодеплой из GitHub `main`.
 
-Прод: `https://sanchez-live-qna.vercel.app/`
+- Канонический адрес: **https://qna.sanchez-ai.ru/**
+- Резервный фронтенд: **https://sanchez-live-qna.vercel.app/** (Vercel, из того же `main`).
+- Backend обоих фронтендов: существующий Supabase `xofydbxnficxmiyncygq` (`BLACK_Q_A`). Отдельную базу при переключении хостинга не создаём.
+- Гостевые QR-ссылки всегда используют `https://qna.sanchez-ai.ru`, даже если Admin открыт через резервный Vercel, preview или localhost.
+  - Отдельная комната: `/ask.html?room=<slug>`.
+  - Мероприятие: `/welcome.html?event=<event_key>`.
+
+После изменений, затрагивающих доставку фронтенда, сверяем коммит и доступность основного Timeweb и резервного Vercel. GitHub `main` определяет код, но не подтверждает состояние развёрнутого сайта.
