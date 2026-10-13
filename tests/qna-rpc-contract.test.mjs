@@ -13,7 +13,21 @@ function extractFunction(source, name) {
   const marker = `export ${['normalizeQuestion','cleanOptional'].includes(name) ? '' : 'async '}function ${name}`;
   const start = source.indexOf(marker);
   assert.notEqual(start, -1, `${name} must exist`);
-  const braceStart = source.indexOf('{', start);
+  // Some functions destructure object parameters. Find the body brace after the
+  // closing parameter parenthesis, not the brace inside the signature.
+  const parameterStart = source.indexOf('(', start);
+  let parenthesisDepth = 0;
+  let parameterEnd = -1;
+  for (let index = parameterStart; index < source.length; index++) {
+    if (source[index] === '(') parenthesisDepth++;
+    if (source[index] === ')') parenthesisDepth--;
+    if (source[index] === ')' && parenthesisDepth === 0) {
+      parameterEnd = index;
+      break;
+    }
+  }
+  assert.notEqual(parameterEnd, -1, `${name} signature must be complete`);
+  const braceStart = source.indexOf('{', parameterEnd);
   let depth = 0;
   for (let index = braceStart; index < source.length; index++) {
     if (source[index] === '{') depth++;
