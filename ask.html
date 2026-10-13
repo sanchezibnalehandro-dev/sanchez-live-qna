@@ -680,7 +680,13 @@
     const eventKey = getEventKey();
     const requestedRoomSlug = getRoomSlug();
     let activeRoomSlug = eventKey ? null : requestedRoomSlug;
-    applyBrandIdentity('guest', getBrandForRoute(requestedRoomSlug, eventKey));
+    const guestBrand = getBrandForRoute(requestedRoomSlug, eventKey);
+    applyBrandIdentity('guest', guestBrand);
+    if (guestBrand.key === 'kdw-2026') {
+      void import('./kdw-guest-background.js')
+        .then(({ initKdwGuestBackground }) => initKdwGuestBackground('questions'))
+        .catch(error => console.warn('KDW guest background unavailable', error));
+    }
     let sessionId = null;
 
     const appShell = document.getElementById('appShell');
