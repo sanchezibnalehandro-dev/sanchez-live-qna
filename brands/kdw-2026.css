@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+
+/* KDW 2026 visual treatment based on the public forum palette.
+   Temporary typographic KDW mark, not an official logo file. */
+:root {
+  --bg:         #041b20;
+  --bg2:        #08292d;
+  --bg3:        #0c393c;
+
+  --surface:    rgba(8, 39, 43, 0.94);
+  --surface-2:  rgba(99, 219, 199, 0.055);
+  --surface-3:  rgba(99, 219, 199, 0.038);
+
+  --border:     rgba(49, 204, 178, 0.28);
+  --border-2:   rgba(155, 228, 218, 0.12);
+
+  --text:       #f3fffb;
+  --muted:      #adceca;
+  --muted-2:    #7ea8a6;
+
+  /* Brand blue */
+  --blue:       #13b99c;
+  --blue-light: #21d3b5;
+  --blue-glow:  #0a9d94;
+
+  --white:      #ffffff;
+  --green:      #5de0ba;
+  --yellow:     #f0be69;
+  --danger:     #f0807a;
+
+  --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(59,130,246,0.08) inset;
+  --shadow-btn:  0 4px 20px rgba(13, 183, 154, 0.28);
+
+  --radius-xl:  24px;
+  --radius-lg:  18px;
+  --radius-md:  14px;
+  --radius-sm:  10px;
+  --radius-pill: 999px;
+
+  /* Semantic theme contract — components consume purpose, not palette names. */
+  --color-bg:              var(--bg);
+  --color-bg-elevated:     var(--bg2);
+  --color-bg-glow-secondary: rgba(8, 69, 68, 0.45);
+  --color-surface:         var(--surface);
+  --color-surface-raised:  rgba(7, 38, 42, 0.97);
+  --color-surface-dropdown: #0c3638;
+  --color-surface-raised-hover: #114246;
+  --color-surface-raised-active: #0e3b40;
+  --color-surface-qr:      #ffffff;
+  --color-surface-subtle:  var(--surface-3);
+  --color-surface-hover:   rgba(99, 219, 199, 0.055);
+
+  --color-text:            var(--text);
+  --color-text-secondary:  var(--muted);
+  --color-text-muted:      var(--muted-2);
+  --color-text-on-accent:  var(--white);
+  --color-heading-gradient-start: #ffffff;
+  --color-heading-gradient-mid: #b4fff0;
+  --color-heading-gradient-end: #71e5cd;
+  --color-speaker-name:    #ebfffa;
+
+  --color-accent:          var(--blue);
+  --color-accent-hover:    var(--blue-light);
+  --color-accent-soft:     color-mix(in srgb, var(--color-accent-hover) 12%, transparent);
+  --color-accent-border:   var(--border);
+  --color-accent-text:     #8debd4;
+  --color-accent-active-text: #d4fff4;
+  --color-focus-ring:      color-mix(in srgb, var(--color-accent-hover) 38%, transparent);
+
+  --color-border:          var(--border);
+  --color-border-subtle:   var(--border-2);
+  --color-border-strong:   color-mix(in srgb, var(--color-accent-hover) 50%, transparent);
+
+  --color-success:         var(--green);
+  --color-success-accent:  #65e0b7;
+  --color-success-text:    #a0f2d5;
+  --color-success-soft:    color-mix(in srgb, var(--color-success) 10%, transparent);
+  --color-warning:         var(--yellow);
+  --color-warning-text:    #ffdfa1;
+  --color-warning-soft:    color-mix(in srgb, var(--color-warning) 10%, transparent);
+  --color-danger:          var(--danger);
+  --color-danger-text:     #f5aaa4;
+  --color-danger-soft:     color-mix(in srgb, var(--color-danger) 8%, transparent);
+  --color-info-text:       #b3ded8;
+  --color-info-strong:     #d9fcf4;
+  --color-neutral-text:    #a4bcb9;
+  --color-neutral-soft:    rgba(255,255,255,0.06);
+  --color-neutral-border:  rgba(255,255,255,0.08);
+  --color-pinned-text:     #a9f9df;
+
+  --font-body:     'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display:  'Montserrat', sans-serif;
+  --font-console: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* System scale: brands provide values, shared UI consumes the semantic names. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --control-height: 40px;
+  --control-height-touch: 44px;
+  --role-density: 1;
+}
+
+
+/* KDW-specific editorial layer: quiet geometric data-grid, not an event-platform redesign. */
+:root {
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --color-text-on-accent: #042720;
+  --color-heading-gradient-start: #ffffff;
+  --color-heading-gradient-mid: #d6fff5;
+  --color-heading-gradient-end: #75e8d1;
+  --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-console: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+html body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 85% 0%, rgba(19, 185, 156, .16), transparent 45%),
+    radial-gradient(ellipse at 5% 80%, rgba(20, 112, 119, .16), transparent 50%);
+}
+body .card {
+  border-color: var(--color-border);
+  box-shadow: 0 18px 45px rgba(0, 10, 14, .28);
+}
+body .brand-logo-mark {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: -.07em;
+  font-weight: 900;
+  color: var(--color-text-on-accent);
+  border-radius: 7px;
+  background: linear-gradient(140deg, #46dec6, #10b19a);
+  box-shadow: 0 4px 18px rgba(17, 196, 164, .18);
+}
+body .brand-logo-text, body .bootstrap-brand-copy strong {
+  letter-spacing: .015em;
+  font-weight: 800;
+}
+body .bootstrap-screen { background: var(--bg); }
+body .bootstrap-card { padding: 24px; }
+body .btn.primary { border-color: transparent; color: var(--color-text-on-accent); }
+body .btn.primary:hover { background: var(--color-accent-hover); }
+body .question-card.is-pinned { box-shadow: inset 3px 0 0 var(--color-accent); }
+body .filter-tab.active, body .question-sort-btn.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent-active-text);
+}
+body .guest-shell > .card:first-of-type,
+body .moderator-live, body .admin-console .shell > .card:first-of-type {
+  background-image:
+    linear-gradient(132deg, rgba(10, 75, 72, .36), transparent 68%),
+    repeating-linear-gradient(62deg, transparent 0 100px, rgba(75, 195, 180, .038) 101px, transparent 102px);
+}
+body .guest-shell > .card:first-of-type::before,
+body .moderator-live::before {
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, #0db697, #5ae2d4, transparent 88%);
+}
+body :focus-visible { outline-color: var(--color-accent-hover); }
+@media (max-width: 640px) {
+  body .brand-logo-text { overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body .btn, body .question-card { transition: none; }
+}
