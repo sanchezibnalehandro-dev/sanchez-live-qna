@@ -141,6 +141,11 @@
     const eventKey = getEventKey();
     const brand = getBrandForRoute(null, eventKey);
     applyBrandIdentity('program', brand);
+    if (brand.key === 'kdw-2026') {
+      void import('./kdw-guest-background.js')
+        .then(({ initKdwGuestBackground }) => initKdwGuestBackground('program'))
+        .catch(error => console.warn('KDW program background unavailable', error));
+    }
 
     const appShell = document.getElementById('appShell');
     const bootstrapScreen = document.getElementById('bootstrapScreen');
