@@ -230,7 +230,8 @@ export function initKdwGuestBackground(surface = 'welcome') {
     disposed = true;
     stop();
     window.removeEventListener('resize', resize);
-    window.removeEventListener('pagehide', dispose);
+    window.removeEventListener('pagehide', onPageHide);
+    window.removeEventListener('pageshow', onPageShow);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     mobileMedia.removeEventListener?.('change', resize);
     motionMedia.removeEventListener?.('change', start);
@@ -240,8 +241,19 @@ export function initKdwGuestBackground(surface = 'welcome') {
     delete document.body.dataset.kdwSurface;
   }
 
+  function onPageHide(event) {
+    // BFCache keeps the document alive; pause it, but keep the background mounted.
+    if (event.persisted) stop();
+    else dispose();
+  }
+
+  function onPageShow(event) {
+    if (event.persisted && !disposed) start();
+  }
+
   window.addEventListener('resize', resize);
-  window.addEventListener('pagehide', dispose, { once: true });
+  window.addEventListener('pagehide', onPageHide);
+  window.addEventListener('pageshow', onPageShow);
   document.addEventListener('visibilitychange', onVisibilityChange);
   mobileMedia.addEventListener?.('change', resize);
   motionMedia.addEventListener?.('change', start);
