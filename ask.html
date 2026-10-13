@@ -9,9 +9,10 @@
       const params = new URLSearchParams(location.search);
       const room = (params.get('room') || '').trim();
       const event = (params.get('event') || '').trim();
+      const isKdw = room.startsWith('kdw-2026-') || event.startsWith('kdw-2026-');
       const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
-      document.documentElement.dataset.brand = isTasigo ? 'tasigo-esg' : 'sanchez';
-      document.documentElement.style.backgroundColor = isTasigo ? '#101612' : '#020810';
+      document.documentElement.dataset.brand = isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
+      document.documentElement.style.backgroundColor = isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
       document.documentElement.style.colorScheme = 'dark';
     })();
   </script>
@@ -21,9 +22,12 @@
     (() => {
       const params = new URLSearchParams(location.search);
       const event = (params.get('event') || '').trim();
-      const isTasigo = document.documentElement.dataset.brand === 'tasigo-esg';
+
       document.documentElement.classList.toggle('event-route', Boolean(event));
-      document.querySelector('[data-brand-stylesheet]').href = isTasigo ? './brands/tasigo-esg.css' : './brands/sanchez.css';
+      const selectedBrand = document.documentElement.dataset.brand;
+      document.querySelector('[data-brand-stylesheet]').href = selectedBrand === 'kdw-2026'
+        ? './brands/kdw-2026.css'
+        : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css' : './brands/sanchez.css';
     })();
   </script>
   <style>
