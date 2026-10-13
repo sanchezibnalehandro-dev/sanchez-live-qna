@@ -32,7 +32,7 @@ export function initKdwGuestBackground(surface = 'welcome') {
   document.body.prepend(veil);
   document.body.prepend(canvas);
   document.body.classList.add('kdw-network-enabled');
-  document.body.dataset.kdwSurface = surface === 'questions' ? 'questions' : 'welcome';
+  document.body.dataset.kdwSurface = ['welcome', 'questions', 'program'].includes(surface) ? surface : 'welcome';
 
   const C = KDW_BACKGROUND_CHOICE;
   const mobileMedia = window.matchMedia('(max-width: 767px)');
