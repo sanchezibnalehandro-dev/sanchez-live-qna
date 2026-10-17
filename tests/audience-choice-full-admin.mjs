@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, relative, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
+import { grantLocalAudienceStaff } from './audience-choice-local-staff.mjs';
 
 const config = Object.fromEntries(readFileSync('.audience-supabase-local.env','utf8')
   .split(/\r?\n/).filter(line=>/^[A-Z_]+=/.test(line))
@@ -51,13 +52,17 @@ async function signup(email,password){
   });
   const result=await response.text();
   assert.ok(response.ok,'local signup: '+result.slice(0,240));
+  const user=JSON.parse(result);
+  assert.ok(user?.user?.id,'Local signup response did not include user ID');
+  return user.user.id;
 }
 
 let browser;
 try {
   const email='full-admin-'+randomUUID()+'@example.test';
   const password='FullAdmin-'+randomUUID()+'Aa3!';
-  await signup(email,password);
+  const staffId=await signup(email,password);
+  grantLocalAudienceStaff(staffId,'elina-28-2026');
   browser=await chromium.launch({headless:true});
   const staff=await browser.newPage({viewport:{width:1440,height:900}});
   const pageErrors=[];
