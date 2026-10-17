@@ -38,3 +38,21 @@ test('guest page asks for own team first and only then for a competing vote', ()
   assert.match(html, /p_team_no:\s*votedTeam/);
   assert.match(html, /welcome\.html\?event=/);
 });
+
+test('ELINA 28 guest modules parse and English is strictly event-scoped', () => {
+  for (const page of ['welcome.html','program.html','ask.html']) {
+    const html=read(page);
+    const script=inlineModule(html);
+    const checked=spawnSync(process.execPath,['--check','--input-type=module'],{input:script,encoding:'utf8'});
+    assert.equal(checked.status,0,page+': '+checked.stderr);
+    assert.match(script,/eventKey === 'elina-28-2026'/,page+': exact match is required');
+    assert.match(script,/document\.documentElement\.lang = 'en'/);
+  }
+  const welcome=read('welcome.html');
+  assert.match(welcome,/Event programme/);
+  const program=read('program.html');
+  assert.match(program,/Programme details to follow/);
+  const ask=read('ask.html');
+  assert.match(ask,/Questions are not available for this session yet/);
+  assert.match(ask,/Q&A is closed/);
+});
