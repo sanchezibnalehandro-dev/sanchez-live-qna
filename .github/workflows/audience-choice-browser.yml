@@ -14,6 +14,10 @@ permissions:
 jobs:
   browser-smoke:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -22,7 +26,9 @@ jobs:
           node-version: '22'
       - name: Install pinned Playwright for CI rehearsal
         run: npm install --no-save --package-lock=false playwright@1.56.1
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Mobile viewport and operator UI smoke (mock backend)
+      - name: Install ${{ matrix.engine }}
+        run: npx playwright install --with-deps ${{ matrix.engine }}
+      - name: Mobile viewport and operator UI smoke (${{ matrix.engine }})
+        env:
+          BROWSER_ENGINE: ${{ matrix.engine }}
         run: node tests/audience-choice-browser.mjs
