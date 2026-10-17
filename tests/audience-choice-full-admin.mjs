@@ -62,6 +62,8 @@ try {
   const staff=await browser.newPage({viewport:{width:1440,height:900}});
   const pageErrors=[];
   staff.on('pageerror',err=>pageErrors.push(String(err)));
+  // Close deliberately asks for operator confirmation in the production UI.
+  staff.on('dialog', dialog => dialog.accept());
   await staff.goto(origin+'/login-auth.html?event=elina-28-2026&next=admin',{waitUntil:'domcontentloaded'});
   await staff.locator('#emailInput').fill(email);
   await staff.locator('#passwordInput').fill(password);
