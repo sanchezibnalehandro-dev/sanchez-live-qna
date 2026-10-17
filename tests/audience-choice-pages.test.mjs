@@ -10,6 +10,16 @@ function inlineModule(html) {
   return match[1];
 }
 
+test('public event branding uses accelerator name, not internal ELINA label', () => {
+  const brand = read('brand-presets/elina-28.js');
+  const vote = read('audience-vote.html');
+  assert.match(brand, /IT Park Global Startup Accelerator 2026/);
+  assert.match(brand, /International Team Session · 28 October/);
+  assert.doesNotMatch(brand, /name:\\s*'ELINA 28'/);
+  assert.match(vote, /IT PARK · GLOBAL STARTUP ACCELERATOR 2026/);
+  assert.doesNotMatch(vote, /MODERATORLIVE \\/ ELINA 28/);
+});
+
 test('Audience Choice page module parses', () => {
   const source = inlineModule(read('audience-vote.html'));
   const checked = spawnSync(process.execPath, ['--check', '--input-type=module'], { input: source, encoding: 'utf8' });
