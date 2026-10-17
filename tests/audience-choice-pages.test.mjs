@@ -20,6 +20,16 @@ test('public event branding uses accelerator name, not internal ELINA label', ()
   assert.equal(vote.includes('MODERATORLIVE / ELINA 28'), false);
 });
 
+test('control desk uses current program brand and explains missing voting backend', () => {
+  const admin = read('admin-auth.html');
+  const controller = read('audience-choice-admin.mjs');
+  assert.match(admin, /Audience Choice · Startup Accelerator 2026/);
+  assert.equal(admin.includes('Audience Choice · ELINA 28'), false);
+  assert.match(controller, /PGRST202/);
+  assert.match(controller, /серверный модуль не установлен в Supabase/);
+  assert.match(controller, /disableButtons\(true\)/);
+});
+
 test('Audience Choice page module parses', () => {
   const source = inlineModule(read('audience-vote.html'));
   const checked = spawnSync(process.execPath, ['--check', '--input-type=module'], { input: source, encoding: 'utf8' });
