@@ -19,6 +19,7 @@ export async function mountAudienceChoiceAdmin(root, supabase, eventKey) {
   let pollKey = null;
   let pollStatus = 'draft';
   let refreshing = false;
+  let operatorDenied = false;
   let refreshTimer = null;
 
   function status(text, error = false) {
@@ -26,9 +27,9 @@ export async function mountAudienceChoiceAdmin(root, supabase, eventKey) {
     message.dataset.error = error ? 'true' : 'false';
   }
   function disableButtons(value) {
-    openBtn.disabled = value || pollStatus === 'open';
-    closeBtn.disabled = value || pollStatus !== 'open';
-    refreshBtn.disabled = value;
+    openBtn.disabled = value || operatorDenied || pollStatus === 'open';
+    closeBtn.disabled = value || operatorDenied || pollStatus !== 'open';
+    refreshBtn.disabled = value || operatorDenied;
   }
   function displayCounts(counts) {
     const vals = Array.from({ length: 5 }, (_, idx) => {
@@ -55,19 +56,23 @@ export async function mountAudienceChoiceAdmin(root, supabase, eventKey) {
       const { data, error } = await supabase.rpc('audience_choice_admin_state', { p_poll_key: pollKey });
       if (error) throw error;
       if (!data) throw new Error('Опрос не найден');
+      operatorDenied = false;
       pollStatus = data.status;
       heading.textContent = pollStatus.toUpperCase();
       displayCounts(data.counts);
       status('');
     } catch (error) {
-      status('Не удалось получить данные голосования: ' + (error.message || error), true);
+      operatorDenied = error?.code === '42501' || /Poll operator access required|Staff sign-in required/i.test(error?.message || '');
+      status(operatorDenied
+        ? 'Нет прав оператора для этого голосования. Обратитесь к администратору.'
+        : 'Не удалось получить данные голосования: ' + (error.message || error), true);
     } finally {
       refreshing = false;
       disableButtons(busy || !pollKey);
     }
   }
   async function update(next) {
-    if (busy || !pollKey || closed) return;
+    if (busy || !pollKey || closed || operatorDenied) return;
     if (next === 'closed' && !confirm('Закрыть Audience Choice для всех участников?')) return;
     if (next === 'open' && pollStatus === 'revealed' && !confirm('Опрос уже объявлен. Повторно открыть?')) return;
     busy = true;
