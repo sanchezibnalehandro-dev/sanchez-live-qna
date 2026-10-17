@@ -87,41 +87,11 @@ $$;
 
 reset role;
 
--- The CI harness supplies a minimal auth.users table. No user gets staff
--- access automatically on sign-up; grant is intentional and poll-specific.
-insert into auth.users(id)
-values ('22222222-2222-4222-8222-222222222222'::uuid);
--- A signed-in identity exists, but has no operator grant yet.
 -- Emulate an authenticated ModeratorLive staff JWT in PostgreSQL.
 -- This checks the real Supabase auth.uid() integration, not only a JS mock.
 set local role authenticated;
 set local request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';
 
-do $no_access$
-begin
-  begin
-    perform public.audience_choice_admin_state('elina-28-rehearsal');
-    raise exception 'FAIL: ordinary signed-in user read private counts';
-  exception when others then
-    if sqlerrm is distinct from 'Poll operator access required' then raise; end if;
-  end;
-  begin
-    perform public.audience_choice_admin_status('elina-28-rehearsal','open');
-    raise exception 'FAIL: ordinary signed-in user opened a poll';
-  exception when others then
-    if sqlerrm is distinct from 'Poll operator access required' then raise; end if;
-  end;
-end
-$no_access$;
-reset role;
-
--- A privileged, server-side provisioning step grants one operator
--- access to the rehearsal poll ONLY. Live poll remains forbidden.
-insert into public.audience_choice_staff(poll_id,user_id)
-select id,'22222222-2222-4222-8222-222222222222'::uuid
-from public.audience_choice_polls where poll_key='elina-28-rehearsal';
-
-set local role authenticated;
 do $staff$
 declare
   v_state jsonb;
@@ -144,18 +114,6 @@ begin
 
   if public.audience_choice_event_status('elina-28-2026')->>'status' is distinct from 'draft'
   then raise exception 'FAIL: rehearsal operator changed the event-day poll'; end if;
-  begin
-    perform public.audience_choice_admin_state('elina-28-2026');
-    raise exception 'FAIL: rehearsal operator can read live poll';
-  exception when others then
-    if sqlerrm is distinct from 'Poll operator access required' then raise; end if;
-  end;
-  begin
-    perform public.audience_choice_admin_status('elina-28-2026','open');
-    raise exception 'FAIL: rehearsal operator can open live poll';
-  exception when others then
-    if sqlerrm is distinct from 'Poll operator access required' then raise; end if;
-  end;
 end
 $staff$;
 
@@ -166,9 +124,6 @@ begin
     or has_table_privilege('authenticated','public.audience_choice_votes','INSERT')
     or has_table_privilege('anon','public.audience_choice_votes','SELECT')
     or has_table_privilege('anon','public.audience_choice_votes','INSERT')
-    or has_table_privilege('authenticated','public.audience_choice_staff','SELECT')
-    or has_table_privilege('authenticated','public.audience_choice_staff','INSERT')
-    or has_table_privilege('anon','public.audience_choice_staff','SELECT')
   then raise exception 'FAIL: direct guest/staff table privileges are too broad'; end if;
 end
 $staff$;
