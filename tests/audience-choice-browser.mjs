@@ -21,7 +21,12 @@ const origin = 'http://127.0.0.1:' + server.address().port;
 
 const fakeQnaModule = [
 "export function getEventKey() { return new URLSearchParams(location.search).get('event') }",
-"export async function loadGuestEventProgram() { return {items:[], operationalCurrentRoom:null} }",
+"export async function loadGuestEventProgram(eventKey) {",
+"  if (!['test-day-29','test-day-30'].includes(eventKey)) return {items:[], operationalCurrentRoom:null};",
+"  const id = eventKey === 'test-day-29' ? 29 : 30;",
+"  return { items:[{id,kind:'session',title:'A separate day',room_id:id,is_current:true,session_order:1,duration_minutes:60,starts_at:'2026-10-29T12:00:00+03:00'}],",
+"    operationalCurrentRoom:{id,is_questions_open:true} };",
+"}",
 "export function subscribeGuestEventProgram(eventKey, getRooms, refresh, setStatus) { setStatus?.('SUBSCRIBED'); return ()=>{} }",
 "export const supabase = {",
 "  async rpc(name, args) {",
@@ -77,10 +82,20 @@ try {
   await page.locator('#audienceVoteLink').waitFor({state:'visible',timeout:9000});
   await page.evaluate(()=>localStorage.setItem('__test_poll_status','closed'));
   await page.locator('#audienceVoteLink').waitFor({state:'hidden',timeout:9000});
-  await page.goto(origin+'/welcome.html?event=unrelated-event');
+  // Reuse the same phone and same browser storage on two additional days.
+  // These keys are synthetic fixtures, not claimed to be real 29/30 event keys.
+  for (const [day, roomId] of [['test-day-29', 29], ['test-day-30', 30]]) {
+    await page.goto(origin+'/welcome.html?event='+day);
+    await page.locator('#programLink').waitFor({state:'visible'});
+    await page.locator('#askLink').waitFor({state:'visible'});
+    assert.equal(await page.locator('#audienceVoteLink').isVisible(),false,'No ELINA voting on '+day);
+    assert.ok((await page.locator('#programLink').getAttribute('href')).includes(day),'Program URL must stay event-scoped');
+    assert.ok((await page.locator('#askLink').getAttribute('href')).includes(day),'Q&A URL must stay event-scoped');
+  }
+  await page.goto(origin+'/welcome.html?event=elina-28-rehearsal');
   await page.locator('#programLink').waitFor({state:'visible'});
-  assert.equal(await page.locator('#audienceVoteLink').isVisible(),false,'Other events unaffected');
-  console.log('PASS: mobile welcome → 2-step vote → persistent lock → closed; unrelated event unaffected');
+  assert.equal(await page.locator('#audienceVoteLink').isVisible(),false,'Elina vote remains closed after visiting other days');
+  console.log('PASS: same-browser three-day isolation, guest Q&A, program and vote visibility');
 
   const staff=await browser.newPage();
   staff.on('dialog', d => d.accept());
