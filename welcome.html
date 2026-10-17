@@ -42,6 +42,7 @@
     .event-entry-actions { display: grid; gap: 10px; margin-top: 26px; }
     .event-entry-action { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: 18px; text-decoration: none; background: var(--color-surface-subtle); color: var(--color-text); transition: border-color .15s ease, transform .15s ease, background .15s ease; }
     .event-entry-action:hover { border-color: var(--color-border-strong); transform: translateY(-1px); }
+    .event-entry-action[hidden] { display: none; }
     .event-entry-action.primary { background: var(--color-accent); color: var(--color-accent-contrast, #fff); border-color: transparent; }
     .event-entry-qna-state { min-height: 66px; display: grid; align-content: center; gap: 4px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-surface-subtle); color: var(--color-text); }
     .event-entry-qna-state[hidden] { display: none; }
@@ -98,6 +99,10 @@
             <strong>Q&amp;A пока закрыт</strong>
             <span>Когда Q&amp;A откроется, здесь появится кнопка «Задать вопрос».</span>
           </div>
+          <a class="event-entry-action" id="audienceVoteLink" href="#" hidden>
+            <strong>Vote · Audience Choice</strong>
+            <span class="event-entry-arrow" aria-hidden="true">→</span>
+          </a>
           <a class="event-entry-action" id="programLink" href="#">
             <strong>Программа дня</strong>
             <span class="event-entry-arrow" aria-hidden="true">→</span>
@@ -118,9 +123,11 @@
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
     import { deriveGuestProgramState, PROGRAM_HERO_STATE } from './guest-program-state.mjs';
-    import { getEventKey, loadGuestEventProgram, subscribeGuestEventProgram } from './supabase-qna.js';
+    import { getEventKey, loadGuestEventProgram, subscribeGuestEventProgram, supabase } from './supabase-qna.js';
+    import { ELINA_28_EVENT_KEYS, voteButtonVisible } from './audience-choice-flow.mjs';
 
     const eventKey = getEventKey();
+    const audienceVoteEligible = ELINA_28_EVENT_KEYS.includes(eventKey);
     const brand = getBrandForRoute(null, eventKey);
     applyBrandIdentity('welcome', brand);
     if (brand.key === 'kdw-2026') {
@@ -136,6 +143,7 @@
     const askLink = document.getElementById('askLink');
     const askClosedState = document.getElementById('askClosedState');
     const programLink = document.getElementById('programLink');
+    const audienceVoteLink = document.getElementById('audienceVoteLink');
     const telegramLink = document.getElementById('telegramLink');
     const programCard = document.getElementById('programCard');
     const programLabel = document.getElementById('programLabel');
@@ -145,6 +153,8 @@
     const realtimeStatus = document.getElementById('realtimeStatus');
 
     let unsubscribeEvent = null;
+    let audienceVoteTimer = null;
+    let audienceVoteBusy = false;
     let transitionTimer = null;
     let transitionGeneration = 0;
     let relevantRoomIds = new Set();
@@ -272,6 +282,26 @@
       }
     }
 
+    // Poll state is intentionally separate from Program v2 and Q&A.
+    // Other event keys never call the Audience Choice API.
+    async function refreshAudienceVote() {
+      if (disposed || !audienceVoteEligible || audienceVoteBusy) return;
+      audienceVoteBusy = true;
+      try {
+        const { data, error } = await supabase.rpc('audience_choice_event_status', {
+          p_event_key: eventKey
+        });
+        if (error) throw error;
+        if (!disposed) audienceVoteLink.hidden = !voteButtonVisible(data?.status);
+      } catch (error) {
+        // Fail closed if the poll is absent/unavailable: ordinary event stays usable.
+        audienceVoteLink.hidden = true;
+        console.warn('Audience Choice status unavailable', error);
+      } finally {
+        audienceVoteBusy = false;
+      }
+    }
+
     function render(snapshot) {
       const view = deriveGuestProgramState(snapshot.items, snapshot.operationalCurrentRoom);
       renderProgram(view);
@@ -316,6 +346,12 @@
       askLink.href = `./ask.html?event=${route}`;
       programLink.href = `./program.html?event=${route}`;
       telegramLink.hidden = eventKey !== 'tasigo-esg-2026';
+      if (audienceVoteEligible) {
+        // The existing event QR stays unchanged. This is an internal destination.
+        audienceVoteLink.href = `./audience-vote.html?event=${route}`;
+        void refreshAudienceVote();
+        audienceVoteTimer = setInterval(refreshAudienceVote, 5000);
+      }
       unsubscribeEvent = subscribeGuestEventProgram(eventKey, () => relevantRoomIds, queueRefresh, setRealtimeStatus);
       try {
         await refresh();
@@ -325,13 +361,20 @@
     }
 
     window.addEventListener('pageshow', event => {
-      if (event.persisted && !disposed) queueRefresh();
+      if (event.persisted && !disposed) {
+        queueRefresh();
+        void refreshAudienceVote();
+      }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && !disposed) void refreshAudienceVote();
     });
 
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
       disposed = true;
       clearTimeout(transitionTimer);
+      clearInterval(audienceVoteTimer);
       transitionGeneration += 1;
       unsubscribeEvent?.();
       unsubscribeEvent = null;
