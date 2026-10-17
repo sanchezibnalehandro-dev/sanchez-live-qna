@@ -50,13 +50,14 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "notify pgrst, 'reload schema';"
       - name: Test real HTTP RPC + guest and operator authentication
         run: node tests/audience-choice-http.integration.mjs
-      - name: Reset only the isolated rehearsal poll between API and browser tests
+      - name: Reset isolated event and rehearsal polls between independent suites
         run: |
           psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" <<'SQL'
           delete from public.audience_choice_votes
-          where poll_id=(select id from public.audience_choice_polls where poll_key='elina-28-rehearsal');
+          where poll_id in (select id from public.audience_choice_polls
+                            where poll_key in ('elina-28-rehearsal', 'elina-28-2026'));
           update public.audience_choice_polls set status='draft'
-          where poll_key='elina-28-rehearsal';
+          where poll_key in ('elina-28-rehearsal', 'elina-28-2026');
           SQL
       - name: Install Chromium for full browser rehearsal
         run: |
