@@ -15,9 +15,9 @@ test('public event branding uses accelerator name, not internal ELINA label', ()
   const vote = read('audience-vote.html');
   assert.match(brand, /IT Park Global Startup Accelerator 2026/);
   assert.match(brand, /International Team Session · 28 October/);
-  assert.doesNotMatch(brand, /name:\\s*'ELINA 28'/);
+  assert.equal(brand.includes("name: 'ELINA 28'"), false);
   assert.match(vote, /IT PARK · GLOBAL STARTUP ACCELERATOR 2026/);
-  assert.doesNotMatch(vote, /MODERATORLIVE \\/ ELINA 28/);
+  assert.equal(vote.includes('MODERATORLIVE / ELINA 28'), false);
 });
 
 test('Audience Choice page module parses', () => {
