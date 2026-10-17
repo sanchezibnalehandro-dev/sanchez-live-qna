@@ -31,6 +31,11 @@ insert into public.audience_choice_polls(poll_key, title, status)
 values ('elina-28-2026', 'ELINA 28 · Audience Choice', 'draft')
 on conflict (poll_key) do nothing;
 
+-- Separate rehearsal poll so test votes never enter the live count.
+insert into public.audience_choice_polls(poll_key, title, status)
+values ('elina-28-rehearsal', 'ELINA 28 · Rehearsal', 'draft')
+on conflict (poll_key) do nothing;
+
 create or replace function public.audience_choice_get(
   p_poll_key text, p_guest_id uuid
 ) returns jsonb
