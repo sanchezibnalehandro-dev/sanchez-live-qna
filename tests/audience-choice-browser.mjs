@@ -25,6 +25,7 @@ const origin = 'http://127.0.0.1:' + server.address().port;
 const fakeQnaModule = [
 "export function getEventKey() { return new URLSearchParams(location.search).get('event') }",
 "export async function loadGuestEventProgram(eventKey) {",
+"  if (eventKey === 'elina-28-2026') return {items:[{id:64,kind:'service',title:'Audience Choice Award & Closing',room_id:null,session_order:70,starts_at:null,duration_minutes:29,is_current:true}],operationalCurrentRoom:null};",
 "  if (!['test-day-29','test-day-30'].includes(eventKey)) return {items:[], operationalCurrentRoom:null};",
 "  const id = eventKey === 'test-day-29' ? 29 : 30;",
 "  return { items:[{id,kind:'session',title:'A separate day',room_id:id,is_current:true,session_order:1,duration_minutes:60,starts_at:'2026-10-29T12:00:00+03:00'}],",
@@ -100,6 +101,19 @@ try {
   await page.goto(origin+'/welcome.html?event=elina-28-rehearsal');
   await page.locator('#programLink').waitFor({state:'visible'});
   assert.equal(await page.locator('#audienceVoteLink').isVisible(),false,'Elina vote remains closed after visiting other days');
+  // Regression for the actual production screenshot: manual "current" on an
+  // untimed block must never print "до null" / "until null".
+  await page.goto(origin+'/welcome.html?event=elina-28-2026');
+  await page.locator('#programTitle').filter({hasText:'Audience Choice Award & Closing'}).waitFor({timeout:8000});
+  assert.equal(await page.locator('#programTime').innerText(),'Time to be confirmed');
+  assert.equal(await page.locator('.event-entry-brand-copy strong').innerText(),'ELINA 28');
+  const elinaFont=await page.locator('#programTitle').evaluate(el=>getComputedStyle(el).fontFamily);
+  assert.ok(elinaFont.toLowerCase().startsWith('system-ui'), 'ELINA event must not use the Syne headline: '+elinaFont);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 2),'ELINA oversized headline overflows mobile viewport');
+  await page.goto(origin+'/welcome.html?event=test-day-29');
+  await page.locator('#programLink').waitFor({state:'visible'});
+  assert.equal(await page.locator('.event-entry-brand-copy strong').innerText(),'SANCHEZ_AI_SOLUTIONS', 'Other events keep original brand');
+
   console.log('PASS: '+engineLabel+' mobile viewport, three-day isolation, guest Q&A, program and vote visibility');
 
   const staff=await browser.newPage();
