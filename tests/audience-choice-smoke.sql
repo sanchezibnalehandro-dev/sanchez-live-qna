@@ -87,7 +87,49 @@ $$;
 
 reset role;
 
-do $$
+-- Emulate an authenticated ModeratorLive staff JWT in PostgreSQL.
+-- This checks the real Supabase auth.uid() integration, not only a JS mock.
+set local role authenticated;
+set local request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';
+
+do $staff$
+declare
+  v_state jsonb;
+begin
+  if auth.uid() is distinct from '22222222-2222-4222-8222-222222222222'::uuid
+  then raise exception 'FAIL: authenticated Supabase JWT context not recognized'; end if;
+
+  v_state := public.audience_choice_admin_state('elina-28-rehearsal');
+  if v_state->>'status' is distinct from 'open'
+     or jsonb_array_length(v_state->'counts') <> 5
+     or (select sum((c->>'votes')::int)
+         from jsonb_array_elements(v_state->'counts') c) <> 1
+     or (select (c->>'votes')::int
+         from jsonb_array_elements(v_state->'counts') c
+         where c->>'team_no' = '2') <> 1
+  then raise exception 'FAIL: private staff tally is incorrect'; end if;
+
+  if public.audience_choice_admin_status('elina-28-rehearsal', 'closed') is distinct from 'closed'
+  then raise exception 'FAIL: operator cannot close the poll'; end if;
+
+  if public.audience_choice_event_status('elina-28-2026')->>'status' is distinct from 'draft'
+  then raise exception 'FAIL: rehearsal operator changed the event-day poll'; end if;
+end
+$staff$;
+
+-- Staff cannot read/write poll tables directly; only the scoped RPCs.
+do $staff$
+begin
+  if has_table_privilege('authenticated','public.audience_choice_votes','SELECT')
+    or has_table_privilege('authenticated','public.audience_choice_votes','INSERT')
+    or has_table_privilege('anon','public.audience_choice_votes','SELECT')
+    or has_table_privilege('anon','public.audience_choice_votes','INSERT')
+  then raise exception 'FAIL: direct guest/staff table privileges are too broad'; end if;
+end
+$staff$;
+reset role;
+
+do $
 declare
   v_poll_id bigint;
   v_count bigint;
