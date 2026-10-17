@@ -1,0 +1,92 @@
+name: Audience Choice Supabase HTTP integration
+
+on:
+  pull_request:
+    paths:
+      - 'audience-choice.sql'
+      - 'tests/audience-choice-http.integration.mjs'
+      - 'tests/audience-choice-local-browser.mjs'
+      - 'tests/audience-choice-admin-live-fixture.html'
+      - 'audience-choice-admin.mjs'
+      - 'tests/audience-choice-full-admin.mjs'
+      - 'tests/audience-choice-full-admin.seed.sql'
+      - 'schema.sql'
+      - 'RLS-auth-next.sql'
+      - 'admin-auth.html'
+      - 'login-auth.html'
+      - 'program.html'
+      - 'ask.html'
+      - 'audience-vote.html'
+      - 'welcome.html'
+      - '.github/workflows/audience-choice-http.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  local-supabase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3
+        with:
+          version: 2.121.0
+      - name: Start isolated Supabase (never link to production)
+        run: |
+          mkdir -p "$RUNNER_TEMP/audience-choice-supabase"
+          cd "$RUNNER_TEMP/audience-choice-supabase"
+          supabase init
+          supabase start
+          supabase status -o env > "$GITHUB_WORKSPACE/.audience-supabase-local.env"
+      - name: Install voting schema in isolated PostgreSQL
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f audience-choice.sql
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "notify pgrst, 'reload schema';"
+      - name: Test real HTTP RPC + guest and operator authentication
+        run: node tests/audience-choice-http.integration.mjs
+      - name: Reset isolated event and rehearsal polls between independent suites
+        run: |
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" <<'SQL'
+          delete from public.audience_choice_votes
+          where poll_id in (select id from public.audience_choice_polls
+                            where poll_key in ('elina-28-rehearsal', 'elina-28-2026'));
+          update public.audience_choice_polls set status='draft'
+          where poll_key in ('elina-28-rehearsal', 'elina-28-2026');
+          SQL
+      - name: Install Chromium for full browser rehearsal
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test actual operator controls + guest screens against real HTTP API
+        run: node tests/audience-choice-local-browser.mjs
+      - name: Install full Q&A schema only in isolated local database
+        run: |
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f schema.sql
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f RLS-auth-next.sql
+          # Production already has this migration; the baseline RLS file predates it.
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/migrations/20261005111611_grant_event_program_live_cursor_read.sql
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f tests/audience-choice-full-admin.seed.sql
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" <<'SQL'
+          delete from public.audience_choice_votes
+          where poll_id=(select id from public.audience_choice_polls where poll_key='elina-28-2026');
+          update public.audience_choice_polls set status='draft' where poll_key='elina-28-2026';
+          notify pgrst, 'reload schema';
+          SQL
+      - name: Bundle the exact app Supabase JS SDK locally
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1 @supabase/supabase-js@2.116.0 esbuild@0.25.12
+          printf '%s\n' "export { createClient } from '@supabase/supabase-js';" > tests/_audience-sdk-entry.mjs
+          npx esbuild tests/_audience-sdk-entry.mjs --bundle --format=esm --platform=browser --outfile=tests/_audience-supabase-sdk.mjs
+      - name: Verify actual login-auth and admin-auth pages with real local API
+        run: node tests/audience-choice-full-admin.mjs
+      - name: Remove isolated Supabase containers
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/audience-choice-supabase"
+          supabase stop --no-backup || true

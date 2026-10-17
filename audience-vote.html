@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Audience Choice · ModeratorLive</title>
+<link rel="stylesheet" href="./theme.css">
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;padding:20px 14px;background:radial-gradient(ellipse at 95% 0%,#193049,#07121f 55%);color:#f0f3f7;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+main{max-width:540px;margin:0 auto}
+header{font-size:12px;letter-spacing:.15em;color:#c99b69;font-weight:800;padding:12px 0 24px}
+h1{font-size:clamp(30px,7vw,44px);letter-spacing:-.045em;margin:0 0 12px;color:#f0f3f7}
+h2{font-size:24px;letter-spacing:-.02em;margin:0 0 9px}
+p{color:#b8c3ce;line-height:1.5;margin:0 0 20px}
+small{display:block;color:#a8b8c7;line-height:1.5}
+.view[hidden], .alert[hidden]{display:none}
+.step{color:#d0a477;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin:8px 0 14px}
+.options{display:grid;gap:10px;margin:20px 0}
+.team-option{display:flex;align-items:center;gap:14px;padding:17px;background:#112334;border:1px solid #34475a;border-radius:13px;cursor:pointer}
+.team-option:has(input:checked){border-color:#dda871;background:#1d344a}
+.team-option input{accent-color:#ce9b67;width:20px;height:20px;margin:0;flex-shrink:0}
+.team-no{font-size:16px;font-weight:800;min-width:32px}
+.team-name{font-size:16px;font-weight:600}
+.actions{display:flex;gap:10px;margin:12px 0}
+.actions button{flex:1}
+button{border:0;border-radius:12px;padding:16px;background:#c39563;color:#0c1926;font-size:15px;font-weight:800;cursor:pointer;min-height:50px}
+button.secondary{background:#22384e;color:#e1eaf3}
+button:disabled{opacity:.4;cursor:default}
+a.back-event{display:inline-flex;align-items:center;gap:9px;color:#c4d3e2;text-decoration:none;font-size:13px;margin:0 0 25px}
+a.back-event:hover{text-decoration:underline}
+.alert{padding:13px 15px;background:#16304a;border:1px solid #39516b;border-radius:11px;margin:12px 0 20px;color:#dce7f2;line-height:1.4}
+.alert.error{border-color:#a45f57}
+.complete{text-align:center;padding:28px 14px;background:#112334;border:1px solid #32475c;border-radius:16px}
+.complete-icon{font-size:36px;color:#c49d70;margin-bottom:10px}
+footer{font-size:11px;color:#95a7b8;margin-top:30px}
+</style>
+</head>
+<body>
+<main>
+<header>IT PARK · GLOBAL STARTUP ACCELERATOR 2026</header>
+<a class="back-event" id="backEvent" href="./welcome.html">← Back to event</a>
+<h1>Audience Choice</h1>
+<p>Choose the solution that impressed you most. You can vote for another team, but not your own.</p>
+<div class="alert" id="notice" role="status" aria-live="polite">Loading voting status…</div>
+<section class="view" id="ownStep" hidden>
+  <div class="step">Step 1 of 2</div>
+  <h2>Which team are you on?</h2>
+  <small>Select your own team. You won't be able to vote for it.</small>
+  <div class="options" id="ownOptions" role="radiogroup" aria-label="Your team"></div>
+  <div class="actions"><button id="continueBtn" disabled>Continue →</button></div>
+</section>
+<section class="view" id="voteStep" hidden>
+  <div class="step">Step 2 of 2</div>
+  <h2>Who gets your vote?</h2>
+  <small id="choiceHint">Pick one of the other four teams.</small>
+  <div class="options" id="voteOptions" role="radiogroup" aria-label="Vote for another team"></div>
+  <div class="actions">
+    <button class="secondary" id="backBtn" type="button">← Back</button>
+    <button id="submitBtn" type="button" disabled>Submit vote</button>
+  </div>
+</section>
+<section class="view complete" id="completeStep" hidden>
+  <div class="complete-icon" aria-hidden="true">✓</div>
+  <h2>Vote submitted!</h2>
+  <p>Thank you. Your vote has been recorded.</p>
+  <small>Only one vote can be submitted from this browser.</small>
+</section>
+<footer>One vote per browser · No sign-in required</footer>
+</main>
+<script type="module">
+import { supabase } from './supabase-qna.js';
+import { AUDIENCE_TEAMS, teamOptions, canSubmitChoice } from './audience-choice-flow.mjs';
+
+const $ = id => document.getElementById(id);
+const eventKey = (new URLSearchParams(location.search).get('event') || '').trim();
+$('backEvent').href = eventKey ? './welcome.html?event=' + encodeURIComponent(eventKey) : './welcome.html';
+
+let pollKey = null;
+let guestId = null;
+let ownTeam = null;
+let votedTeam = null;
+let submitting = false;
+let pollOpen = false;
+let voted = false;
+
+function notice(text, isError = false) {
+  $('notice').textContent = text;
+  $('notice').classList.toggle('error', isError);
+  $('notice').hidden = !text;
+}
+function show(step) {
+  for (const id of ['ownStep', 'voteStep', 'completeStep']) $(id).hidden = id !== step;
+}
+function guestSessionId(key) {
+  const storageKey = 'audience-choice-guest:' + key;
+  try {
+    const existing = localStorage.getItem(storageKey);
+    if (existing && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existing)) return existing;
+    if (!crypto.randomUUID) return null;
+    const next = crypto.randomUUID();
+    localStorage.setItem(storageKey, next);
+    return next;
+  } catch { return null; }
+}
+function optionLabel(team, group, selected, change) {
+  const label = document.createElement('label');
+  label.className = 'team-option';
+  const input = document.createElement('input');
+  input.type = 'radio';
+  input.name = group;
+  input.value = String(team.no);
+  input.checked = selected === team.no;
+  input.addEventListener('change', () => change(team.no));
+  const no = document.createElement('span');
+  no.className = 'team-no';
+  no.textContent = String(team.no).padStart(2, '0');
+  const name = document.createElement('span');
+  name.className = 'team-name';
+  name.textContent = team.label;
+  label.append(input, no, name);
+  return label;
+}
+function renderOwn() {
+  const target = $('ownOptions');
+  target.replaceChildren(...AUDIENCE_TEAMS.map(t => optionLabel(t, 'ownTeam', ownTeam, no => {
+    if (ownTeam !== no) votedTeam = null;
+    ownTeam = no;
+    $('continueBtn').disabled = false;
+  })));
+  $('continueBtn').disabled = ownTeam === null;
+}
+function renderVote() {
+  const target = $('voteOptions');
+  target.replaceChildren(...teamOptions(ownTeam).map(t => optionLabel(t, 'votedTeam', votedTeam, no => {
+    votedTeam = no;
+    $('submitBtn').disabled = submitting;
+  })));
+  $('choiceHint').textContent = 'Your team is Team ' + String(ownTeam).padStart(2, '0') + '. Choose one of the other four teams.';
+  $('submitBtn').disabled = submitting || !canSubmitChoice(ownTeam, votedTeam);
+}
+async function checkStatus() {
+  if (!eventKey) { show(null); notice('Event link is missing.', true); return; }
+  try {
+    const { data: eventInfo, error: eventError } = await supabase.rpc('audience_choice_event_status', { p_event_key: eventKey });
+    if (eventError) throw eventError;
+    if (!eventInfo?.poll_key) { show(null); notice('No vote is configured for this event.', true); return; }
+    pollKey = eventInfo.poll_key;
+    guestId = guestSessionId(pollKey);
+    if (!guestId) { show(null); notice('Please allow browser storage to vote.', true); return; }
+    const { data, error } = await supabase.rpc('audience_choice_get', { p_poll_key: pollKey, p_guest_id: guestId });
+    if (error) throw error;
+    if (!data) { show(null); notice('Voting information is unavailable.', true); return; }
+    voted = data.already_voted === true;
+    pollOpen = data.status === 'open';
+    if (voted) { show('completeStep'); notice(''); return; }
+    if (!pollOpen) { show(null); notice(data.status === 'draft' ? 'Voting will open shortly.' : 'Voting has closed.'); return; }
+    renderOwn();
+    show('ownStep');
+    notice('');
+  } catch (error) {
+    show(null);
+    notice('Could not load voting. Please return to the event page and try again.', true);
+    console.warn('Audience Choice guest load failed', error);
+  }
+}
+$('continueBtn').addEventListener('click', () => {
+  if (!pollOpen || ownTeam === null || submitting) return;
+  renderVote();
+  show('voteStep');
+});
+$('backBtn').addEventListener('click', () => {
+  if (submitting || voted) return;
+  renderOwn();
+  show('ownStep');
+});
+$('submitBtn').addEventListener('click', async () => {
+  if (submitting || voted || !pollOpen || !canSubmitChoice(ownTeam, votedTeam)) return;
+  submitting = true;
+  $('submitBtn').disabled = true;
+  notice('Submitting your vote…');
+  try {
+    const { data, error } = await supabase.rpc('audience_choice_submit', {
+      p_poll_key: pollKey,
+      p_guest_id: guestId,
+      p_own_team: ownTeam,
+      p_team_no: votedTeam
+    });
+    if (error) throw error;
+    voted = true; // false means this browser already has a recorded vote.
+    show('completeStep');
+    notice('');
+  } catch (error) {
+    console.warn('Audience Choice vote submission failed', error);
+    // The server may have accepted the vote before the connection dropped.
+    try {
+      const { data } = await supabase.rpc('audience_choice_get', { p_poll_key: pollKey, p_guest_id: guestId });
+      if (data?.already_voted) {
+        voted = true;
+        show('completeStep');
+        notice('');
+      } else if (data?.status !== 'open') {
+        pollOpen = false;
+        show(null);
+        notice('Voting is now closed.');
+      } else {
+        notice('Vote not sent. Please try again.', true);
+      }
+    } catch {
+      notice('Connection lost. Return to the event page to check your vote.', true);
+      show(null);
+    }
+  } finally {
+    submitting = false;
+    if (!voted && pollOpen) $('submitBtn').disabled = !canSubmitChoice(ownTeam, votedTeam);
+  }
+});
+checkStatus();
+</script>
+</body>
+</html>

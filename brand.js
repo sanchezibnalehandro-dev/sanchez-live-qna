@@ -1,4 +1,5 @@
 import { TASIGO_ESG_BRAND } from './brand-presets/tasigo-esg.js';
+import { ELINA_28_BRAND } from './brand-presets/elina-28.js';
 import { KDW_2026_BRAND } from './brand-presets/kdw-2026.js';
 
 export const SANCHEZ_BRAND = {
@@ -13,6 +14,13 @@ export const SANCHEZ_BRAND = {
 };
 
 export const BRAND = SANCHEZ_BRAND;
+
+const ELINA_28_ROOM_BRAND = {
+  ...ELINA_28_BRAND,
+  stylesheetHref: './brands/elina-28.css'
+};
+const ELINA_28_EVENT_KEYS = new Set(['elina-28-2026', 'elina-28-rehearsal']);
+const ELINA_28_ROOM_SLUG = 'elina-28-session';
 
 const KDW_2026_ROOM_PREFIX = 'kdw-2026-';
 const KDW_2026_ROOM_BRAND = {
@@ -56,6 +64,9 @@ function initAdminAccordionInertGuard() {
 }
 
 export function getBrandForRoute(roomSlug, eventKey = null) {
+  if (ELINA_28_EVENT_KEYS.has(eventKey) || roomSlug === ELINA_28_ROOM_SLUG) {
+    return ELINA_28_ROOM_BRAND;
+  }
   if (roomSlug?.startsWith(KDW_2026_ROOM_PREFIX) || eventKey?.startsWith(KDW_2026_ROOM_PREFIX)) {
     return KDW_2026_ROOM_BRAND;
   }

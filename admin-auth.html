@@ -11,8 +11,9 @@
       const event = (params.get('event') || '').trim();
       const isKdw = room.startsWith('kdw-2026-') || event.startsWith('kdw-2026-');
       const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
-      document.documentElement.dataset.brand = isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
-      document.documentElement.style.backgroundColor = isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
+      const isElina = event === 'elina-28-2026' || event === 'elina-28-rehearsal' || room === 'elina-28-session';
+      document.documentElement.dataset.brand = isElina ? 'elina-28' : isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
+      document.documentElement.style.backgroundColor = isElina ? '#080d15' : isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
       document.documentElement.style.colorScheme = 'dark';
     })();
   </script>
@@ -27,7 +28,8 @@
       const selectedBrand = document.documentElement.dataset.brand;
       document.querySelector('[data-brand-stylesheet]').href = selectedBrand === 'kdw-2026'
         ? './brands/kdw-2026.css'
-        : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css' : './brands/sanchez.css';
+        : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css'
+        : selectedBrand === 'elina-28' ? './brands/elina-28.css' : './brands/sanchez.css';
     })();
   </script>
   <style>
@@ -677,6 +679,18 @@
     .admin-console .event-session-activate,
     .admin-console .event-session-program { min-height: 44px; font-size: 12px; }
 
+    /* Audience Choice: small embedded admin controls, independent of Program v2 */
+    .audience-choice-control[hidden] { display: none !important; }
+    .audience-choice-control { display: grid; gap: 9px; padding: 15px; margin-top: 15px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface-subtle); }
+    .audience-choice-control-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+    .audience-choice-control-head strong { color: var(--color-text); font-size: 13px; }
+    .audience-choice-control-head span { font-size: 12px; font-weight: 800; color: var(--color-accent-text); }
+    .audience-choice-control-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .audience-choice-control-actions .btn { min-height: 42px; font-size: 12px; }
+    .audience-choice-counts { display: flex; gap: 8px 16px; flex-wrap: wrap; color: var(--color-text-secondary); font-size: 12px; }
+    .audience-choice-counts span { white-space: nowrap; }
+    .audience-choice-control-status { color: var(--color-text-secondary); font-size: 12px; }
+    .audience-choice-control-status[data-error="true"] { color: var(--color-danger-text); }
     /* окно программы вынесено из .admin-console, поэтому селекторы без префикса */
     .program-flag, .program-field, .program-toolbar-field, .program-add-option span { font-size: 11px; }
     .program-configure, .program-remove { min-height: 36px; font-size: 11px; }
@@ -745,6 +759,17 @@
               <button class="btn primary event-session-activate" id="eventSessionActivateBtn" type="button" hidden>Сделать текущей</button>
               <button class="btn ghost event-session-program" id="eventProgramBtn" type="button">Эфир / программа</button>
             </div>
+            <section class="audience-choice-control" id="audienceChoiceControl" hidden aria-label="Audience Choice">
+              <div class="audience-choice-control-head"><strong>Audience Choice · Startup Accelerator 2026</strong><span data-poll-status>—</span></div>
+              <div class="audience-choice-control-actions">
+                <button type="button" class="btn primary" data-poll-open disabled>Открыть голосование</button>
+                <button type="button" class="btn ghost" data-poll-close disabled>Закрыть</button>
+                <button type="button" class="btn ghost" data-poll-refresh disabled>Обновить результат</button>
+              </div>
+              <div class="audience-choice-counts" data-poll-counts></div>
+              <div class="audience-choice-control-status" data-poll-winner></div>
+              <div class="audience-choice-control-status" data-poll-message role="status" aria-live="polite"></div>
+            </section>
           </div>
         </div>
       </section>
@@ -858,6 +883,7 @@
       setCurrentEventSession, subscribeRoom, subscribeEvent, escapeHtml, formatClock, normalizeQuestion,
       createSpeaker, deleteSpeaker, updateSpeakerOrder
     } from './supabase-qna.js';
+    import { mountAudienceChoiceAdmin } from './audience-choice-admin.mjs';
 
     const roomSlug = getRoomSlug();
     const roomBrand = getBrandForRoomSlug(roomSlug);
@@ -3028,6 +3054,8 @@
 
       try {
         await refresh();
+        // Only configured ELINA events receive voting controls; regular events are unaffected.
+        void mountAudienceChoiceAdmin(document.getElementById('audienceChoiceControl'), supabase, state.room?.event_key);
         try {
           await loadEventSessionSelector();
         } catch (error) {
