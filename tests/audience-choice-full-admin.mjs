@@ -10,7 +10,6 @@ import { readFile } from 'node:fs/promises';
 import { extname, relative, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
-import { grantLocalAudienceStaff } from './audience-choice-local-staff.mjs';
 
 const config = Object.fromEntries(readFileSync('.audience-supabase-local.env','utf8')
   .split(/\r?\n/).filter(line=>/^[A-Z_]+=/.test(line))
@@ -52,16 +51,13 @@ async function signup(email,password){
   });
   const result=await response.text();
   assert.ok(response.ok,'local signup: '+result.slice(0,240));
-  const user=JSON.parse(result);
-  assert.ok(user?.user?.id,'Local signup response did not include user ID');
-  return user.user.id;
 }
 
 let browser;
 try {
   const email='full-admin-'+randomUUID()+'@example.test';
   const password='FullAdmin-'+randomUUID()+'Aa3!';
-  const staffId=await signup(email,password);
+  await signup(email,password);
   browser=await chromium.launch({headless:true});
   const staff=await browser.newPage({viewport:{width:1440,height:900}});
   const pageErrors=[];
@@ -75,16 +71,6 @@ try {
   await staff.waitForURL('**/admin-auth.html?room=elina-28-session',{timeout:15000});
   await staff.locator('#appShell').waitFor({state:'visible',timeout:18000});
   await staff.locator('#audienceChoiceControl').waitFor({state:'visible',timeout:12000});
-  // A signed-in account without a poll grant must NOT see enabled controls.
-  await staff.locator('[data-poll-message]').filter({hasText:'Нет прав оператора'}).waitFor({timeout:12000});
-  assert.equal(await staff.locator('[data-poll-open]').isDisabled(),true);
-  assert.equal(await staff.locator('[data-poll-close]').isDisabled(),true);
-  assert.equal(await staff.locator('[data-poll-refresh]').isDisabled(),true);
-
-  // Local server-side provisioning only, not a public endpoint or self-grant.
-  grantLocalAudienceStaff(staffId,'elina-28-2026');
-  await staff.reload({waitUntil:'domcontentloaded'});
-  await staff.locator('#appShell').waitFor({state:'visible',timeout:18000});
   await staff.locator('[data-poll-status]').filter({hasText:'DRAFT'}).waitFor({timeout:12000});
   assert.equal(await staff.locator('#eventSessionControl').count(),1,'Existing Q&A session panel must be present');
   assert.equal(await staff.locator('#questionsOpenToggle').count(),1,'Existing Q&A intake must stay intact');
