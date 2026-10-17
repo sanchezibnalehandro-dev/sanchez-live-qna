@@ -282,9 +282,10 @@
 
       if (item) {
         const timing = formatRange(item);
-        focusTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service'
-          ? `${txt('до','until')} ${formatTime(item.endMs)}`
-          : timing.range;
+        const endTime = item.endMs == null ? null : formatTime(item.endMs);
+        focusTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service' && endTime
+          ? `${txt('до','until')} ${endTime}`
+          : (item.startMs == null || item.endMs == null ? timing.note : timing.range);
         focusTitle.textContent = item.title || txt('Без названия','Untitled');
         focusType.textContent = itemType(item);
         const meta = speakerMeta(item);
