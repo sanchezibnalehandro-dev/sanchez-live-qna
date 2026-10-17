@@ -68,6 +68,8 @@ jobs:
         run: |
           psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f schema.sql
           psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f RLS-auth-next.sql
+          # Production already has this migration; the baseline RLS file predates it.
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/migrations/20261005111611_grant_event_program_live_cursor_read.sql
           psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f tests/audience-choice-full-admin.seed.sql
           psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" <<'SQL'
           delete from public.audience_choice_votes
