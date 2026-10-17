@@ -1,0 +1,44 @@
+name: Audience Choice Supabase HTTP integration
+
+on:
+  pull_request:
+    paths:
+      - 'audience-choice.sql'
+      - 'tests/audience-choice-http.integration.mjs'
+      - '.github/workflows/audience-choice-http.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  local-supabase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3
+        with:
+          version: 2.121.0
+      - name: Start isolated Supabase (never link to production)
+        run: |
+          mkdir -p "$RUNNER_TEMP/audience-choice-supabase"
+          cd "$RUNNER_TEMP/audience-choice-supabase"
+          supabase init
+          supabase start
+          supabase status -o env > "$GITHUB_WORKSPACE/.audience-supabase-local.env"
+      - name: Install voting schema in isolated PostgreSQL
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f audience-choice.sql
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "notify pgrst, 'reload schema';"
+      - name: Test real HTTP RPC + guest and operator authentication
+        run: node tests/audience-choice-http.integration.mjs
+      - name: Remove isolated Supabase containers
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/audience-choice-supabase"
+          supabase stop --no-backup || true
