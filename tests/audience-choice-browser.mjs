@@ -2,7 +2,10 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, relative } from 'node:path';
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
+import { chromium, webkit } from 'playwright';
+
+const engine = process.env.BROWSER_ENGINE === 'webkit' ? webkit : chromium;
+const engineLabel = process.env.BROWSER_ENGINE === 'webkit' ? 'WebKit (Safari)' : 'Chromium';
 
 const root = process.cwd();
 const mime = { '.html':'text/html', '.js':'text/javascript', '.mjs':'text/javascript', '.css':'text/css' };
@@ -49,19 +52,21 @@ const fakeQnaModule = [
 
 let browser;
 try {
-  browser=await chromium.launch({headless:true});
-  const page=await browser.newPage({viewport:{width:375,height:812}});
+  browser=await engine.launch({headless:true});
+  const page=await browser.newPage({viewport:{width:375,height:812},deviceScaleFactor:3,isMobile:true,hasTouch:true});
   page.on('pageerror', error => { throw error; });
   await page.route('**/supabase-qna.js', route=>route.fulfill({status:200,contentType:'text/javascript',body:fakeQnaModule}));
 
   await page.goto(origin+'/welcome.html?event=elina-28-rehearsal');
   await page.locator('#programLink').waitFor({state:'visible'});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 2),engineLabel+': welcome overflows mobile width');
   assert.equal(await page.locator('#audienceVoteLink').isVisible(),false,'Vote hidden before Open');
   await page.evaluate(()=>localStorage.setItem('__test_poll_status','open'));
   await page.locator('#audienceVoteLink').waitFor({state:'visible',timeout:9000});
   await page.locator('#audienceVoteLink').click();
 
   await page.locator('#ownStep').waitFor({state:'visible'});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 2),engineLabel+': vote step overflows mobile width');
   assert.equal(await page.locator('#ownOptions input').count(),5);
   await page.locator('#ownOptions input[value="2"]').check();
   await page.locator('#continueBtn').click();
@@ -95,7 +100,7 @@ try {
   await page.goto(origin+'/welcome.html?event=elina-28-rehearsal');
   await page.locator('#programLink').waitFor({state:'visible'});
   assert.equal(await page.locator('#audienceVoteLink').isVisible(),false,'Elina vote remains closed after visiting other days');
-  console.log('PASS: same-browser three-day isolation, guest Q&A, program and vote visibility');
+  console.log('PASS: '+engineLabel+' mobile viewport, three-day isolation, guest Q&A, program and vote visibility');
 
   const staff=await browser.newPage();
   staff.on('dialog', d => d.accept());
@@ -107,7 +112,7 @@ try {
   await staff.locator('[data-poll-close]').click();
   await staff.locator('[data-poll-status]').filter({hasText:'CLOSED'}).waitFor();
   await staff.locator('[data-poll-winner]').filter({hasText:'НИЧЬЯ'}).waitFor();
-  console.log('PASS: embedded operator open/close, private counts and tie');
+  console.log('PASS: '+engineLabel+' embedded operator open/close, private counts and tie');
 } finally {
   await browser?.close();
   await new Promise(done=>server.close(done));
