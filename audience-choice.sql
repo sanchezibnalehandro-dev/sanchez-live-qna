@@ -39,8 +39,8 @@ revoke all on table public.audience_choice_votes from public, anon, authenticate
 -- Both start in draft status and cannot accept votes until opened by staff.
 insert into public.audience_choice_polls(event_key, poll_key, title, status)
 values
-  ('elina-28-2026', 'elina-28-2026', 'ELINA 28 · Audience Choice', 'draft'),
-  ('elina-28-rehearsal', 'elina-28-rehearsal', 'ELINA 28 · Rehearsal', 'draft')
+  ('elina-28-2026', 'elina-28-2026', 'Global Startup Accelerator · Audience Choice', 'draft'),
+  ('elina-28-rehearsal', 'elina-28-rehearsal', 'Global Startup Accelerator · Rehearsal', 'draft')
 on conflict (event_key) do nothing;
 
 -- Lightweight state check for the existing welcome.html guest entrance.
