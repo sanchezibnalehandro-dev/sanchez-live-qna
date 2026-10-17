@@ -1,0 +1,53 @@
+name: Audience Choice SQL smoke
+
+on:
+  pull_request:
+    paths:
+      - 'audience-choice.sql'
+      - 'tests/audience-choice-smoke.sql'
+      - '.github/workflows/audience-choice-sql.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: audience_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d audience_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      PGHOST: localhost
+      PGUSER: postgres
+      PGDATABASE: audience_test
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Stub Supabase client roles in isolated PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 <<'SQL'
+          create role anon;
+          create role authenticated;
+          create schema auth;
+          create function auth.uid() returns uuid
+          language sql stable as $uid$
+            select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+          $uid$;
+          SQL
+      - name: Install standalone voting schema
+        run: psql -X -v ON_ERROR_STOP=1 -f audience-choice.sql
+      - name: Run rollback-only assertions
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/audience-choice-smoke.sql
