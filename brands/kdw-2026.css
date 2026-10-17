@@ -111,6 +111,7 @@
   --radius-lg: 14px;
   --radius-md: 10px;
   --color-text-on-accent: #042720;
+  --color-accent-contrast: var(--color-text-on-accent);
   --color-heading-gradient-start: #ffffff;
   --color-heading-gradient-mid: #d6fff5;
   --color-heading-gradient-end: #75e8d1;
