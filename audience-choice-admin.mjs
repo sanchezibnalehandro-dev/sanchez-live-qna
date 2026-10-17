@@ -101,7 +101,14 @@ export async function mountAudienceChoiceAdmin(root, supabase, eventKey) {
       if (pollStatus === 'open' && !document.hidden) void refresh();
     }, 5000);
   } catch (error) {
-    status('Модуль голосования пока недоступен: ' + (error.message || error), true);
+    // The preview frontend may be published before its database migration.
+    // Keep all operator controls disabled and show an actionable explanation
+    // rather than leaking a raw PostgREST function-cache error into the UI.
+    const rpcNotInstalled = error?.code === 'PGRST202'
+      || /could not find the function|schema cache/i.test(error?.message || '');
+    status(rpcNotInstalled
+      ? 'Голосование пока недоступно: серверный модуль не установлен в Supabase. Это превью интерфейса, а не рабочий опрос.'
+      : 'Не удалось подключить голосование. Проверьте соединение или обратитесь к администратору.', true);
   }
   return () => { closed = true; clearInterval(refreshTimer); };
 }
