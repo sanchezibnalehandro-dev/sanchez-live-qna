@@ -134,6 +134,59 @@ $$;
 
 reset role;
 
+-- Three-day event isolation. These are synthetic test event keys, not real
+-- event configuration. A browser ID is unique per poll, NOT across all events.
+insert into public.audience_choice_polls(event_key,poll_key,title,status)
+values
+  ('test-day-29','test-day-29','Day 29 fixture','open'),
+  ('test-day-30','test-day-30','Day 30 fixture','draft');
+
+do $
+begin
+  if public.audience_choice_event_status('test-day-29')->>'status' is distinct from 'open'
+    or public.audience_choice_event_status('test-day-30')->>'status' is distinct from 'draft'
+    or public.audience_choice_event_status('elina-28-rehearsal')->>'status' is distinct from 'closed'
+  then raise exception 'FAIL: statuses leaked across event keys';
+  end if;
+end
+$;
+
+set local role anon;
+do $
+declare
+  v_id uuid := '00000000-0000-4000-8000-000000000001';
+begin
+  -- Browser ID already voted on Elina rehearsal, but may vote in a
+  -- completely separate poll if that other event explicitly enables one.
+  if public.audience_choice_submit('test-day-29',v_id,1::smallint,3::smallint) is distinct from true
+  then raise exception 'FAIL: a separate event cannot use the same browser'; end if;
+
+  if (public.audience_choice_get('test-day-30',v_id)->>'already_voted')::boolean is distinct from false
+  then raise exception 'FAIL: another event inherited a vote'; end if;
+
+  begin
+    perform public.audience_choice_submit('test-day-30',v_id,1::smallint,3::smallint);
+    raise exception 'FAIL: draft event accepted a vote';
+  exception
+    when others then
+      if sqlerrm is distinct from 'Voting is closed' then raise; end if;
+  end;
+end
+$;
+reset role;
+
+do $
+begin
+  if (select count(*) from public.audience_choice_votes v
+      join public.audience_choice_polls p on p.id=v.poll_id
+      where p.poll_key='test-day-29') <> 1
+    or (select count(*) from public.audience_choice_votes v
+      join public.audience_choice_polls p on p.id=v.poll_id
+      where p.poll_key='test-day-30') <> 0
+  then raise exception 'FAIL: event counts not isolated'; end if;
+end
+$;
+
 -- Repeatable tests always leave the database unchanged.
 rollback;
 
