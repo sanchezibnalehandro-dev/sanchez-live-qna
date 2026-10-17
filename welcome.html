@@ -127,6 +127,9 @@
     import { ELINA_28_EVENT_KEYS, voteButtonVisible } from './audience-choice-flow.mjs';
 
     const eventKey = getEventKey();
+    const isEnglishEvent = eventKey === 'elina-28-2026';
+    const txt = (ru, en) => isEnglishEvent ? en : ru;
+    if (isEnglishEvent) document.documentElement.lang = 'en';
     const audienceVoteEligible = ELINA_28_EVENT_KEYS.includes(eventKey);
     const brand = getBrandForRoute(null, eventKey);
     applyBrandIdentity('welcome', brand);
@@ -151,6 +154,12 @@
     const programTitle = document.getElementById('programTitle');
     const programType = document.getElementById('programType');
     const realtimeStatus = document.getElementById('realtimeStatus');
+    if (isEnglishEvent) {
+      askLink.querySelector('strong').textContent = 'Ask a question';
+      askClosedState.querySelector('strong').textContent = 'Q&A is currently closed';
+      askClosedState.querySelector('span').textContent = 'The Ask a question button will appear when Q&A opens.';
+      programLink.querySelector('strong').textContent = 'Event programme';
+    }
 
     let unsubscribeEvent = null;
     let audienceVoteTimer = null;
@@ -182,15 +191,15 @@
       const offline = ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status);
       realtimeStatus.hidden = connected;
       realtimeStatus.dataset.state = offline ? 'offline' : 'connecting';
-      realtimeStatus.textContent = offline ? 'нет связи' : 'подключение';
+      realtimeStatus.textContent = offline ? txt('нет связи','Offline') : txt('подключение','Connecting…');
     }
 
     function reportRefreshError(error) {
       console.error('Event welcome refresh failed', error);
       if (!hasRendered) {
         showError(error?.code === 'EVENT_NOT_FOUND'
-          ? 'Мероприятие не найдено. Проверьте QR-код или ссылку.'
-          : 'Не удалось загрузить мероприятие. Обновите страницу и попробуйте снова.');
+          ? txt('Мероприятие не найдено. Проверьте QR-код или ссылку.','Event not found. Check the link or QR code.')
+          : txt('Не удалось загрузить мероприятие. Обновите страницу и попробуйте снова.','Could not load the event. Please refresh and try again.'));
       }
     }
 
@@ -202,7 +211,7 @@
       if (value == null) return null;
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return null;
-      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: brand.timeZone || undefined });
+      return date.toLocaleTimeString(isEnglishEvent ? 'en-GB' : 'ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: isEnglishEvent ? 'Europe/Moscow' : (brand.timeZone || undefined) });
     }
 
     function formatRange(item) {
@@ -211,8 +220,8 @@
     }
 
     function itemType(item) {
-      if (item.kind === 'service') return 'Организационный блок';
-      return item.mode === 'panel' ? 'Панель' : 'Выступление';
+      if (item.kind === 'service') return txt('Организационный блок','Programme block');
+      return item.mode === 'panel' ? txt('Панель','Session') : txt('Выступление','Talk');
     }
 
     function transitionRetryDelay(attempt) {
@@ -256,11 +265,11 @@
     function renderProgram(view) {
       const item = view.heroItem;
       const labels = {
-        [PROGRAM_HERO_STATE.NOW]: 'СЕЙЧАС',
-        [PROGRAM_HERO_STATE.NEXT]: 'ДАЛЕЕ',
-        [PROGRAM_HERO_STATE.COMPLETE]: 'ПРОГРАММА ЗАВЕРШЕНА',
-        [PROGRAM_HERO_STATE.UNSCHEDULED]: 'РАСПИСАНИЕ УТОЧНЯЕТСЯ',
-        [PROGRAM_HERO_STATE.EMPTY]: 'ПРОГРАММА'
+        [PROGRAM_HERO_STATE.NOW]: txt('СЕЙЧАС','NOW'),
+        [PROGRAM_HERO_STATE.NEXT]: txt('ДАЛЕЕ','NEXT'),
+        [PROGRAM_HERO_STATE.COMPLETE]: txt('ПРОГРАММА ЗАВЕРШЕНА','PROGRAMME COMPLETED'),
+        [PROGRAM_HERO_STATE.UNSCHEDULED]: txt('РАСПИСАНИЕ УТОЧНЯЕТСЯ','SCHEDULE TO BE CONFIRMED'),
+        [PROGRAM_HERO_STATE.EMPTY]: txt('ПРОГРАММА','PROGRAMME')
       };
       programCard.dataset.mode = view.heroState.toLowerCase();
       programLabel.textContent = labels[view.heroState];
@@ -268,17 +277,17 @@
 
       if (item) {
         programTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service'
-          ? `до ${formatTime(item.endMs)}`
+          ? `${txt('до','until')} ${formatTime(item.endMs)}`
           : formatRange(item);
-        programTitle.textContent = item.title || 'Без названия';
+        programTitle.textContent = item.title || txt('Без названия','Untitled');
         programType.textContent = itemType(item);
       } else {
         programTime.textContent = '—';
         programTitle.textContent = view.heroState === PROGRAM_HERO_STATE.COMPLETE
-          ? 'Спасибо, что были с нами'
+          ? txt('Спасибо, что были с нами','Thank you for joining us')
           : view.heroState === PROGRAM_HERO_STATE.UNSCHEDULED
-            ? 'Время блоков появится здесь'
-            : 'Расписание готовится';
+            ? txt('Время блоков появится здесь','Session times will appear here')
+            : txt('Расписание готовится','Programme coming soon');
       }
     }
 
@@ -339,7 +348,7 @@
 
     async function init() {
       if (!eventKey) {
-        showError('В ссылке не указано мероприятие.');
+        showError(txt('В ссылке не указано мероприятие.','Missing event in the link.'));
         return;
       }
       const route = encodeURIComponent(eventKey);
