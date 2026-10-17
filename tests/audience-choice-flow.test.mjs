@@ -12,6 +12,20 @@ test('five teams and every participant sees exactly four other teams', () => {
   }
 });
 
+// Rule approved 18 Oct: a voter must declare their own team and choose
+// only another team. This protects the DECLARED team, not actual identity.
+test('approved 18 October contract rejects self-vote for all five teams', () => {
+  for (let declared = 1; declared <= 5; declared++) {
+    assert.equal(canSubmitChoice(declared, declared), false);
+    const available = teamOptions(declared);
+    assert.equal(available.length, 4);
+    for (const other of available) {
+      assert.notEqual(other.no, declared);
+      assert.equal(canSubmitChoice(declared, other.no), true);
+    }
+  }
+});
+
 test('cannot select own team or invalid inputs', () => {
   assert.equal(canSubmitChoice(2, 2), false);
   assert.equal(canSubmitChoice(2, 1), true);
