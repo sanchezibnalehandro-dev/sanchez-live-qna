@@ -8,6 +8,7 @@ import { resolve, extname, relative } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
+import { grantLocalAudienceStaff } from './audience-choice-local-staff.mjs';
 
 const env = Object.fromEntries(readFileSync('.audience-supabase-local.env', 'utf8')
   .split(/\r?\n/).filter(x=>/^[A-Z_]+=/.test(x))
@@ -48,8 +49,10 @@ try{
     headers:{apikey:ANON,'content-type':'application/json'},
     body:JSON.stringify({email,password})});
   assert.equal(resp.ok,true,'Local staff login');
-  const token=(await resp.json()).access_token;
+  const auth=await resp.json();
+  const token=auth.access_token;
   assert.ok(token,'Local staff JWT');
+  grantLocalAudienceStaff(auth.user.id, 'elina-28-rehearsal');
 
   browser=await chromium.launch({headless:true});
   const staff=await browser.newPage({viewport:{width:1280,height:800}});
