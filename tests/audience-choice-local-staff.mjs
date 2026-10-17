@@ -23,6 +23,7 @@ export function grantLocalAudienceStaff(userId,pollKey){
   select case when exists(select 1 from public.audience_choice_staff s
     join public.audience_choice_polls p on p.id=s.poll_id
     where s.user_id='${userId}'::uuid and p.poll_key='${pollKey}')
-    then 'PASS' else pg_catalog.pg_sleep(0)::text end;`;
-  execFileSync('psql',['-X','-q','-v','ON_ERROR_STOP=1',PG,'-c',query],{stdio:'pipe'});
+    then 'PASS' else 'FAIL' end;`;
+  const result=execFileSync('psql',['-X','-t','-A','-v','ON_ERROR_STOP=1',PG,'-c',query],{encoding:'utf8'});
+  assert.ok(result.includes('PASS'),'Isolated operator grant not saved');
 }
