@@ -46,6 +46,8 @@ jobs:
           language sql stable as $uid$
             select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
           $uid$;
+          grant usage on schema auth to anon, authenticated;
+          grant execute on function auth.uid() to anon, authenticated;
           SQL
       - name: Install standalone voting schema
         run: psql -X -v ON_ERROR_STOP=1 -f audience-choice.sql
