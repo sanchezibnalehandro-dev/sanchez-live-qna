@@ -52,6 +52,8 @@ const staff = auth.access_token;
 
 let denied = await request('/rest/v1/rpc/audience_choice_admin_state', pollArgs);
 assert.ok(!denied.ok, 'Anonymous guest must not read admin tally');
+denied = await request('/rest/v1/rpc/audience_choice_admin_status', {...pollArgs, p_status:'open'});
+assert.ok(!denied.ok, 'Anonymous guest must not control a poll');
 
 state = check(await request('/rest/v1/rpc/audience_choice_admin_state', pollArgs, staff), 'Staff reads poll');
 assert.equal(state.status, 'draft');
@@ -98,9 +100,35 @@ const late = await request('/rest/v1/rpc/audience_choice_submit', {
   ...pollArgs, p_guest_id: randomUUID(), p_own_team: 4, p_team_no: 5
 });
 assert.ok(!late.ok, 'Closed poll must reject new votes');
+
+// Event-switch contract: any signed-in ModeratorLive account manages every
+// event without a per-poll operator grant or independent staff role.
+const secondEmail='another-staff-'+randomUUID()+'@example.test';
+const secondPassword='E2e!'+randomUUID()+'Bb4';
+check(await request('/auth/v1/signup',{email:secondEmail,password:secondPassword}),'Create second signed-in account');
+const secondAuth=check(await request('/auth/v1/token?grant_type=password',{
+  email:secondEmail,password:secondPassword
+}),'Sign in second account');
+const otherStaff=secondAuth.access_token;
+assert.ok(otherStaff && otherStaff!==staff,'Second user must have their own session');
+const liveArgs={p_poll_key:'elina-28-2026'};
+const liveOpened=check(await request('/rest/v1/rpc/audience_choice_admin_status',{
+  ...liveArgs,p_status:'open'
+},staff),'First signed-in account opens a different event');
+assert.equal(liveOpened,'open');
+const anotherStaffState=check(await request('/rest/v1/rpc/audience_choice_admin_state',
+  liveArgs,otherStaff),'Another signed-in account reads that event');
+assert.equal(anotherStaffState.status,'open');
+assert.equal(anotherStaffState.counts.reduce((n,x)=>n+Number(x.votes),0),0);
+const liveClosed=check(await request('/rest/v1/rpc/audience_choice_admin_status',{
+  ...liveArgs,p_status:'closed'
+},otherStaff),'Another signed-in account closes that event');
+assert.equal(liveClosed,'closed');
+assert.equal(check(await request('/rest/v1/rpc/audience_choice_event_status',
+  statusArgs),'Rehearsal state independent').status,'closed');
 const direct = await fetch(origin + '/rest/v1/audience_choice_votes?select=id', {
   headers: { apikey: anon, authorization: 'Bearer ' + anon }
 });
 assert.ok(!direct.ok, 'Anon must not read private voting table');
 
-console.log('PASS: real local Supabase HTTP, guest votes, operator login, open/close, concurrent duplicate, no self-votes, private tally, tie and event isolation.');
+console.log('PASS: real Supabase HTTP, any signed-in account controls both event polls with no extra role, anon denied, votes, closed-state and isolation.');
