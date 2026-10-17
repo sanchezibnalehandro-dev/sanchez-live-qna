@@ -5,6 +5,11 @@ on:
     paths:
       - 'audience-choice.sql'
       - 'tests/audience-choice-http.integration.mjs'
+      - 'tests/audience-choice-local-browser.mjs'
+      - 'tests/audience-choice-admin-live-fixture.html'
+      - 'audience-choice-admin.mjs'
+      - 'audience-vote.html'
+      - 'welcome.html'
       - '.github/workflows/audience-choice-http.yml'
 
 permissions:
@@ -37,6 +42,12 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "notify pgrst, 'reload schema';"
       - name: Test real HTTP RPC + guest and operator authentication
         run: node tests/audience-choice-http.integration.mjs
+      - name: Install Chromium for full browser rehearsal
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test actual operator controls + guest screens against real HTTP API
+        run: node tests/audience-choice-local-browser.mjs
       - name: Remove isolated Supabase containers
         if: always()
         run: |
