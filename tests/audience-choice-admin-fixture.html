@@ -1,0 +1,21 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><body>
+<div id="panel" hidden>
+<strong data-poll-status>—</strong>
+<button data-poll-open>Открыть</button>
+<button data-poll-close>Закрыть</button>
+<button data-poll-refresh>Обновить</button>
+<div data-poll-counts></div>
+<div data-poll-winner></div>
+<div data-poll-message></div>
+</div>
+<script type="module">
+import { mountAudienceChoiceAdmin } from '../audience-choice-admin.mjs';
+let status='draft';
+const supabase={rpc:async(name,args)=>{
+ if(name==='audience_choice_event_status')return {data:{poll_key:'elina-28-rehearsal',status},error:null};
+ if(name==='audience_choice_admin_status'){status=args.p_status;return {data:status,error:null};}
+ if(name==='audience_choice_admin_state')return {data:{status,title:'ELINA 28 · Rehearsal',counts:[{team_no:1,votes:2},{team_no:2,votes:2},{team_no:3,votes:1},{team_no:4,votes:0},{team_no:5,votes:0}]},error:null};
+ return {data:null,error:{message:'Unexpected RPC '+name}};
+}};
+mountAudienceChoiceAdmin(document.getElementById('panel'),supabase,'elina-28-rehearsal');
+</script></body></html>
