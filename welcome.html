@@ -278,9 +278,12 @@
       programType.hidden = !item;
 
       if (item) {
-        programTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service'
-          ? `${txt('до','until')} ${formatTime(item.endMs)}`
-          : formatRange(item);
+        const endTime = item.endMs == null ? null : formatTime(item.endMs);
+        programTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service' && endTime
+          ? `${txt('до','until')} ${endTime}`
+          : (item.startMs == null || item.endMs == null
+              ? txt('Время уточняется','Time to be confirmed')
+              : formatRange(item));
         programTitle.textContent = item.title || txt('Без названия','Untitled');
         programType.textContent = itemType(item);
       } else {
