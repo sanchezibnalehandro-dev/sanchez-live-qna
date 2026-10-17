@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Audience Choice · ModeratorLive</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:#07121f;color:#f0f3f7}
+*{box-sizing:border-box}body{margin:0;padding:24px 14px;background:radial-gradient(ellipse at 95% 0%,#193049,#07121f 55%)}
+main{max-width:530px;margin:0 auto}header{font-size:12px;letter-spacing:.15em;color:#b78856;font-weight:700;padding:14px 0 30px}
+h1{font-size:clamp(30px,7vw,48px);letter-spacing:-.045em;margin:0 0 12px}
+p{color:#b8c3ce;line-height:1.5;margin:0 0 23px}
+fieldset{border:0;padding:0;margin:0}label{display:flex;align-items:center;gap:14px;padding:17px;margin:10px 0;background:#112334;border:1px solid #324357;border-radius:14px;cursor:pointer}
+label:has(input:checked){border-color:#d7a370;background:#1e3449}
+label input{accent-color:#c89660;width:20px;height:20px;margin:0}
+.team{font-weight:700;font-size:17px}.subtitle{font-size:12px;color:#aab7c6;display:block;margin-top:3px}
+button{margin-top:18px;width:100%;border:0;border-radius:13px;background:#bf8a52;color:#101c28;padding:17px;font-size:16px;font-weight:800;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}#feedback{margin:15px 0;min-height:45px;padding:12px 0;color:#cad5df}
+.small{font-size:12px;color:#99aabc}footer{margin-top:32px;font-size:11px;color:#8e9eae}
+</style>
+</head>
+<body>
+<main>
+<header>MODERATORLIVE / ELINA 28</header>
+<h1>Audience Choice</h1>
+<p>Which team's solution impressed you the most? Choose one team and submit your vote.</p>
+<form id="vote-form">
+<fieldset id="choices" disabled>
+<label><input type="radio" name="team" value="1"><span><span class="team">Team 01</span><span class="subtitle">A Safe First Pilot</span></span></label>
+<label><input type="radio" name="team" value="2"><span><span class="team">Team 02</span><span class="subtitle">A Service People Trust</span></span></label>
+<label><input type="radio" name="team" value="3"><span><span class="team">Team 03</span><span class="subtitle">The First New Market</span></span></label>
+<label><input type="radio" name="team" value="4"><span><span class="team">Team 04</span><span class="subtitle">A Smarter City</span></span></label>
+<label><input type="radio" name="team" value="5"><span><span class="team">Team 05</span><span class="subtitle">Two Startups, One Experience</span></span></label>
+</fieldset>
+<button id="submit" type="submit" disabled>Loading vote…</button>
+</form>
+<div id="feedback" role="status" aria-live="polite"></div>
+<footer>One vote per browser. No sign-in required.</footer>
+</main>
+<script type="module">
+import { supabase } from './supabase-qna.js';
+const pollKey = (new URLSearchParams(location.search).get('poll') || 'elina-28-2026').trim();
+const key = 'audience-choice-guest:' + pollKey;
+const choices = document.getElementById('choices');
+const submit = document.getElementById('submit');
+const feedback = document.getElementById('feedback');
+const form = document.getElementById('vote-form');
+let guestId = null, locked = false, submitting = false;
+function message(text){ feedback.textContent = text; }
+function disable(text){ choices.disabled=true; submit.disabled=true; submit.textContent=text; }
+function getGuestId(){
+  try{
+    const old = localStorage.getItem(key);
+    if(old && /^[0-9a-f-]{36}$/i.test(old)) return old;
+    const id=crypto.randomUUID(); localStorage.setItem(key,id); return id;
+  }catch{return null;}
+}
+async function refresh(){
+  guestId=getGuestId();
+  if(!guestId){disable('Voting unavailable');message('Browser storage must be enabled to vote.');return;}
+  try{
+    const {data,error}=await supabase.rpc('audience_choice_get',{p_poll_key:pollKey,p_guest_id:guestId});
+    if(error) throw error;
+    if(!data){disable('Poll not found');message('Please check the voting link.');return;}
+    locked=Boolean(data.already_voted);
+    if(locked){disable('Vote submitted');message('Your vote has been received. Thank you!');return;}
+    if(data.status!=='open'){disable('Voting is not open');message(data.status==='draft'?'Voting will open shortly.':'Voting has closed. Thank you!');return;}
+    choices.disabled=false;submit.disabled=false;submit.textContent='Submit vote';message('Choose one team. Your choice is final.');
+  }catch(e){disable('Voting unavailable');message('Unable to load the vote. Please try again later.');}
+}
+form.addEventListener('change',()=>{if(!locked&&!submitting)submit.disabled=choices.disabled;});
+form.addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  if(locked||submitting||choices.disabled)return;
+  const choice=form.querySelector('input[name="team"]:checked');
+  if(!choice){message('Please choose one team.');return;}
+  submitting=true;disable('Submitting…');message('Please wait…');
+  try{
+    const {data,error}=await supabase.rpc('audience_choice_submit',{
+      p_poll_key:pollKey,p_guest_id:guestId,p_team_no:Number(choice.value)
+    });
+    if(error)throw error;
+    locked=true;disable('Vote submitted');
+    message(data ? 'Your vote has been received. Thank you!' : 'Your vote was already recorded. Thank you!');
+  }catch(err){
+    message('The vote could not be submitted. Refresh to check the current status.');
+    submitting=false;await refresh();
+  }
+});
+refresh();
+</script>
+</body></html>
