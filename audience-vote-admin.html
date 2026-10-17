@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audience Choice · Operator</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:#07121f;color:#edf3f8}
+*{box-sizing:border-box}body{margin:0;padding:25px 18px;background:#091522}main{max-width:850px;margin:auto}
+h1{font-size:34px;letter-spacing:-.04em;margin:10px 0}p{color:#b8c5d2}small{color:#a0b1c2}
+.box{border:1px solid #32495e;background:#102334;padding:22px;border-radius:16px;margin:18px 0}
+button,a.btn{border:0;border-radius:9px;padding:13px 17px;background:#c09360;color:#0b1724;font-weight:800;margin:5px 8px 5px 0;cursor:pointer;text-decoration:none;display:inline-block}
+button:disabled{opacity:.4;cursor:default}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #385068}
+td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}
+strong{color:#e4af77}#status{font-weight:800}#error{color:#ffb2a5;white-space:pre-wrap}
+</style></head>
+<body><main>
+<small>MODERATORLIVE · ELINA 28 · OPERATOR ONLY</small>
+<h1>Audience Choice control</h1>
+<p>Never project this page while voting is open. Reveal the team on the stage slide only after the host's cue.</p>
+<div class="box">
+<p>Poll: <strong id="pollLabel">Loading…</strong> &nbsp; Status: <strong id="status">…</strong></p>
+<div id="auth">Checking operator sign-in…</div>
+<div id="controls" hidden>
+<button id="open">Open voting</button>
+<button id="close">Close voting</button>
+<button id="reveal">Mark winner announced</button>
+<button id="refresh">Refresh results</button>
+</div>
+<p id="error" role="status"></p>
+</div>
+<div class="box" id="results" hidden>
+<h2>Private results</h2>
+<table><thead><tr><th>Team</th><th>Votes</th></tr></thead><tbody id="counts"></tbody></table>
+<p>Total counted: <strong id="total">0</strong></p>
+<p id="winner"></p>
+<small>If two or more teams tie for first place, announce a shared Audience Choice. These numbers must not be shown to participants before closing.</small>
+</div>
+<div class="box">
+<strong>Stage cues:</strong>
+<p>02:33 Open · 02:36 Close · 02:42 Announce winner · 02:46 Thank you.</p>
+<small>No identity tracking and no exclusion of own team. Same browser guest ID cannot submit twice; another browser/device is outside the scope of this informal vote.</small>
+</div>
+<script type="module">
+import {supabase} from './supabase-qna.js';
+const pollKey=(new URLSearchParams(location.search).get('poll')||'elina-28-2026').trim();
+const $=id=>document.getElementById(id);let active=false,busy=false,currentStatus='draft';
+const setError=(s)=>{$('error').textContent=s};
+function showState(data){
+  if(!data){setError('Poll not found.');return;}
+  currentStatus=data.status;
+  $('status').textContent=currentStatus.toUpperCase();$('pollLabel').textContent=data.title;
+  const counts=Array.isArray(data.counts)?data.counts:[];
+  $('counts').replaceChildren();
+  const totals=counts.map(x=>({team:x.team_no, count:Number(x.votes)||0}));
+  const total=totals.reduce((a,b)=>a+b.count,0);
+  totals.forEach(row=>{
+    const tr=document.createElement('tr');
+    const name=document.createElement('td');name.textContent='Team '+String(row.team).padStart(2,'0');
+    const votes=document.createElement('td');votes.textContent=String(row.count);
+    tr.append(name,votes);$('counts').append(tr);
+  });
+  $('total').textContent=String(total);
+  const max=Math.max(0,...totals.map(x=>x.count));
+  const winners=totals.filter(x=>x.count===max).map(x=>x.team);
+  $('winner').textContent=total===0?'No votes yet.':('Lead: '+winners.map(x=>'Team '+String(x).padStart(2,'0')).join(' / ')+(winners.length>1?' (TIE)':''));
+  $('results').hidden=false;
+  $('open').disabled=busy||currentStatus==='open';
+  $('close').disabled=busy||currentStatus!=='open';
+  $('reveal').disabled=busy||currentStatus!=='closed';
+}
+async function refresh(){
+  if(!active)return;
+  setError('');
+  const {data,error}=await supabase.rpc('audience_choice_admin_state',{p_poll_key:pollKey});
+  if(error){setError(error.message);return;}showState(data);
+}
+async function change(status){
+  if(!active||busy)return;
+  if(status==='open'&&currentStatus==='revealed'&&!confirm('Reopen voting after the result was announced?'))return;
+  busy=true;$('open').disabled=$('close').disabled=$('reveal').disabled=true;
+  setError('');
+  try{
+    const {error}=await supabase.rpc('audience_choice_admin_status',{p_poll_key:pollKey,p_status:status});
+    if(error)throw error;
+    await refresh();
+  }catch(e){setError(e.message||'Update failed');}
+  finally{busy=false;await refresh();}
+}
+$('open').onclick=()=>change('open');
+$('close').onclick=()=>change('closed');
+$('reveal').onclick=()=>change('revealed');
+$('refresh').onclick=refresh;
+const {data,error}=await supabase.auth.getUser();
+if(error||!data?.user){
+  $('auth').innerHTML='Please sign in via the existing <a href="./login-auth.html">ModeratorLive login</a>, then reopen this operator page.';
+  setError('No authenticated operator session.');
+}else{
+  active=true;$('auth').textContent='Signed in: '+(data.user.email||'operator');
+  $('controls').hidden=false;await refresh();
+}
+</script></main></body></html>
