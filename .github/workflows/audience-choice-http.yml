@@ -78,7 +78,8 @@ jobs:
       - name: Bundle the exact app Supabase JS SDK locally
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1 @supabase/supabase-js@2.116.0 esbuild@0.25.12
-          npx esbuild node_modules/@supabase/supabase-js/dist/module/index.js --bundle --format=esm --platform=browser --outfile=tests/_audience-supabase-sdk.mjs
+          printf '%s\n' "export { createClient } from '@supabase/supabase-js';" > tests/_audience-sdk-entry.mjs
+          npx esbuild tests/_audience-sdk-entry.mjs --bundle --format=esm --platform=browser --outfile=tests/_audience-supabase-sdk.mjs
       - name: Verify actual login-auth and admin-auth pages with real local API
         run: node tests/audience-choice-full-admin.mjs
       - name: Remove isolated Supabase containers
