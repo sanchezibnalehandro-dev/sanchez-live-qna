@@ -9,7 +9,6 @@ on:
       - 'tests/audience-choice-admin-live-fixture.html'
       - 'audience-choice-admin.mjs'
       - 'tests/audience-choice-full-admin.mjs'
-      - 'tests/audience-choice-local-staff.mjs'
       - 'tests/audience-choice-full-admin.seed.sql'
       - 'schema.sql'
       - 'RLS-auth-next.sql'
