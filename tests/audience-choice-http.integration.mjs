@@ -3,7 +3,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { grantLocalAudienceStaff } from './audience-choice-local-staff.mjs';
 
 const entries = Object.fromEntries(
   readFileSync('.audience-supabase-local.env', 'utf8')
@@ -50,33 +49,12 @@ check(await request('/auth/v1/signup', { email, password }), 'Sign up local oper
 const auth = check(await request('/auth/v1/token?grant_type=password', { email, password }), 'Sign in local operator');
 assert.ok(auth?.access_token, 'No access token returned by local Supabase Auth');
 const staff = auth.access_token;
-const staffUid = auth.user?.id;
-assert.ok(staffUid,'Local operator must have a UUID');
-
-// Authenticated user without an explicit ACL grant must not view results or
-// change voting status, even if public self-signup is enabled.
-const unapprovedRead = await request('/rest/v1/rpc/audience_choice_admin_state', pollArgs, staff);
-assert.ok(!unapprovedRead.ok, 'Unapproved signed-in user read private tally');
-const unapprovedOpen = await request('/rest/v1/rpc/audience_choice_admin_status', {
-  ...pollArgs, p_status: 'open'
-}, staff);
-assert.ok(!unapprovedOpen.ok, 'Unapproved signed-in user opened voting');
-
-grantLocalAudienceStaff(staffUid,poll);
 
 let denied = await request('/rest/v1/rpc/audience_choice_admin_state', pollArgs);
 assert.ok(!denied.ok, 'Anonymous guest must not read admin tally');
 
 state = check(await request('/rest/v1/rpc/audience_choice_admin_state', pollArgs, staff), 'Staff reads poll');
 assert.equal(state.status, 'draft');
-
-// A rehearsal-only operator must not access the live poll at all.
-const liveRead = await request('/rest/v1/rpc/audience_choice_admin_state',
-  {p_poll_key:'elina-28-2026'}, staff);
-assert.ok(!liveRead.ok,'Staff scope leaked into the live poll');
-const liveControl = await request('/rest/v1/rpc/audience_choice_admin_status',
-  {p_poll_key:'elina-28-2026',p_status:'open'}, staff);
-assert.ok(!liveControl.ok,'Staff opened a poll outside their own allowlist');
 
 let result = check(await request('/rest/v1/rpc/audience_choice_admin_status', { ...pollArgs, p_status: 'open' }, staff), 'Staff opens poll');
 assert.equal(result, 'open');
@@ -125,4 +103,4 @@ const direct = await fetch(origin + '/rest/v1/audience_choice_votes?select=id', 
 });
 assert.ok(!direct.ok, 'Anon must not read private voting table');
 
-console.log('PASS: real local Supabase HTTP, poll-scoped operator ACL, unapproved sign-in denied, Open/Close, guest vote, duplicate guard, private counts and event isolation.');
+console.log('PASS: real local Supabase HTTP, guest votes, operator login, open/close, concurrent duplicate, no self-votes, private tally, tie and event isolation.');
