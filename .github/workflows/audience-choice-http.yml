@@ -8,6 +8,14 @@ on:
       - 'tests/audience-choice-local-browser.mjs'
       - 'tests/audience-choice-admin-live-fixture.html'
       - 'audience-choice-admin.mjs'
+      - 'tests/audience-choice-full-admin.mjs'
+      - 'tests/audience-choice-full-admin.seed.sql'
+      - 'schema.sql'
+      - 'RLS-auth-next.sql'
+      - 'admin-auth.html'
+      - 'login-auth.html'
+      - 'program.html'
+      - 'ask.html'
       - 'audience-vote.html'
       - 'welcome.html'
       - '.github/workflows/audience-choice-http.yml'
@@ -56,6 +64,23 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Test actual operator controls + guest screens against real HTTP API
         run: node tests/audience-choice-local-browser.mjs
+      - name: Install full Q&A schema only in isolated local database
+        run: |
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f schema.sql
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f RLS-auth-next.sql
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f tests/audience-choice-full-admin.seed.sql
+          psql -X -v ON_ERROR_STOP=1 "postgresql://postgres:postgres@127.0.0.1:54322/postgres" <<'SQL'
+          delete from public.audience_choice_votes
+          where poll_id=(select id from public.audience_choice_polls where poll_key='elina-28-2026');
+          update public.audience_choice_polls set status='draft' where poll_key='elina-28-2026';
+          notify pgrst, 'reload schema';
+          SQL
+      - name: Bundle the exact app Supabase JS SDK locally
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1 @supabase/supabase-js@2.116.0 esbuild@0.25.12
+          npx esbuild node_modules/@supabase/supabase-js/dist/module/index.js --bundle --format=esm --platform=browser --outfile=tests/_audience-supabase-sdk.mjs
+      - name: Verify actual login-auth and admin-auth pages with real local API
+        run: node tests/audience-choice-full-admin.mjs
       - name: Remove isolated Supabase containers
         if: always()
         run: |
