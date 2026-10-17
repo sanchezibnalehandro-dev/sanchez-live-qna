@@ -141,7 +141,7 @@ values
   ('test-day-29','test-day-29','Day 29 fixture','open'),
   ('test-day-30','test-day-30','Day 30 fixture','draft');
 
-do $
+do $threeday$
 begin
   if public.audience_choice_event_status('test-day-29')->>'status' is distinct from 'open'
     or public.audience_choice_event_status('test-day-30')->>'status' is distinct from 'draft'
@@ -149,10 +149,10 @@ begin
   then raise exception 'FAIL: statuses leaked across event keys';
   end if;
 end
-$;
+$threeday$;
 
 set local role anon;
-do $
+do $threeday$
 declare
   v_id uuid := '00000000-0000-4000-8000-000000000001';
 begin
@@ -172,10 +172,10 @@ begin
       if sqlerrm is distinct from 'Voting is closed' then raise; end if;
   end;
 end
-$;
+$threeday$;
 reset role;
 
-do $
+do $threeday$
 begin
   if (select count(*) from public.audience_choice_votes v
       join public.audience_choice_polls p on p.id=v.poll_id
@@ -185,7 +185,7 @@ begin
       where p.poll_key='test-day-30') <> 0
   then raise exception 'FAIL: event counts not isolated'; end if;
 end
-$;
+$threeday$;
 
 -- Repeatable tests always leave the database unchanged.
 rollback;
