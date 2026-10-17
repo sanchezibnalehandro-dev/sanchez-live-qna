@@ -129,7 +129,7 @@ end
 $staff$;
 reset role;
 
-do $
+do $$
 declare
   v_poll_id bigint;
   v_count bigint;
