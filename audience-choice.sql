@@ -26,19 +26,6 @@ create table if not exists public.audience_choice_votes (
   constraint audience_choice_one_browser_vote unique (poll_id, guest_id)
 );
 
--- Explicit, poll-scoped staff allowlist. Authenticated ≠ authorized.
--- Provision verified operator accounts separately before production activation.
--- There is intentionally no automatic grant to every Supabase Auth user.
-create table if not exists public.audience_choice_staff (
-  poll_id bigint not null references public.audience_choice_polls(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  granted_at timestamptz not null default now(),
-  primary key (poll_id, user_id)
-);
-
-alter table public.audience_choice_staff enable row level security;
-revoke all on table public.audience_choice_staff from public, anon, authenticated;
-
 create index if not exists audience_choice_votes_poll_team_idx
   on public.audience_choice_votes (poll_id, team_no);
 
@@ -137,9 +124,9 @@ begin
 end;
 $$;
 
--- ModeratorLive Auth supplies identity, while audience_choice_staff grants
--- poll-scoped authorization. Even a signed-in user may not control a poll.
--- No additional participant authentication. Guest vote totals remain private.
+-- The existing ModeratorLive Supabase Auth is for staff accounts.
+-- No separate participant auth or extra per-team credentials are introduced.
+-- Admin endpoints do NOT grant access to anon; live guests never see counts.
 create or replace function public.audience_choice_admin_state(p_poll_key text)
 returns jsonb
 language plpgsql stable security definer set search_path = ''
@@ -154,13 +141,6 @@ begin
   select id, status, title into v_id, v_status, v_title
     from public.audience_choice_polls where poll_key = btrim(p_poll_key);
   if not found then return null; end if;
-
-  if not exists (
-    select 1 from public.audience_choice_staff
-     where poll_id = v_id and user_id = auth.uid()
-  ) then
-    raise exception 'Poll operator access required' using errcode = '42501';
-  end if;
 
   select jsonb_agg(
     jsonb_build_object(
@@ -184,27 +164,16 @@ language plpgsql volatile security definer set search_path = ''
 as $$
 declare
   v_status text;
-  v_id bigint;
 begin
   if auth.uid() is null then raise exception 'Staff sign-in required'; end if;
   if p_status is null or p_status not in ('draft', 'open', 'closed', 'revealed') then
     raise exception 'Invalid status';
   end if;
-  select id into v_id from public.audience_choice_polls
-    where poll_key = btrim(p_poll_key);
-  if not found then raise exception 'Poll not found'; end if;
-
-  if not exists (
-    select 1 from public.audience_choice_staff
-     where poll_id = v_id and user_id = auth.uid()
-  ) then
-    raise exception 'Poll operator access required' using errcode = '42501';
-  end if;
-
   update public.audience_choice_polls
      set status = p_status
-   where id = v_id
+   where poll_key = btrim(p_poll_key)
   returning status into v_status;
+  if not found then raise exception 'Poll not found'; end if;
   return v_status;
 end;
 $$;
