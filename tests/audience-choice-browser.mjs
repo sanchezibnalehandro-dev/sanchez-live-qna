@@ -39,7 +39,7 @@ const fakeQnaModule = [
 "    const status = localStorage.getItem('__test_poll_status') || 'draft';",
 "    const voted = localStorage.getItem('__test_vote') !== null;",
 "    if (name === 'audience_choice_event_status') return {data:configured?{status,poll_key:key}:null,error:null};",
-"    if (name === 'audience_choice_get') return {data:configured?{status,title:'ELINA 28',already_voted:voted}:null,error:null};",
+"    if (name === 'audience_choice_get') return {data:configured?{status,title:'Global Startup Accelerator',already_voted:voted}:null,error:null};",
 "    if (name === 'audience_choice_submit') {",
 "      if (status !== 'open') return {data:null,error:{message:'Voting is closed'}};",
 "      if (voted) return {data:false,error:null};",
@@ -106,7 +106,8 @@ try {
   await page.goto(origin+'/welcome.html?event=elina-28-2026');
   await page.locator('#programTitle').filter({hasText:'Audience Choice Award & Closing'}).waitFor({timeout:8000});
   assert.equal(await page.locator('#programTime').innerText(),'Time to be confirmed');
-  assert.equal(await page.locator('.event-entry-brand-copy strong').innerText(),'ELINA 28');
+  assert.equal(await page.locator('.event-entry-brand-copy strong').innerText(),'IT Park Global Startup Accelerator 2026');
+  assert.equal(await page.locator('.event-entry-brand-copy span').innerText(),'INTERNATIONAL TEAM SESSION · 28 OCTOBER');
   const elinaFont=await page.locator('#programTitle').evaluate(el=>getComputedStyle(el).fontFamily);
   assert.ok(elinaFont.toLowerCase().startsWith('system-ui'), 'ELINA event must not use the Syne headline: '+elinaFont);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 2),'ELINA oversized headline overflows mobile viewport');
