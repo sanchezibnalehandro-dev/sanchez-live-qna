@@ -11,12 +11,14 @@
       const event = (params.get('event') || '').trim();
       const isKdw = room.startsWith('kdw-2026-') || event.startsWith('kdw-2026-');
       const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
-      document.documentElement.dataset.brand = isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
-      document.documentElement.style.backgroundColor = isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
+      const isElina = event === 'elina-28-2026' || event === 'elina-28-rehearsal' || room === 'elina-28-session';
+      document.documentElement.dataset.brand = isElina ? 'elina-28' : isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
+      document.documentElement.style.backgroundColor = isElina ? '#080d15' : isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
       document.documentElement.style.colorScheme = 'dark';
     })();
   </script>
   <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" href="./guest-network-background.css" />
   <link rel="stylesheet" data-brand-stylesheet />
   <script>
     (() => {
@@ -27,7 +29,8 @@
       const selectedBrand = document.documentElement.dataset.brand;
       document.querySelector('[data-brand-stylesheet]').href = selectedBrand === 'kdw-2026'
         ? './brands/kdw-2026.css'
-        : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css' : './brands/sanchez.css';
+        : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css'
+        : selectedBrand === 'elina-28' ? './brands/elina-28.css' : './brands/sanchez.css';
     })();
   </script>
   <style>
@@ -678,15 +681,16 @@
     } from './supabase-qna.js';
 
     const eventKey = getEventKey();
+    const isEnglishEvent = eventKey === 'elina-28-2026';
+    const txt = (ru, en) => isEnglishEvent ? en : ru;
+    if (isEnglishEvent) document.documentElement.lang = 'en';
     const requestedRoomSlug = getRoomSlug();
     let activeRoomSlug = eventKey ? null : requestedRoomSlug;
     const guestBrand = getBrandForRoute(requestedRoomSlug, eventKey);
     applyBrandIdentity('guest', guestBrand);
-    if (guestBrand.key === 'kdw-2026') {
-      void import('./kdw-guest-background.js')
-        .then(({ initKdwGuestBackground }) => initKdwGuestBackground('questions'))
-        .catch(error => console.warn('KDW guest background unavailable', error));
-    }
+    void import('./guest-network-background.js')
+      .then(({ initGuestNetworkBackground }) => initGuestNetworkBackground('questions'))
+      .catch(error => console.warn('ModeratorLive guest background unavailable', error));
     let sessionId = null;
 
     const appShell = document.getElementById('appShell');
@@ -699,6 +703,27 @@
     const sortButtons = Array.from(document.querySelectorAll('[data-sort]'));
     const sortScope = eventKey ? `event:${eventKey}` : `room:${requestedRoomSlug}`;
     const sortModeKey = `sanchez-live-sort:guest:${sortScope}`;
+
+    if (isEnglishEvent) {
+      guestHomeLink.textContent = 'Home';
+      guestProgramLink.textContent = 'Programme';
+      document.querySelector('#panelParticipants .participant-hint').textContent = 'Tap a participant to see their details';
+      document.querySelector('#panelParticipants > div:first-child').textContent = 'Session participants';
+      document.querySelector('#closedBanner span:last-child').textContent = 'Q&A is temporarily closed.';
+      document.querySelector('#formCard h2.section-title').textContent = 'Your question';
+      document.querySelector('label[for="questionInput"]').textContent = 'Question';
+      document.querySelector('#guestIdentityFields > div:nth-child(2)').textContent = 'Name and company (optional)';
+      document.querySelector('label[for="nameInput"]').textContent = 'Your name';
+      document.querySelector('label[for="companyInput"]').textContent = 'Company';
+      document.getElementById('nameInput').placeholder = 'For example, Alex';
+      document.getElementById('companyInput').placeholder = 'For example, Startup Co.';
+      document.querySelector('#questionsList .empty').textContent = 'No questions yet. Be the first!';
+      document.querySelector('.question-sort').setAttribute('aria-label','Sort questions');
+      document.querySelector('[data-sort="votes"]').textContent = 'Top voted';
+      document.querySelector('[data-sort="newest"]').textContent = 'Newest';
+      const questionHeading = document.querySelector('#countBadge').parentElement;
+      questionHeading.firstChild.textContent = 'Questions ';
+    }
 
     if (eventKey) {
       const eventQuery = '?event=' + encodeURIComponent(eventKey);
@@ -718,7 +743,9 @@
       console.error('Guest initial load failed', error);
       bootstrapScreen.classList.add('is-error');
       bootstrapScreen.setAttribute('role', 'alert');
-      bootstrapMessage.textContent = error?.message || 'Не удалось загрузить данные. Обновите страницу и попробуйте снова.';
+      bootstrapMessage.textContent = isEnglishEvent
+        ? 'Could not load Q&A. Please refresh and try again.'
+        : (error?.message || 'Не удалось загрузить данные. Обновите страницу и попробуйте снова.');
     }
 
     function loadSortMode() {
@@ -1058,22 +1085,24 @@
         button.setAttribute('aria-pressed', String(active));
       });
       const isPanel = state.room?.mode === 'panel';
-      const fallback = state.room?.fallback_label || 'Вопросы спикеру';
+      const fallback = state.room?.fallback_label || txt('Вопросы спикеру','Questions');
       const name = isPanel
         ? (state.room?.title || fallback)
         : (state.speaker?.name || state.speaker?.fallback_label || fallback);
       const metadata = isPanel
-        ? [state.room?.moderator_name && `Модератор: ${state.room.moderator_name}`, state.room?.moderator_regalia]
+        ? [state.room?.moderator_name && `${txt('Модератор','Moderator')}: ${state.room.moderator_name}`, state.room?.moderator_regalia]
         : [state.speaker?.regalia, state.speaker?.topic];
 
       speakerNameEl.textContent = name;
       speakerMetaEl.innerHTML = metadata
         .filter(Boolean)
         .map(value => `<span>${escapeHtml(value)}</span>`)
-        .join('<br>') || (isPanel ? 'Сессия' : 'Готовимся к сессии…');
+        .join('<br>') || (isPanel ? txt('Сессия','Session') : txt('Готовимся к сессии…','Preparing the session…'));
 
       guestIdentityFields.style.display = isPanel ? 'none' : 'block';
-      questionInput.placeholder = isPanel ? 'Напишите вопрос модератору…' : 'Напишите вопрос спикеру…';
+      questionInput.placeholder = isPanel
+        ? txt('Напишите вопрос модератору…','Type your question for the moderator…')
+        : txt('Напишите вопрос спикеру…','Type your question for the speaker…');
 
       const isCurrentEventSession = !state.room?.event_key || state.room?.is_current_session === true;
       const isOpen = isCurrentEventSession && state.room?.is_questions_open === true;
@@ -1092,7 +1121,7 @@
       const indicator = document.getElementById('receptionIndicator');
       const label     = document.getElementById('receptionLabel');
       indicator.className = `reception-indicator ${isOpen ? 'open' : 'closed'}`;
-      label.textContent   = isOpen ? 'Приём открыт' : 'Приём закрыт';
+      label.textContent = isOpen ? txt('Приём открыт','Q&A open') : txt('Приём закрыт','Q&A closed');
 
       // Лента вопросов
       const qs = sortQuestions(state.questions.filter(q => q.status !== 'hidden'), state.sortMode);
@@ -1108,8 +1137,8 @@
             <line x1="28" y1="6" x2="30" y2="4" stroke="var(--color-text-secondary)" stroke-width="1.5" stroke-linecap="round"/>
             <line x1="20" y1="6" x2="18" y2="4" stroke="var(--color-text-secondary)" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          <div class="empty-title">${isOpen ? 'Будьте первым' : 'Вопросов пока нет'}</div>
-          ${isOpen ? `<div class="empty-sub">${isPanel ? 'Задайте вопрос модератору' : 'Задайте вопрос спикеру'}</div>` : ''}
+          <div class="empty-title">${isOpen ? txt('Будьте первым','Be the first') : txt('Вопросов пока нет','No questions yet')}</div>
+          ${isOpen ? `<div class="empty-sub">${isPanel ? txt('Задайте вопрос модератору','Ask the moderator a question') : txt('Задайте вопрос спикеру','Ask the speaker a question')}</div>` : ''}
         </div>`;
         return;
       }
@@ -1126,16 +1155,18 @@
           : voted
             ? '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>'
             : '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19V5m0 0-5 5m5-5 5 5"/></svg>';
-        const voteLabel = isOwn ? 'Нельзя голосовать за свой вопрос' : isAsked ? 'Вопрос уже задан' : voted ? 'Снять голос' : 'Поддержать вопрос';
+        const voteLabel = isOwn ? txt('Нельзя голосовать за свой вопрос','You cannot upvote your own question')
+          : isAsked ? txt('Вопрос уже задан','Question already answered')
+          : voted ? txt('Снять голос','Remove upvote') : txt('Поддержать вопрос','Upvote question');
         return `
           <div class="question-card" style="${isAsked ? 'opacity:0.6;' : ''}">
             <div class="q-row">
               <div class="q-body">
                 <div class="question-text">${escapeHtml(item.text)}</div>
                 <div class="question-meta" style="margin-top:6px;">
-                  ${isOwn ? '<span class="badge open" style="font-size:9px;padding:2px 6px;">ваш</span> · ' : ''}${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)}
-                  ${item.is_pinned ? ' · <span class="badge pinned" style="font-size:9px;">закреплён</span>' : ''}
-                  ${isAsked ? ' · <span class="badge asked" style="font-size:9px;">задан</span>' : ''}
+                  ${isOwn ? `<span class="badge open" style="font-size:9px;padding:2px 6px;">${txt('ваш','yours')}</span> · ` : ''}${author ? escapeHtml(author) + ' · ' : ''}${formatClock(item.created_at)}
+                  ${item.is_pinned ? ` · <span class="badge pinned" style="font-size:9px;">${txt('закреплён','pinned')}</span>` : ''}
+                  ${isAsked ? ` · <span class="badge asked" style="font-size:9px;">${txt('задан','answered')}</span>` : ''}
                 </div>
               </div>
               <div class="vote-col">
@@ -1212,10 +1243,10 @@
 
     function renderMobileIntakeStatus(status) {
       const content = status === 'open'
-        ? ['Приём вопросов открыт', 'Задайте вопрос — он поступит модератору.']
+        ? [txt('Приём вопросов открыт','Q&A is open'), txt('Задайте вопрос — он поступит модератору.','Your question will be sent to the moderator.')]
         : status === 'offline'
-          ? ['Не в эфире', 'Сейчас эта сессия недоступна для вопросов.']
-          : ['Приём вопросов закрыт', 'Вопросы можно будет задать, когда приём откроется.'];
+          ? [txt('Не в эфире','Not live yet'), txt('Сейчас эта сессия недоступна для вопросов.','Questions are not available for this session yet.')]
+          : [txt('Приём вопросов закрыт','Q&A is closed'), txt('Вопросы можно будет задать, когда приём откроется.','You can submit a question once Q&A opens.')];
       mobileIntakeStatus.hidden = false;
       mobileIntakeStatus.dataset.intakeState = status;
       mobileIntakeStatusTitle.textContent = content[0];
@@ -1277,15 +1308,15 @@
       const operationQuestions = myQuestions;
       const operationIsCurrent = !operationRoom?.event_key || operationRoom?.is_current_session === true;
       if (!operationRoom || !operationRoomSlug || !operationSessionId || !operationIsCurrent || operationRoom.is_questions_open !== true) {
-        showToast('Приём вопросов закрыт.', 'error');
+        showToast(txt('Приём вопросов закрыт.','Q&A is closed.'), 'error');
         return;
       }
       if (submittingQuestion) return;
       const userText = normalizeQuestion(questionInput.value);
-      if (!userText) { showToast('Напишите вопрос.', 'error'); return; }
+      if (!userText) { showToast(txt('Напишите вопрос.','Please type a question.'), 'error'); return; }
       const text = userText;
       if (text.length > LIMIT) {
-        showToast('Сократите вопрос: текст должен быть не длиннее 200 символов.', 'error');
+        showToast(txt('Сократите вопрос: текст должен быть не длиннее 200 символов.','Question must be 200 characters or fewer.'), 'error');
         return;
       }
       const authorName = operationRoom.mode === 'panel' ? '' : nameInput.value;
@@ -1293,7 +1324,7 @@
       const speakerId = operationRoom.mode === 'panel' ? null : state.speaker?.id || null;
       submittingQuestion = true;
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Отправляю…';
+      submitBtn.textContent = txt('Отправляю…','Sending…');
       let questionSubmitted = false;
       try {
         const newQ = await submitGuestQuestion({
@@ -1316,9 +1347,9 @@
           updateQuestionFormState();
           nameInput.value = '';
           companyInput.value = '';
-          showToast(newQ?.status === 'pending' ? 'Вопрос отправлен на модерацию.' : 'Вопрос опубликован!', 'success');
+          showToast(newQ?.status === 'pending' ? txt('Вопрос отправлен на модерацию.','Question sent for moderation.') : txt('Вопрос опубликован!','Question published!'), 'success');
         } else {
-          showToast('Вопрос отправлен в предыдущую сессию.', 'success');
+          showToast(txt('Вопрос отправлен в предыдущую сессию.','Question was sent to the previous session.'), 'success');
         }
       } catch (e) {
         const message = String(e?.message || '');
@@ -1336,7 +1367,7 @@
         showToast('Вопрос сохранён, но данные не удалось обновить.', 'error');
       } finally {
         submittingQuestion = false;
-        submitBtn.textContent = 'Отправить вопрос';
+        submitBtn.textContent = txt('Отправить вопрос','Submit question');
         if (state.room) render();
         else updateQuestionFormState();
       }
@@ -1362,10 +1393,10 @@
         realtimeStatus.innerHTML = '<span class="live-tag-dot"></span> live';
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         realtimeStatus.className = 'live-tag offline';
-        realtimeStatus.innerHTML = '<span class="live-tag-dot"></span> нет связи';
+        realtimeStatus.innerHTML = `<span class="live-tag-dot"></span> ${txt('нет связи','offline')}`;
       } else {
         realtimeStatus.className = 'live-tag connecting';
-        realtimeStatus.innerHTML = '<span class="live-tag-dot"></span> подключение…';
+        realtimeStatus.innerHTML = `<span class="live-tag-dot"></span> ${txt('подключение…','connecting…')}`;
       }
     }
   </script>

@@ -11,19 +11,22 @@
       const event = (params.get('event') || '').trim();
       const isKdw = room.startsWith('kdw-2026-') || event.startsWith('kdw-2026-');
       const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
-      document.documentElement.dataset.brand = isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
-      document.documentElement.style.backgroundColor = isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
+      const isElina = event === 'elina-28-2026' || event === 'elina-28-rehearsal' || room === 'elina-28-session';
+      document.documentElement.dataset.brand = isElina ? 'elina-28' : isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
+      document.documentElement.style.backgroundColor = isElina ? '#080d15' : isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
       document.documentElement.style.colorScheme = 'dark';
     })();
   </script>
   <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" href="./guest-network-background.css" />
   <link rel="stylesheet" data-brand-stylesheet />
   <script>
     (() => {
       const selectedBrand = document.documentElement.dataset.brand;
       document.querySelector('[data-brand-stylesheet]').href = selectedBrand === 'kdw-2026'
         ? './brands/kdw-2026.css'
-        : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css' : './brands/sanchez.css';
+        : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css'
+        : selectedBrand === 'elina-28' ? './brands/elina-28.css' : './brands/sanchez.css';
     })();
   </script>
   <style>
@@ -42,6 +45,7 @@
     .event-entry-actions { display: grid; gap: 10px; margin-top: 26px; }
     .event-entry-action { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: 18px; text-decoration: none; background: var(--color-surface-subtle); color: var(--color-text); transition: border-color .15s ease, transform .15s ease, background .15s ease; }
     .event-entry-action:hover { border-color: var(--color-border-strong); transform: translateY(-1px); }
+    .event-entry-action[hidden] { display: none; }
     .event-entry-action.primary { background: var(--color-accent); color: var(--color-accent-contrast, #fff); border-color: transparent; }
     .event-entry-qna-state { min-height: 66px; display: grid; align-content: center; gap: 4px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: 18px; background: var(--color-surface-subtle); color: var(--color-text); }
     .event-entry-qna-state[hidden] { display: none; }
@@ -98,6 +102,10 @@
             <strong>Q&amp;A пока закрыт</strong>
             <span>Когда Q&amp;A откроется, здесь появится кнопка «Задать вопрос».</span>
           </div>
+          <a class="event-entry-action" id="audienceVoteLink" href="#" hidden>
+            <strong>Vote · Audience Choice</strong>
+            <span class="event-entry-arrow" aria-hidden="true">→</span>
+          </a>
           <a class="event-entry-action" id="programLink" href="#">
             <strong>Программа дня</strong>
             <span class="event-entry-arrow" aria-hidden="true">→</span>
@@ -118,16 +126,19 @@
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
     import { deriveGuestProgramState, PROGRAM_HERO_STATE } from './guest-program-state.mjs';
-    import { getEventKey, loadGuestEventProgram, subscribeGuestEventProgram } from './supabase-qna.js';
+    import { getEventKey, loadGuestEventProgram, subscribeGuestEventProgram, supabase } from './supabase-qna.js';
+    import { ELINA_28_EVENT_KEYS, voteButtonVisible } from './audience-choice-flow.mjs';
 
     const eventKey = getEventKey();
+    const isEnglishEvent = eventKey === 'elina-28-2026';
+    const txt = (ru, en) => isEnglishEvent ? en : ru;
+    if (isEnglishEvent) document.documentElement.lang = 'en';
+    const audienceVoteEligible = ELINA_28_EVENT_KEYS.includes(eventKey);
     const brand = getBrandForRoute(null, eventKey);
     applyBrandIdentity('welcome', brand);
-    if (brand.key === 'kdw-2026') {
-      void import('./kdw-guest-background.js')
-        .then(({ initKdwGuestBackground }) => initKdwGuestBackground('welcome'))
-        .catch(error => console.warn('KDW guest background unavailable', error));
-    }
+    void import('./guest-network-background.js')
+      .then(({ initGuestNetworkBackground }) => initGuestNetworkBackground('welcome'))
+      .catch(error => console.warn('ModeratorLive guest background unavailable', error));
 
     const appShell = document.getElementById('appShell');
     const bootstrapScreen = document.getElementById('bootstrapScreen');
@@ -136,6 +147,7 @@
     const askLink = document.getElementById('askLink');
     const askClosedState = document.getElementById('askClosedState');
     const programLink = document.getElementById('programLink');
+    const audienceVoteLink = document.getElementById('audienceVoteLink');
     const telegramLink = document.getElementById('telegramLink');
     const programCard = document.getElementById('programCard');
     const programLabel = document.getElementById('programLabel');
@@ -143,8 +155,16 @@
     const programTitle = document.getElementById('programTitle');
     const programType = document.getElementById('programType');
     const realtimeStatus = document.getElementById('realtimeStatus');
+    if (isEnglishEvent) {
+      askLink.querySelector('strong').textContent = 'Ask a question';
+      askClosedState.querySelector('strong').textContent = 'Q&A is currently closed';
+      askClosedState.querySelector('span').textContent = 'The Ask a question button will appear when Q&A opens.';
+      programLink.querySelector('strong').textContent = 'Event programme';
+    }
 
     let unsubscribeEvent = null;
+    let audienceVoteTimer = null;
+    let audienceVoteBusy = false;
     let transitionTimer = null;
     let transitionGeneration = 0;
     let relevantRoomIds = new Set();
@@ -172,15 +192,15 @@
       const offline = ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status);
       realtimeStatus.hidden = connected;
       realtimeStatus.dataset.state = offline ? 'offline' : 'connecting';
-      realtimeStatus.textContent = offline ? 'нет связи' : 'подключение';
+      realtimeStatus.textContent = offline ? txt('нет связи','Offline') : txt('подключение','Connecting…');
     }
 
     function reportRefreshError(error) {
       console.error('Event welcome refresh failed', error);
       if (!hasRendered) {
         showError(error?.code === 'EVENT_NOT_FOUND'
-          ? 'Мероприятие не найдено. Проверьте QR-код или ссылку.'
-          : 'Не удалось загрузить мероприятие. Обновите страницу и попробуйте снова.');
+          ? txt('Мероприятие не найдено. Проверьте QR-код или ссылку.','Event not found. Check the link or QR code.')
+          : txt('Не удалось загрузить мероприятие. Обновите страницу и попробуйте снова.','Could not load the event. Please refresh and try again.'));
       }
     }
 
@@ -192,7 +212,7 @@
       if (value == null) return null;
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return null;
-      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: brand.timeZone || undefined });
+      return date.toLocaleTimeString(isEnglishEvent ? 'en-GB' : 'ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: isEnglishEvent ? 'Europe/Moscow' : (brand.timeZone || undefined) });
     }
 
     function formatRange(item) {
@@ -201,8 +221,8 @@
     }
 
     function itemType(item) {
-      if (item.kind === 'service') return 'Организационный блок';
-      return item.mode === 'panel' ? 'Панель' : 'Выступление';
+      if (item.kind === 'service') return txt('Организационный блок','Programme block');
+      return item.mode === 'panel' ? txt('Панель','Session') : txt('Выступление','Talk');
     }
 
     function transitionRetryDelay(attempt) {
@@ -246,29 +266,52 @@
     function renderProgram(view) {
       const item = view.heroItem;
       const labels = {
-        [PROGRAM_HERO_STATE.NOW]: 'СЕЙЧАС',
-        [PROGRAM_HERO_STATE.NEXT]: 'ДАЛЕЕ',
-        [PROGRAM_HERO_STATE.COMPLETE]: 'ПРОГРАММА ЗАВЕРШЕНА',
-        [PROGRAM_HERO_STATE.UNSCHEDULED]: 'РАСПИСАНИЕ УТОЧНЯЕТСЯ',
-        [PROGRAM_HERO_STATE.EMPTY]: 'ПРОГРАММА'
+        [PROGRAM_HERO_STATE.NOW]: txt('СЕЙЧАС','NOW'),
+        [PROGRAM_HERO_STATE.NEXT]: txt('ДАЛЕЕ','NEXT'),
+        [PROGRAM_HERO_STATE.COMPLETE]: txt('ПРОГРАММА ЗАВЕРШЕНА','PROGRAMME COMPLETED'),
+        [PROGRAM_HERO_STATE.UNSCHEDULED]: txt('РАСПИСАНИЕ УТОЧНЯЕТСЯ','SCHEDULE TO BE CONFIRMED'),
+        [PROGRAM_HERO_STATE.EMPTY]: txt('ПРОГРАММА','PROGRAMME')
       };
       programCard.dataset.mode = view.heroState.toLowerCase();
       programLabel.textContent = labels[view.heroState];
       programType.hidden = !item;
 
       if (item) {
-        programTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service'
-          ? `до ${formatTime(item.endMs)}`
-          : formatRange(item);
-        programTitle.textContent = item.title || 'Без названия';
+        const endTime = item.endMs == null ? null : formatTime(item.endMs);
+        programTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service' && endTime
+          ? `${txt('до','until')} ${endTime}`
+          : (item.startMs == null || item.endMs == null
+              ? txt('Время уточняется','Time to be confirmed')
+              : formatRange(item));
+        programTitle.textContent = item.title || txt('Без названия','Untitled');
         programType.textContent = itemType(item);
       } else {
         programTime.textContent = '—';
         programTitle.textContent = view.heroState === PROGRAM_HERO_STATE.COMPLETE
-          ? 'Спасибо, что были с нами'
+          ? txt('Спасибо, что были с нами','Thank you for joining us')
           : view.heroState === PROGRAM_HERO_STATE.UNSCHEDULED
-            ? 'Время блоков появится здесь'
-            : 'Расписание готовится';
+            ? txt('Время блоков появится здесь','Session times will appear here')
+            : txt('Расписание готовится','Programme coming soon');
+      }
+    }
+
+    // Poll state is intentionally separate from Program v2 and Q&A.
+    // Other event keys never call the Audience Choice API.
+    async function refreshAudienceVote() {
+      if (disposed || !audienceVoteEligible || audienceVoteBusy) return;
+      audienceVoteBusy = true;
+      try {
+        const { data, error } = await supabase.rpc('audience_choice_event_status', {
+          p_event_key: eventKey
+        });
+        if (error) throw error;
+        if (!disposed) audienceVoteLink.hidden = !voteButtonVisible(data?.status);
+      } catch (error) {
+        // Fail closed if the poll is absent/unavailable: ordinary event stays usable.
+        audienceVoteLink.hidden = true;
+        console.warn('Audience Choice status unavailable', error);
+      } finally {
+        audienceVoteBusy = false;
       }
     }
 
@@ -309,13 +352,19 @@
 
     async function init() {
       if (!eventKey) {
-        showError('В ссылке не указано мероприятие.');
+        showError(txt('В ссылке не указано мероприятие.','Missing event in the link.'));
         return;
       }
       const route = encodeURIComponent(eventKey);
       askLink.href = `./ask.html?event=${route}`;
       programLink.href = `./program.html?event=${route}`;
       telegramLink.hidden = eventKey !== 'tasigo-esg-2026';
+      if (audienceVoteEligible) {
+        // The existing event QR stays unchanged. This is an internal destination.
+        audienceVoteLink.href = `./audience-vote.html?event=${route}`;
+        void refreshAudienceVote();
+        audienceVoteTimer = setInterval(refreshAudienceVote, 5000);
+      }
       unsubscribeEvent = subscribeGuestEventProgram(eventKey, () => relevantRoomIds, queueRefresh, setRealtimeStatus);
       try {
         await refresh();
@@ -325,13 +374,20 @@
     }
 
     window.addEventListener('pageshow', event => {
-      if (event.persisted && !disposed) queueRefresh();
+      if (event.persisted && !disposed) {
+        queueRefresh();
+        void refreshAudienceVote();
+      }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && !disposed) void refreshAudienceVote();
     });
 
     window.addEventListener('pagehide', event => {
       if (event.persisted) return;
       disposed = true;
       clearTimeout(transitionTimer);
+      clearInterval(audienceVoteTimer);
       transitionGeneration += 1;
       unsubscribeEvent?.();
       unsubscribeEvent = null;

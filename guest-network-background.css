@@ -1,0 +1,47 @@
+/* ModeratorLive guest network: shared visual layer across event themes.
+   The canvas sits behind content and never intercepts taps or keyboard focus. */
+body.guest-network-enabled .guest-network-canvas,
+body.guest-network-enabled .guest-network-veil {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.guest-network-enabled .guest-network-canvas {
+  opacity: .84;
+}
+
+body.guest-network-enabled .guest-network-veil {
+  background:
+    radial-gradient(ellipse at 50% 48%, color-mix(in srgb, var(--color-bg) 30%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-bg) 5%, transparent), color-mix(in srgb, var(--color-bg) 22%, transparent));
+}
+
+body.guest-network-enabled .event-entry .event-program,
+body.guest-network-enabled .guest-shell .card,
+body.guest-network-enabled .program-page .card,
+body.guest-network-enabled .program-page .program-item {
+  background-color: color-mix(in srgb, var(--color-surface-raised) 96%, transparent);
+}
+
+/* Quiet the network behind long questions and programme text. */
+body.guest-network-enabled[data-guest-network-surface="questions"] .guest-network-canvas {
+  opacity: .54;
+}
+body.guest-network-enabled[data-guest-network-surface="questions"] .guest-network-veil {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--color-bg) 20%, transparent),
+    color-mix(in srgb, var(--color-bg) 36%, transparent));
+}
+body.guest-network-enabled[data-guest-network-surface="program"] .guest-network-canvas {
+  opacity: .72;
+}
+body.guest-network-enabled[data-guest-network-surface="program"] .guest-network-veil {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--color-bg) 14%, transparent),
+    color-mix(in srgb, var(--color-bg) 26%, transparent));
+}

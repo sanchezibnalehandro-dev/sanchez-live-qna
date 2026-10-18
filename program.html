@@ -11,19 +11,22 @@
       const event = (params.get('event') || '').trim();
       const isKdw = room.startsWith('kdw-2026-') || event.startsWith('kdw-2026-');
       const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
-      document.documentElement.dataset.brand = isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
-      document.documentElement.style.backgroundColor = isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
+      const isElina = event === 'elina-28-2026' || event === 'elina-28-rehearsal' || room === 'elina-28-session';
+      document.documentElement.dataset.brand = isElina ? 'elina-28' : isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
+      document.documentElement.style.backgroundColor = isElina ? '#080d15' : isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
       document.documentElement.style.colorScheme = 'dark';
     })();
   </script>
   <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" href="./guest-network-background.css" />
   <link rel="stylesheet" data-brand-stylesheet />
   <script>
     (() => {
       const selectedBrand = document.documentElement.dataset.brand;
       document.querySelector('[data-brand-stylesheet]').href = selectedBrand === 'kdw-2026'
         ? './brands/kdw-2026.css'
-        : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css' : './brands/sanchez.css';
+        : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css'
+        : selectedBrand === 'elina-28' ? './brands/elina-28.css' : './brands/sanchez.css';
     })();
   </script>
   <style>
@@ -139,13 +142,14 @@
     import { escapeHtml, getEventKey, loadGuestEventProgram, subscribeGuestEventProgram } from './supabase-qna.js';
 
     const eventKey = getEventKey();
+    const isEnglishEvent = eventKey === 'elina-28-2026';
+    const txt = (ru,en) => isEnglishEvent ? en : ru;
+    if (isEnglishEvent) document.documentElement.lang = 'en';
     const brand = getBrandForRoute(null, eventKey);
     applyBrandIdentity('program', brand);
-    if (brand.key === 'kdw-2026') {
-      void import('./kdw-guest-background.js')
-        .then(({ initKdwGuestBackground }) => initKdwGuestBackground('program'))
-        .catch(error => console.warn('KDW program background unavailable', error));
-    }
+    void import('./guest-network-background.js')
+      .then(({ initGuestNetworkBackground }) => initGuestNetworkBackground('program'))
+      .catch(error => console.warn('ModeratorLive guest background unavailable', error));
 
     const appShell = document.getElementById('appShell');
     const bootstrapScreen = document.getElementById('bootstrapScreen');
@@ -166,6 +170,16 @@
     const homeLink = document.getElementById('homeLink');
     const askLink = document.getElementById('askLink');
     const realtimeStatus = document.getElementById('realtimeStatus');
+    if (isEnglishEvent) {
+      document.querySelector('.program-title').textContent = 'Event programme';
+      document.querySelector('.program-group-head h2').textContent = "Today's schedule";
+      document.querySelector('#unscheduledSection .program-group-head h2').textContent = 'Times to be confirmed';
+      document.querySelector('#unscheduledSection .program-group-head span').textContent = 'Unscheduled';
+      homeLink.textContent = 'Home';
+      askLink.textContent = 'Ask a question';
+      focusAskLink.textContent = 'Ask a question';
+      bootstrapMessage.textContent = 'Loading programme…';
+    }
 
     let unsubscribeEvent = null;
     let transitionTimer = null;
@@ -195,15 +209,15 @@
       const offline = ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status);
       realtimeStatus.hidden = connected;
       realtimeStatus.dataset.state = offline ? 'offline' : 'connecting';
-      realtimeStatus.textContent = offline ? 'Нет связи' : 'Подключение…';
+      realtimeStatus.textContent = offline ? txt('Нет связи','Offline') : txt('Подключение…','Connecting…');
     }
 
     function reportRefreshError(error) {
       console.error('Event program refresh failed', error);
       if (!hasRendered) {
         showError(error?.code === 'EVENT_NOT_FOUND'
-          ? 'Мероприятие не найдено. Проверьте QR-код или ссылку.'
-          : 'Не удалось загрузить программу. Обновите страницу и попробуйте снова.');
+          ? txt('Мероприятие не найдено. Проверьте QR-код или ссылку.','Event not found. Check the link or QR code.')
+          : txt('Не удалось загрузить программу. Обновите страницу и попробуйте снова.','Could not load the programme. Please refresh and try again.'));
       }
     }
 
@@ -215,24 +229,24 @@
       if (value == null) return null;
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return null;
-      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: brand.timeZone || undefined });
+      return date.toLocaleTimeString(isEnglishEvent ? 'en-GB' : 'ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: isEnglishEvent ? 'Europe/Moscow' : brand.timeZone || undefined });
     }
 
     function formatRange(item) {
-      if (item.startMs == null || item.endMs == null) return { range: '—', note: 'Время уточняется' };
-      return { range: `${formatTime(item.startMs)}–${formatTime(item.endMs)}`, note: `${Number(item.duration_minutes)} мин` };
+      if (item.startMs == null || item.endMs == null) return { range: '—', note: txt('Время уточняется','Time to be confirmed') };
+      return { range: `${formatTime(item.startMs)}–${formatTime(item.endMs)}`, note: `${Number(item.duration_minutes)} ${txt('мин','min')}` };
     }
 
     function formatDate(value) {
       if (!value) return null;
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return null;
-      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: brand.timeZone || undefined });
+      return date.toLocaleDateString(isEnglishEvent ? 'en-GB' : 'ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: isEnglishEvent ? 'Europe/Moscow' : brand.timeZone || undefined });
     }
 
     function itemType(item) {
-      if (item.kind === 'service') return 'Организационный блок';
-      return item.mode === 'panel' ? 'Панель' : 'Выступление';
+      if (item.kind === 'service') return txt('Организационный блок','Programme block');
+      return item.mode === 'panel' ? txt('Панель','Session') : txt('Выступление','Talk');
     }
 
     function speakerMeta(item) {
@@ -240,9 +254,9 @@
       if (item.kind !== 'session') return '';
       if (item.mode === 'panel') {
         const names = speakers.map(entry => entry.name).filter(Boolean);
-        const participants = names.length ? `Участники: ${names.slice(0, 4).join(', ')}${names.length > 4 ? ` · +${names.length - 4}` : ''}` : '';
+        const participants = names.length ? `${txt('Участники','Participants')}: ${names.slice(0, 4).join(', ')}${names.length > 4 ? ` · +${names.length - 4}` : ''}` : '';
         const moderatorIdentity = [item.moderator_name, item.moderator_regalia].filter(Boolean).join(', ');
-        const moderator = moderatorIdentity ? `Модератор: ${moderatorIdentity}` : '';
+        const moderator = moderatorIdentity ? `${txt('Модератор','Moderator')}: ${moderatorIdentity}` : '';
         return [moderator, participants].filter(Boolean).join(' · ');
       }
       const speaker = speakers[0];
@@ -252,11 +266,11 @@
     function renderHero(view) {
       const item = view.heroItem;
       const labels = {
-        [PROGRAM_HERO_STATE.NOW]: 'СЕЙЧАС',
-        [PROGRAM_HERO_STATE.NEXT]: 'ДАЛЕЕ',
-        [PROGRAM_HERO_STATE.COMPLETE]: 'ПРОГРАММА ЗАВЕРШЕНА',
-        [PROGRAM_HERO_STATE.UNSCHEDULED]: 'ВРЕМЯ УТОЧНЯЕТСЯ',
-        [PROGRAM_HERO_STATE.EMPTY]: 'ПРОГРАММА'
+        [PROGRAM_HERO_STATE.NOW]: txt('СЕЙЧАС','NOW'),
+        [PROGRAM_HERO_STATE.NEXT]: txt('ДАЛЕЕ','NEXT'),
+        [PROGRAM_HERO_STATE.COMPLETE]: txt('ПРОГРАММА ЗАВЕРШЕНА','PROGRAMME COMPLETED'),
+        [PROGRAM_HERO_STATE.UNSCHEDULED]: txt('ВРЕМЯ УТОЧНЯЕТСЯ','TIME TO BE CONFIRMED'),
+        [PROGRAM_HERO_STATE.EMPTY]: txt('ПРОГРАММА','PROGRAMME')
       };
       scheduleFocus.dataset.mode = view.heroState.toLowerCase();
       focusLabel.textContent = labels[view.heroState];
@@ -267,10 +281,11 @@
 
       if (item) {
         const timing = formatRange(item);
-        focusTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service'
-          ? `до ${formatTime(item.endMs)}`
-          : timing.range;
-        focusTitle.textContent = item.title || 'Без названия';
+        const endTime = item.endMs == null ? null : formatTime(item.endMs);
+        focusTime.textContent = view.heroState === PROGRAM_HERO_STATE.NOW && item.kind === 'service' && endTime
+          ? `${txt('до','until')} ${endTime}`
+          : (item.startMs == null || item.endMs == null ? timing.note : timing.range);
+        focusTitle.textContent = item.title || txt('Без названия','Untitled');
         focusType.textContent = itemType(item);
         const meta = speakerMeta(item);
         focusMeta.textContent = meta;
@@ -280,24 +295,24 @@
 
       focusTime.textContent = '—';
       focusTitle.textContent = view.heroState === PROGRAM_HERO_STATE.COMPLETE
-        ? 'Спасибо, что были с нами'
+        ? txt('Спасибо, что были с нами','Thank you for joining us')
         : view.heroState === PROGRAM_HERO_STATE.UNSCHEDULED
-          ? 'Расписание готовится'
-          : 'Программа пока не опубликована';
+          ? txt('Расписание готовится','Programme being prepared')
+          : txt('Программа пока не опубликована','Programme not yet published');
     }
 
     function renderProgramItem(item, nextItemId) {
       const timing = formatRange(item);
       const meta = speakerMeta(item);
-      const pastFlag = item.scheduleState === 'PAST' ? '<span class="program-flag past">Завершено</span>' : '';
-      const currentFlag = item.scheduleState === 'NOW' ? '<span class="program-flag current">Сейчас</span>' : '';
-      const nextFlag = String(item.id) === String(nextItemId) ? '<span class="program-flag next">Далее</span>' : '';
+      const pastFlag = item.scheduleState === 'PAST' ? `<span class="program-flag past">${txt('Завершено','Completed')}</span>` : '';
+      const currentFlag = item.scheduleState === 'NOW' ? `<span class="program-flag current">${txt('Сейчас','Now')}</span>` : '';
+      const nextFlag = String(item.id) === String(nextItemId) ? `<span class="program-flag next">${txt('Далее','Next')}</span>` : '';
       return `
         <article class="program-item state-${item.scheduleState.toLowerCase()}">
           <div class="program-time"><strong>${escapeHtml(timing.range)}</strong><span>${escapeHtml(timing.note)}</span></div>
           <div class="program-content">
             <div class="program-flags"><span class="program-flag">${escapeHtml(itemType(item))}</span>${pastFlag}${currentFlag}${nextFlag}</div>
-            <div class="program-name">${escapeHtml(item.title || 'Без названия')}</div>
+            <div class="program-name">${escapeHtml(item.title || txt('Без названия','Untitled'))}</div>
             ${meta ? `<div class="program-meta">${escapeHtml(meta)}</div>` : ''}
           </div>
         </article>`;
@@ -344,12 +359,12 @@
     function render(snapshot) {
       const view = deriveGuestProgramState(snapshot.items, snapshot.operationalCurrentRoom);
       const firstScheduled = view.scheduledItems[0];
-      programDate.textContent = formatDate(firstScheduled?.starts_at) || 'Актуальное расписание мероприятия';
+      programDate.textContent = formatDate(firstScheduled?.starts_at) || txt('Актуальное расписание мероприятия','28 October 2026 · Programme details to follow');
       renderHero(view);
 
       const visibleScheduled = view.scheduledItems;
       scheduledSection.hidden = !visibleScheduled.length;
-      scheduledCount.textContent = `${visibleScheduled.length} ${visibleScheduled.length === 1 ? 'блок' : 'блока'}`;
+      scheduledCount.textContent = `${visibleScheduled.length} ${txt(visibleScheduled.length === 1 ? 'блок' : 'блока', visibleScheduled.length === 1 ? 'block' : 'blocks')}`;
       programList.innerHTML = visibleScheduled.map(item => renderProgramItem(item, view.nextItem?.id)).join('');
 
       unscheduledSection.hidden = !view.unscheduledItems.length;
@@ -385,7 +400,7 @@
 
     async function init() {
       if (!eventKey) {
-        showError('В ссылке не указано мероприятие.');
+        showError(txt('В ссылке не указано мероприятие.','Missing event in the link.'));
         return;
       }
       const route = encodeURIComponent(eventKey);
