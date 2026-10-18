@@ -76,3 +76,14 @@ test('ELINA 28 guest modules parse and English is strictly event-scoped', () => 
   assert.match(ask,/Questions are not available for this session yet/);
   assert.match(ask,/Q&A is closed/);
 });
+
+test('ELINA 28 projector QR uses English only for the accelerator and keeps the canonical guest destination', () => {
+  const admin = read('admin-auth.html');
+  assert.match(admin, /const QR_PRODUCTION_ORIGIN = 'https:\/\/qna\.sanchez-ai\.ru'/);
+  assert.match(admin, /'\/welcome\.html\?event=' \+ encodeURIComponent\(state\.room\.event_key\)/);
+  assert.match(admin, /elinaEnglishQr = state\.room\?\.event_key === 'elina-28-2026'/);
+  assert.match(admin, /'JOIN THE SESSION'/);
+  assert.match(admin, /'Programme · Live Q&A · Audience Choice'/);
+  assert.match(admin, /state\.room\?\.event_key \? 'ПРИСОЕДИНЯЙТЕСЬ'/);
+  assert.match(admin, /state\.room\?\.event_key \? 'Программа дня и LIVE Q&A'/);
+});
