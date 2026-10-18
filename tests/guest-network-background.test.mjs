@@ -115,8 +115,8 @@ test('animation can run when reduced-motion is off; unavailable surfaces do noth
 test('guest pages use the shared entry; admin, moderator and login stay untouched', () => {
   for (const page of ['welcome.html', 'ask.html', 'program.html']) {
     assert.match(read(page), /initGuestNetworkBackground/);
-    assert.match(read(page), /guest-network-background\\.css/);
-    assert.doesNotMatch(read(page), /kdw-guest-background\\.js/);
+    assert.match(read(page), /guest-network-background\.css/);
+    assert.doesNotMatch(read(page), /kdw-guest-background\.js/);
   }
   for (const page of ['admin-auth.html', 'mod-auth.html', 'login-auth.html']) {
     assert.doesNotMatch(read(page), /initGuestNetworkBackground/);
