@@ -1,0 +1,47 @@
+name: Production guest routes smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-guest-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check both public hosts after auto deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_host() {
+            local origin="$1"
+            local tmp
+            tmp="$(mktemp -d)"
+            trap 'rm -rf "$tmp"' RETURN
+            for attempt in $(seq 1 16); do
+              if curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/welcome.html?event=elina-28-2026" -o "$tmp/welcome" &&
+                 curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/audience-vote.html?event=elina-28-2026" -o "$tmp/vote" &&
+                 curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/admin-auth.html?room=elina-28-session" -o "$tmp/admin" &&
+                 curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/program.html?event=elina-28-2026" -o "$tmp/program" &&
+                 curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/guest-network-background.js" -o "$tmp/network" &&
+                 grep -Fq 'guest-network-background.css' "$tmp/welcome" &&
+                 grep -Fq 'audienceVoteLink' "$tmp/welcome" &&
+                 grep -Fq 'id="ownStep"' "$tmp/vote" &&
+                 grep -Fq 'JOIN THE SESSION' "$tmp/admin" &&
+                 grep -Fq 'guest-network-background.css' "$tmp/program" &&
+                 grep -Fq 'initGuestNetworkBackground' "$tmp/network"; then
+                echo "PASS: $origin has ELINA welcome, voting, programme, network and English QR screen"
+                return 0
+              fi
+              echo "Attempt $attempt/16 not ready on $origin"
+              sleep 15
+            done
+            echo "::error::Release files not confirmed on $origin after retries"
+            return 1
+          }
+          check_host "https://qna.sanchez-ai.ru"
+          check_host "https://sanchez-live-qna.vercel.app"
