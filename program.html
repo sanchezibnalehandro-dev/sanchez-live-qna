@@ -17,6 +17,7 @@
     })();
   </script>
   <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" href="./guest-network-background.css" />
   <link rel="stylesheet" data-brand-stylesheet />
   <script>
     (() => {
@@ -141,11 +142,9 @@
     const eventKey = getEventKey();
     const brand = getBrandForRoute(null, eventKey);
     applyBrandIdentity('program', brand);
-    if (brand.key === 'kdw-2026') {
-      void import('./kdw-guest-background.js')
-        .then(({ initKdwGuestBackground }) => initKdwGuestBackground('program'))
-        .catch(error => console.warn('KDW program background unavailable', error));
-    }
+    void import('./guest-network-background.js')
+      .then(({ initGuestNetworkBackground }) => initGuestNetworkBackground('program'))
+      .catch(error => console.warn('ModeratorLive guest background unavailable', error));
 
     const appShell = document.getElementById('appShell');
     const bootstrapScreen = document.getElementById('bootstrapScreen');
