@@ -1,0 +1,32 @@
+name: Guest network smoke tests
+
+on:
+  pull_request:
+    paths:
+      - 'guest-network-background.js'
+      - 'guest-network-background.css'
+      - 'kdw-guest-background.js'
+      - 'welcome.html'
+      - 'ask.html'
+      - 'program.html'
+      - 'tests/guest-network-background.test.mjs'
+      - '.github/workflows/guest-network-smoke.yml'
+  push:
+    branches:
+      - 'feature/moderatorlive-unified-guest-network'
+      - 'test/elina28-unified-network-preview'
+
+permissions:
+  contents: read
+
+jobs:
+  static-guest-network:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate shared module syntax
+        run: node --check guest-network-background.js
+      - name: Run network component checks
+        run: node --test tests/guest-network-background.test.mjs
