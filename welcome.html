@@ -13,6 +13,7 @@
       const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
       const isElina = event === 'elina-28-2026' || event === 'elina-28-rehearsal' || room === 'elina-28-session';
       document.documentElement.dataset.brand = isElina ? 'elina-28' : isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
+      document.documentElement.classList.toggle('kdw-tiles', event === 'kdw-2026-finokhin');
       document.documentElement.style.backgroundColor = isElina ? '#080d15' : isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
       document.documentElement.style.colorScheme = 'dark';
     })();
@@ -53,6 +54,68 @@
     .event-entry-qna-state span { color: var(--color-text-secondary); font-size: 12px; line-height: 1.45; }
     .event-entry-action strong { font-size: 16px; font-weight: 850; }
     .event-entry-action .event-entry-arrow { flex: 0 0 auto; font-size: 20px; line-height: 1; }
+    .kdw-action-icon { display: none; }
+    /* Only the KDW panel uses two square, icon-led actions. Other events retain their existing controls. */
+    html.kdw-tiles .event-entry-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    html.kdw-tiles .event-entry-action,
+    html.kdw-tiles .event-entry-qna-state {
+      position: relative; aspect-ratio: 1 / 1; min-height: 0; min-width: 0;
+      padding: clamp(14px, 3vw, 24px); border-radius: 18px;
+      display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 12px;
+      overflow: hidden;
+    }
+    html.kdw-tiles .event-entry-action[hidden],
+    html.kdw-tiles .event-entry-qna-state[hidden] { display: none; }
+    html.kdw-tiles .event-entry-action:not(.primary) {
+      background: linear-gradient(145deg, color-mix(in srgb, var(--color-accent) 9%, transparent), transparent 64%), var(--color-surface-raised);
+    }
+    html.kdw-tiles .event-entry-action .kdw-action-icon,
+    html.kdw-tiles .event-entry-qna-state .kdw-action-icon {
+      width: clamp(37px, 5vw, 52px); height: clamp(37px, 5vw, 52px);
+      display: grid; place-items: center; flex: 0 0 auto;
+      border: 1px solid var(--color-accent-border); border-radius: 12px;
+      background: var(--color-accent-soft); color: var(--color-accent-text);
+    }
+    html.kdw-tiles .event-entry-action.primary .kdw-action-icon {
+      border-color: rgba(3, 48, 42, .15); background: rgba(3, 48, 42, .1);
+      color: var(--color-accent-contrast, #042720);
+    }
+    html.kdw-tiles .kdw-action-icon svg {
+      width: 26px; height: 26px; fill: none; stroke: currentColor;
+      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    }
+    html.kdw-tiles .event-entry-action strong,
+    html.kdw-tiles .event-entry-qna-state strong {
+      font-family: var(--font-display); font-size: clamp(15px, 2.6vw, 21px);
+      line-height: 1.25; letter-spacing: -.02em; overflow-wrap: anywhere;
+    }
+    html.kdw-tiles .event-entry-action .event-entry-arrow {
+      position: absolute; right: clamp(14px, 3vw, 24px); top: clamp(17px, 3vw, 25px);
+      font-size: 21px; opacity: .85;
+    }
+    html.kdw-tiles .event-entry-qna-state > span:not(.kdw-action-icon) { display: none; }
+    html.kdw-tiles .event-entry-qna-state {
+      background: var(--color-surface-subtle);
+      border-color: var(--color-border-subtle);
+    }
+    html.kdw-tiles .event-entry-qna-state .kdw-action-icon {
+      color: var(--color-text-secondary); border-color: var(--color-border-subtle);
+      background: rgba(255,255,255,.04);
+    }
+    html.kdw-tiles .event-entry-action:focus-visible {
+      outline: 3px solid var(--color-focus-ring); outline-offset: 3px;
+    }
+    @media (max-width: 390px) {
+      html.kdw-tiles .event-entry-actions { gap: 9px; }
+      html.kdw-tiles .event-entry-action,
+      html.kdw-tiles .event-entry-qna-state { padding: 13px; border-radius: 15px; }
+      html.kdw-tiles .event-entry-action strong,
+      html.kdw-tiles .event-entry-qna-state strong { font-size: 14px; }
+      html.kdw-tiles .event-entry-action .kdw-action-icon,
+      html.kdw-tiles .event-entry-qna-state .kdw-action-icon { width: 36px; height: 36px; }
+      html.kdw-tiles .kdw-action-icon svg { width: 22px; height: 22px; }
+      html.kdw-tiles .event-entry-action .event-entry-arrow { top: 14px; right: 13px; font-size: 18px; }
+    }
     .event-entry-foot { min-height: 18px; padding: 0 8px; color: var(--color-text-secondary); font-size: 10px; text-align: center; }
     .event-entry-realtime { display: inline-flex; align-items: center; gap: 6px; }
     .event-entry-realtime::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -95,10 +158,12 @@
 
         <div class="event-entry-actions" id="entryActions">
           <a class="event-entry-action primary" id="askLink" href="#" hidden>
+            <span class="kdw-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.2 7.6L3 21l1.9-5.3a8.5 8.5 0 1 1 15.6-4.2Z"/><path d="M9.5 9.2a2.6 2.6 0 0 1 5.1.8c0 1.6-2.6 2-2.6 3.4"/><path d="M12 16.5h.01"/></svg></span>
             <strong>Задать вопрос</strong>
             <span class="event-entry-arrow" aria-hidden="true">→</span>
           </a>
           <div class="event-entry-qna-state" id="askClosedState" role="status">
+            <span class="kdw-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M12 8v4l3 2"/></svg></span>
             <strong>Q&amp;A пока закрыт</strong>
             <span>Когда Q&amp;A откроется, здесь появится кнопка «Задать вопрос».</span>
           </div>
@@ -107,6 +172,7 @@
             <span class="event-entry-arrow" aria-hidden="true">→</span>
           </a>
           <a class="event-entry-action" id="programLink" href="#">
+            <span class="kdw-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-1.2a5.5 5.5 0 0 1 11 0V20"/><path d="M16 5.1a3 3 0 0 1 0 5.8M18 14.1a5 5 0 0 1 2.5 4.3V20"/></svg></span>
             <strong>Программа дня</strong>
             <span class="event-entry-arrow" aria-hidden="true">→</span>
           </a>
