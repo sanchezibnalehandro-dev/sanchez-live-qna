@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Участники дискуссии Kazan Digital Week 2026: состав панели, должности и темы выступлений." />
+  <title>Участники сессии · KAZAN DIGITAL WEEK</title>
+  <script>
+    document.documentElement.dataset.brand = 'kdw-2026';
+    document.documentElement.style.backgroundColor = '#041b20';
+    document.documentElement.style.colorScheme = 'dark';
+  </script>
+  <link rel="stylesheet" href="./theme.css" />
+  <link rel="stylesheet" data-brand-stylesheet href="./brands/kdw-2026.css" />
+  <style>
+    .people-page { min-height: 100vh; padding: max(18px, env(safe-area-inset-top)) 16px max(48px, env(safe-area-inset-bottom)); }
+    .people-shell { width: min(900px, 100%); margin-inline: auto; display: grid; gap: 18px; }
+    .people-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 4px 2px; }
+    .people-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .people-brand .brand-logo-mark { width: 46px; height: 46px; flex: 0 0 auto; }
+    .people-brand-copy { display: grid; gap: 3px; }
+    .people-brand-copy strong { font: 800 15px/1.2 var(--font-display); letter-spacing: -.02em; color: var(--color-text); }
+    .people-brand-copy span { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--color-text-secondary); }
+    .people-back { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 9px 14px; border: 1px solid var(--color-border); border-radius: 12px; text-decoration: none; color: var(--color-text); background: var(--color-surface-subtle); font-weight: 750; font-size: 14px; white-space: nowrap; }
+    .people-back:hover { border-color: var(--color-border-strong); background: var(--color-surface-hover); }
+    .people-intro { position: relative; isolation: isolate; overflow: hidden; padding: clamp(24px, 5vw, 40px); background: radial-gradient(ellipse at 95% 0%, rgba(30, 197, 165, .18), transparent 55%), var(--color-surface-raised); }
+    .people-intro::after { content: ''; position: absolute; z-index: -1; inset: 0; opacity: .16; background-image: linear-gradient(to right, rgba(130, 232, 208, .15) 1px, transparent 1px), linear-gradient(to bottom, rgba(130, 232, 208, .15) 1px, transparent 1px); background-size: 36px 36px; mask-image: linear-gradient(90deg, transparent, black); pointer-events: none; }
+    .people-kicker, .people-section-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--color-accent-text); font-size: 11px; font-weight: 850; letter-spacing: .15em; text-transform: uppercase; }
+    .people-kicker::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent); }
+    .people-title { margin: 16px 0 12px; font: 800 clamp(28px, 5.6vw, 44px)/1.08 var(--font-display); letter-spacing: -.035em; color: var(--color-text); }
+    .people-session-name { margin: 0; max-width: 720px; font: 650 clamp(16px, 2.8vw, 21px)/1.45 var(--font-body); color: var(--color-text-secondary); overflow-wrap: anywhere; }
+    .people-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+    .people-meta span { display: inline-flex; min-height: 34px; align-items: center; padding: 6px 12px; border: 1px solid var(--color-border-subtle); border-radius: 9px; background: rgba(255,255,255,.04); color: var(--color-text); font-size: 13px; font-weight: 750; }
+    .people-moderator { display: grid; gap: 16px; padding: clamp(22px, 4vw, 30px); }
+    .people-moderator-row { display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 16px; align-items: start; }
+    .people-moderator-mark { display: grid; place-items: center; width: 50px; height: 50px; border: 1px solid var(--color-accent-border); border-radius: 13px; background: var(--color-accent-soft); color: var(--color-accent-text); font: 850 24px/1 var(--font-display); }
+    .people-moderator-name { margin: 0 0 7px; color: var(--color-text); font: 800 clamp(18px, 3vw, 23px)/1.25 var(--font-display); }
+    .people-moderator-role { margin: 0; color: var(--color-text-secondary); font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+    .people-list-section { display: grid; gap: 15px; }
+    .people-section-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; padding: 0 2px; }
+    .people-section-head h2 { margin: 5px 0 0; color: var(--color-text); font: 800 21px/1.2 var(--font-display); letter-spacing: -.025em; }
+    .people-count { color: var(--color-text-secondary); font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .people-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .people-member { display: grid; align-content: start; gap: 13px; padding: 22px; background: var(--color-surface-raised); min-width: 0; }
+    .people-member-top { display: flex; align-items: center; gap: 12px; }
+    .people-member-num { display: grid; place-items: center; width: 39px; height: 39px; flex: 0 0 auto; border: 1px solid var(--color-border-subtle); border-radius: 11px; color: var(--color-accent-text); background: var(--color-surface-subtle); font: 850 14px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+    .people-member-name { margin: 0; color: var(--color-text); font: 800 clamp(16px, 2.5vw, 19px)/1.26 var(--font-display); overflow-wrap: anywhere; }
+    .people-member-role { margin: 0; color: var(--color-text-secondary); font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+    .people-member-topic { margin-top: 3px; padding: 13px 14px; border-left: 2px solid var(--color-accent); border-radius: 0 9px 9px 0; background: var(--color-accent-soft); }
+    .people-member-topic-label { display: block; margin-bottom: 6px; color: var(--color-accent-text); font-size: 10px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+    .people-member-topic p { margin: 0; color: var(--color-text); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+    .people-bottom { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 2px 2px 0; }
+    .people-bottom-note { color: var(--color-text-secondary); font-size: 13px; line-height: 1.5; }
+    .people-ask { display: inline-flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 50px; padding: 12px 17px; border-radius: 12px; background: var(--color-accent); color: var(--color-accent-contrast, #042720); text-decoration: none; font-size: 15px; font-weight: 850; white-space: nowrap; }
+    .people-ask:hover { background: var(--color-accent-hover); }
+    .people-ask[hidden] { display: none; }
+    .people-empty { padding: 24px; text-align: center; color: var(--color-text-secondary); font-size: 15px; }
+    .people-back:focus-visible, .people-ask:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 3px; }
+    @media (max-width: 680px) {
+      .people-page { padding: max(14px, env(safe-area-inset-top)) 12px max(36px, env(safe-area-inset-bottom)); }
+      .people-shell { gap: 13px; }
+      .people-brand .brand-logo-mark { width: 41px; height: 41px; }
+      .people-brand-copy strong { font-size: 13px; }
+      .people-back { padding-inline: 12px; font-size: 13px; }
+      .people-intro { padding: 25px 20px; }
+      .people-grid { grid-template-columns: 1fr; }
+      .people-member { padding: 20px; }
+      .people-bottom { flex-direction: column; align-items: stretch; }
+      .people-ask { width: 100%; }
+    }
+  </style>
+</head>
+<body class="is-booting">
+  <div class="bootstrap-screen" id="bootstrapScreen" role="status" aria-live="polite">
+    <div class="bootstrap-card">
+      <div class="bootstrap-brand">
+        <div class="brand-logo-mark" data-brand-mark></div>
+        <div class="bootstrap-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div>
+      </div>
+      <p class="bootstrap-message" id="bootstrapMessage">Загрузка участников…</p>
+    </div>
+  </div>
+
+  <main class="people-page app" id="appShell" inert aria-hidden="true">
+    <div class="people-shell">
+      <header class="people-top">
+        <div class="people-brand">
+          <div class="brand-logo-mark" data-brand-mark></div>
+          <div class="people-brand-copy"><strong data-brand-name></strong><span data-brand-product></span></div>
+        </div>
+        <a class="people-back" id="homeLink" href="#">← Главная</a>
+      </header>
+
+      <section class="card people-intro">
+        <span class="people-kicker">KDW 2026 · Зал 3</span>
+        <h1 class="people-title">Участники сессии</h1>
+        <p class="people-session-name" id="sessionTitle"></p>
+        <div class="people-meta"><span id="sessionDate"></span><span id="sessionTime"></span></div>
+      </section>
+
+      <section class="card people-moderator">
+        <span class="people-section-kicker">Модератор</span>
+        <div class="people-moderator-row">
+          <div class="people-moderator-mark" aria-hidden="true">М</div>
+          <div>
+            <h2 class="people-moderator-name" id="moderatorName"></h2>
+            <p class="people-moderator-role" id="moderatorRole"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="people-list-section" aria-labelledby="participantsHeading">
+        <div class="people-section-head">
+          <div>
+            <span class="people-section-kicker">Эксперты панели</span>
+            <h2 id="participantsHeading">Участники дискуссии</h2>
+          </div>
+          <span class="people-count" id="participantCount"></span>
+        </div>
+        <div class="people-grid" id="participantGrid"></div>
+      </section>
+
+      <div class="people-bottom">
+        <span class="people-bottom-note">Вопросы принимаются в общей очереди сессии.</span>
+        <a class="people-ask" id="askLink" href="#" hidden>К вопросам <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { applyBrandIdentity, getBrandForRoute } from './brand.js';
+    import { getEventKey, loadGuestEventProgram } from './supabase-qna.js';
+
+    const eventKey = getEventKey();
+    const brand = getBrandForRoute(null, eventKey);
+    applyBrandIdentity('welcome', brand);
+    document.title = 'Участники сессии · KAZAN DIGITAL WEEK';
+
+    const appShell = document.getElementById('appShell');
+    const bootstrapScreen = document.getElementById('bootstrapScreen');
+    const bootstrapMessage = document.getElementById('bootstrapMessage');
+    const homeLink = document.getElementById('homeLink');
+    const askLink = document.getElementById('askLink');
+    const grid = document.getElementById('participantGrid');
+
+    function showError(message) {
+      bootstrapScreen.classList.add('is-error');
+      bootstrapScreen.setAttribute('role', 'alert');
+      bootstrapMessage.textContent = message;
+    }
+
+    function formatDateTime(item) {
+      const date = new Date(item.starts_at);
+      if (Number.isNaN(date.getTime())) return { date: 'Дата уточняется', time: 'Время уточняется' };
+      const dateText = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Moscow' });
+      const timeFormat = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' };
+      const from = date.toLocaleTimeString('ru-RU', timeFormat);
+      const minutes = Number(item.duration_minutes);
+      const to = Number.isFinite(minutes) && minutes > 0
+        ? new Date(date.getTime() + minutes * 60000).toLocaleTimeString('ru-RU', timeFormat)
+        : null;
+      return { date: dateText, time: to ? from + '–' + to : from };
+    }
+
+    function createMember(person, index) {
+      const card = document.createElement('article');
+      card.className = 'card people-member';
+
+      const header = document.createElement('div');
+      header.className = 'people-member-top';
+      const number = document.createElement('span');
+      number.className = 'people-member-num';
+      number.setAttribute('aria-hidden', 'true');
+      number.textContent = String(index + 1).padStart(2, '0');
+      const name = document.createElement('h3');
+      name.className = 'people-member-name';
+      name.textContent = person.name;
+      header.append(number, name);
+      card.append(header);
+
+      if (person.regalia && person.regalia.trim()) {
+        const regalia = document.createElement('p');
+        regalia.className = 'people-member-role';
+        regalia.textContent = person.regalia;
+        card.append(regalia);
+      }
+
+      if (person.topic && person.topic.trim()) {
+        const topic = document.createElement('div');
+        topic.className = 'people-member-topic';
+        const label = document.createElement('span');
+        label.className = 'people-member-topic-label';
+        label.textContent = 'Тема выступления';
+        const text = document.createElement('p');
+        text.textContent = person.topic;
+        topic.append(label, text);
+        card.append(topic);
+      }
+      return card;
+    }
+
+    async function init() {
+      if (eventKey !== 'kdw-2026-finokhin') {
+        showError('Сессия не найдена. Проверьте ссылку или QR-код.');
+        return;
+      }
+
+      const route = encodeURIComponent(eventKey);
+      homeLink.href = './welcome.html?event=' + route;
+      askLink.href = './ask.html?event=' + route;
+
+      try {
+        const snapshot = await loadGuestEventProgram(eventKey);
+        const sessions = snapshot.items.filter(item => item.kind === 'session' && item.mode === 'panel');
+        const currentId = snapshot.operationalCurrentRoom?.id;
+        const session = sessions.find(item => String(item.room_id) === String(currentId)) || sessions[0];
+        if (!session) {
+          showError('Сведения об участниках пока недоступны.');
+          return;
+        }
+
+        document.getElementById('sessionTitle').textContent = session.title || 'Панельная дискуссия';
+        const timing = formatDateTime(session);
+        document.getElementById('sessionDate').textContent = timing.date;
+        document.getElementById('sessionTime').textContent = timing.time;
+        document.getElementById('moderatorName').textContent = session.moderator_name || 'Модератор уточняется';
+        document.getElementById('moderatorRole').textContent = session.moderator_regalia || '';
+
+        const members = (session.speakers || []).filter(person => typeof person.name === 'string' && person.name.trim());
+        document.getElementById('participantCount').textContent = 'Всего: ' + members.length;
+        if (members.length) {
+          const fragment = document.createDocumentFragment();
+          members.forEach((person, index) => fragment.append(createMember(person, index)));
+          grid.replaceChildren(fragment);
+        } else {
+          const empty = document.createElement('div');
+          empty.className = 'card people-empty';
+          empty.textContent = 'Состав участников уточняется.';
+          grid.replaceChildren(empty);
+        }
+
+        askLink.hidden = !snapshot.operationalCurrentRoom || String(currentId) !== String(session.room_id);
+
+        appShell.removeAttribute('inert');
+        appShell.removeAttribute('aria-hidden');
+        document.body.classList.remove('is-booting');
+        document.body.classList.add('is-ready');
+      } catch (error) {
+        console.error('KDW participants load failed', error);
+        showError(error?.code === 'EVENT_NOT_FOUND'
+          ? 'Сессия не найдена. Проверьте ссылку или QR-код.'
+          : 'Не удалось загрузить участников. Обновите страницу.');
+      }
+    }
+
+    void init();
+  </script>
+</body>
+</html>
