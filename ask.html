@@ -728,7 +728,12 @@
     if (eventKey) {
       const eventQuery = '?event=' + encodeURIComponent(eventKey);
       guestHomeLink.href = './welcome.html' + eventQuery;
-      guestProgramLink.href = './program.html' + eventQuery;
+      if (eventKey === 'kdw-2026-finokhin') {
+        guestProgramLink.textContent = 'Участники';
+        guestProgramLink.href = './participants.html' + eventQuery;
+      } else {
+        guestProgramLink.href = './program.html' + eventQuery;
+      }
       guestEventHeader.hidden = false;
     }
 
