@@ -357,7 +357,12 @@
       }
       const route = encodeURIComponent(eventKey);
       askLink.href = `./ask.html?event=${route}`;
-      programLink.href = `./program.html?event=${route}`;
+      if (eventKey === 'kdw-2026-finokhin') {
+        programLink.querySelector('strong').textContent = 'Участники сессии';
+        programLink.href = `./participants.html?event=${route}`;
+      } else {
+        programLink.href = `./program.html?event=${route}`;
+      }
       telegramLink.hidden = eventKey !== 'tasigo-esg-2026';
       if (audienceVoteEligible) {
         // The existing event QR stays unchanged. This is an internal destination.
