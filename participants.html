@@ -121,15 +121,16 @@
       </section>
 
       <div class="people-bottom">
-        <span class="people-bottom-note">Вопросы принимаются в общей очереди сессии.</span>
+        <span class="people-bottom-note" id="questionStatus">Вопросы откроются по команде оператора.</span>
         <a class="people-ask" id="askLink" href="#" hidden>К вопросам <span aria-hidden="true">→</span></a>
       </div>
+      <p class="people-bottom-note" id="connectionStatus" role="status" hidden>Связь прервана. Восстанавливаем данные…</p>
     </div>
   </main>
 
   <script type="module">
     import { applyBrandIdentity, getBrandForRoute } from './brand.js';
-    import { getEventKey, loadGuestEventProgram } from './supabase-qna.js';
+    import { getEventKey, loadGuestEventProgram, subscribeGuestEventProgram } from './supabase-qna.js';
 
     const eventKey = getEventKey();
     const brand = getBrandForRoute(null, eventKey);
@@ -142,6 +143,16 @@
     const homeLink = document.getElementById('homeLink');
     const askLink = document.getElementById('askLink');
     const grid = document.getElementById('participantGrid');
+    const questionStatus = document.getElementById('questionStatus');
+    const connectionStatus = document.getElementById('connectionStatus');
+    let relevantRoomIds = new Set();
+    let unsubscribeEvent = null;
+    let retryTimer = null;
+    let retryAttempt = 0;
+    let refreshing = false;
+    let refreshPending = false;
+    let hasRendered = false;
+    let disposed = false;
 
     function showError(message) {
       bootstrapScreen.classList.add('is-error');
@@ -150,8 +161,10 @@
     }
 
     function formatDateTime(item) {
+      const pending = { date: '2026 · дата уточняется', time: 'Время уточняется' };
+      if (!item.starts_at) return pending;
       const date = new Date(item.starts_at);
-      if (Number.isNaN(date.getTime())) return { date: 'Дата уточняется', time: 'Время уточняется' };
+      if (Number.isNaN(date.getTime())) return pending;
       const dateText = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Moscow' });
       const timeFormat = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' };
       const from = date.toLocaleTimeString('ru-RU', timeFormat);
@@ -199,24 +212,17 @@
       return card;
     }
 
-    async function init() {
-      if (eventKey !== 'kdw-2026-finokhin') {
-        showError('Сессия не найдена. Проверьте ссылку или QR-код.');
-        return;
-      }
-
-      const route = encodeURIComponent(eventKey);
-      homeLink.href = './welcome.html?event=' + route;
-      askLink.href = './ask.html?event=' + route;
-
-      try {
-        const snapshot = await loadGuestEventProgram(eventKey);
+    function render(snapshot) {
         const sessions = snapshot.items.filter(item => item.kind === 'session' && item.mode === 'panel');
         const currentId = snapshot.operationalCurrentRoom?.id;
         const session = sessions.find(item => String(item.room_id) === String(currentId)) || sessions[0];
         if (!session) {
-          showError('Сведения об участниках пока недоступны.');
-          return;
+          if (!hasRendered) showError('Сведения об участниках пока недоступны.');
+          else {
+            connectionStatus.textContent = 'Сведения об участниках временно недоступны.';
+            connectionStatus.hidden = false;
+          }
+          return false;
         }
 
         document.getElementById('sessionTitle').textContent = session.title || 'Панельная дискуссия';
@@ -239,19 +245,106 @@
           grid.replaceChildren(empty);
         }
 
-        askLink.hidden = !snapshot.operationalCurrentRoom || String(currentId) !== String(session.room_id);
+        const canAsk = String(currentId) === String(session.room_id)
+          && snapshot.operationalCurrentRoom?.is_questions_open === true;
+        askLink.hidden = !canAsk;
+        questionStatus.textContent = canAsk
+          ? 'Вопросы принимаются в общей очереди сессии.'
+          : 'Вопросы откроются по команде оператора.';
 
-        appShell.removeAttribute('inert');
-        appShell.removeAttribute('aria-hidden');
-        document.body.classList.remove('is-booting');
-        document.body.classList.add('is-ready');
+        if (!hasRendered) {
+          hasRendered = true;
+          appShell.removeAttribute('inert');
+          appShell.removeAttribute('aria-hidden');
+          document.body.classList.remove('is-booting');
+          document.body.classList.add('is-ready');
+        }
+        return true;
+    }
+
+    function scheduleRetry() {
+      if (disposed || retryTimer) return;
+      const delay = Math.min(30_000, 2_000 * 2 ** Math.min(retryAttempt++, 4));
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        queueRefresh();
+      }, delay);
+    }
+
+    function queueRefresh() {
+      void refresh();
+    }
+
+    async function refresh() {
+      if (disposed) return;
+      if (refreshing) {
+        refreshPending = true;
+        return;
+      }
+      refreshing = true;
+      try {
+        const snapshot = await loadGuestEventProgram(eventKey);
+        if (disposed) return;
+        relevantRoomIds = new Set(snapshot.items
+          .filter(item => item.kind === 'session' && item.room_id != null)
+          .map(item => String(item.room_id)));
+        const rendered = render(snapshot);
+        clearTimeout(retryTimer);
+        retryTimer = null;
+        retryAttempt = 0;
+        if (rendered) connectionStatus.hidden = true;
+        bootstrapScreen.classList.remove('is-error');
       } catch (error) {
+        if (disposed) return;
         console.error('KDW participants load failed', error);
-        showError(error?.code === 'EVENT_NOT_FOUND'
+        if (!hasRendered) showError(error?.code === 'EVENT_NOT_FOUND'
           ? 'Сессия не найдена. Проверьте ссылку или QR-код.'
-          : 'Не удалось загрузить участников. Обновите страницу.');
+          : 'Не удалось загрузить участников. Повторяем попытку…');
+        else {
+          connectionStatus.textContent = 'Связь прервана. Восстанавливаем данные…';
+          connectionStatus.hidden = false;
+        }
+        if (error?.code !== 'EVENT_NOT_FOUND') scheduleRetry();
+      } finally {
+        refreshing = false;
+        if (!disposed && refreshPending) {
+          refreshPending = false;
+          queueRefresh();
+        }
       }
     }
+
+    function init() {
+      if (eventKey !== 'kdw-2026-finokhin') {
+        showError('Сессия не найдена. Проверьте ссылку или QR-код.');
+        return;
+      }
+      const route = encodeURIComponent(eventKey);
+      homeLink.href = './welcome.html?event=' + route;
+      askLink.href = './ask.html?event=' + route;
+      unsubscribeEvent = subscribeGuestEventProgram(eventKey, () => relevantRoomIds, queueRefresh, status => {
+        if (disposed) return;
+        if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status) && hasRendered) {
+          connectionStatus.textContent = 'Связь прервана. Восстанавливаем данные…';
+          connectionStatus.hidden = false;
+        }
+      });
+      queueRefresh();
+    }
+
+    window.addEventListener('pageshow', event => {
+      if (event.persisted && !disposed) queueRefresh();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && !disposed) queueRefresh();
+    });
+    window.addEventListener('pagehide', event => {
+      if (event.persisted) return;
+      disposed = true;
+      clearTimeout(retryTimer);
+      unsubscribeEvent?.();
+      unsubscribeEvent = null;
+    });
 
     void init();
   </script>
