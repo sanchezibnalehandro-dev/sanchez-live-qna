@@ -98,8 +98,18 @@ function guestSessionId(key) {
   try {
     const existing = localStorage.getItem(storageKey);
     if (existing && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existing)) return existing;
-    if (!crypto.randomUUID) return null;
-    const next = crypto.randomUUID();
+    let next;
+    if (typeof crypto.randomUUID === 'function') {
+      next = crypto.randomUUID();
+    } else if (typeof crypto.getRandomValues === 'function') {
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      bytes[6] = (bytes[6] & 0x0f) | 0x40;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+      const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+      next = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    } else {
+      return null;
+    }
     localStorage.setItem(storageKey, next);
     return next;
   } catch { return null; }
@@ -148,7 +158,7 @@ async function checkStatus() {
     if (!eventInfo?.poll_key) { show(null); notice('No vote is configured for this event.', true); return; }
     pollKey = eventInfo.poll_key;
     guestId = guestSessionId(pollKey);
-    if (!guestId) { show(null); notice('Please allow browser storage to vote.', true); return; }
+    if (!guestId) { show(null); notice('This browser cannot save a voting ID. Please enable browser storage or use another browser.', true); return; }
     const { data, error } = await supabase.rpc('audience_choice_get', { p_poll_key: pollKey, p_guest_id: guestId });
     if (error) throw error;
     if (!data) { show(null); notice('Voting information is unavailable.', true); return; }
