@@ -70,11 +70,16 @@ test('ELINA 28 guest modules parse and English is strictly event-scoped', () => 
   }
   const welcome=read('welcome.html');
   assert.match(welcome,/Event programme/);
+  assert.match(welcome, /class="ask-closed-copy"/);
+  assert.match(welcome, /askClosedState\.querySelector\('\.ask-closed-copy'\)\.textContent = 'The Ask a question button will appear when Q&A opens\.'/);
   const program=read('program.html');
   assert.match(program,/Programme details to follow/);
   const ask=read('ask.html');
   assert.match(ask,/Questions are not available for this session yet/);
   assert.match(ask,/Q&A is closed/);
+  assert.match(ask, /submitBtn\.textContent = txt\('Отправить вопрос','Submit question'\)/);
+  assert.match(ask, /isEnglishEvent \? 'Could not submit the question\. Please try again\.'/);
+  assert.match(ask, /txt\('Список участников уточняется\.','Participant list to be confirmed\.'\)/);
 });
 
 test('ELINA 28 projector QR uses English only for the accelerator and keeps the canonical guest destination', () => {
