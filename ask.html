@@ -713,6 +713,8 @@
       document.querySelector('#formCard h2.section-title').textContent = 'Your question';
       document.querySelector('label[for="questionInput"]').textContent = 'Question';
       document.querySelector('#guestIdentityFields > div:nth-child(2)').textContent = 'Name and company (optional)';
+      document.querySelector('#mobileParticipantsToggle .mobile-participant-accordion-copy > span').firstChild.textContent = 'Session participants (';
+      document.getElementById('mobileParticipantsHint').textContent = 'Tap to see participants';
       document.querySelector('label[for="nameInput"]').textContent = 'Your name';
       document.querySelector('label[for="companyInput"]').textContent = 'Company';
       document.getElementById('nameInput').placeholder = 'For example, Alex';
@@ -721,6 +723,7 @@
       document.querySelector('.question-sort').setAttribute('aria-label','Sort questions');
       document.querySelector('[data-sort="votes"]').textContent = 'Top voted';
       document.querySelector('[data-sort="newest"]').textContent = 'Newest';
+      document.querySelector('#realtimeStatus').lastChild.textContent = ' connecting…';
       const questionHeading = document.querySelector('#countBadge').parentElement;
       questionHeading.firstChild.textContent = 'Questions ';
     }
@@ -796,6 +799,7 @@
     const companyInput   = document.getElementById('companyInput');
     const guestIdentityFields = document.getElementById('guestIdentityFields');
     const submitBtn      = document.getElementById('submitBtn');
+    submitBtn.textContent = txt('Отправить вопрос','Submit question');
     const toastEl        = document.getElementById('toast');
     const questionsList  = document.getElementById('questionsList');
     const closedBanner   = document.getElementById('closedBanner');
@@ -882,8 +886,8 @@
       charCount.classList.toggle('is-warning', isWarning);
       charCount.classList.toggle('is-danger', isLimitExceeded);
       charCount.setAttribute('aria-label', isLimitExceeded
-        ? `${userTextLength} из ${LIMIT} символов. Сократите вопрос.`
-        : `${userTextLength} из ${LIMIT} символов.`);
+        ? txt(`${userTextLength} из ${LIMIT} символов. Сократите вопрос.`, `${userTextLength} of ${LIMIT} characters. Shorten your question.`)
+        : txt(`${userTextLength} из ${LIMIT} символов.`, `${userTextLength} of ${LIMIT} characters.`));
       questionInput.setAttribute('aria-invalid', String(isLimitExceeded));
       submitBtn.disabled = !isQuestionOpen() || submittingQuestion || isLimitExceeded;
     }
@@ -943,20 +947,20 @@
         listEventProgramItems(eventKey)
       ]);
       if (!eventRooms.length) {
-        const error = new Error('Мероприятие не найдено.');
+        const error = new Error(txt('Мероприятие не найдено.','Event not found.'));
         error.code = 'EVENT_NOT_FOUND';
         throw error;
       }
 
       const currentProgramItem = programItems.find(item => item.is_current);
       if (currentProgramItem?.kind === 'service') {
-        const error = new Error('Q&A временно неактивно.');
+        const error = new Error(txt('Q&A временно неактивно.','Q&A is temporarily unavailable.'));
         error.code = 'CURRENT_SERVICE_BLOCK';
-        error.currentTitle = currentProgramItem.title || 'Организационный блок';
+        error.currentTitle = currentProgramItem.title || txt('Организационный блок','Programme block');
         throw error;
       }
 
-      const error = new Error('Q&A сейчас неактивно.');
+      const error = new Error(txt('Q&A сейчас неактивно.','Q&A is not active yet.'));
       error.code = 'CURRENT_SESSION_NOT_SET';
       throw error;
     }
@@ -981,17 +985,17 @@
       state.mobileParticipantsExpanded = false;
 
       speakerNameEl.textContent = invalidEvent
-        ? 'Мероприятие не найдено'
+        ? txt('Мероприятие не найдено','Event not found')
         : serviceBlock
-          ? (error.currentTitle || 'Организационный блок')
-          : noCurrentSession ? 'Q&A сейчас неактивно' : 'Комната не найдена';
+          ? (error.currentTitle || txt('Организационный блок','Programme block'))
+          : noCurrentSession ? txt('Q&A сейчас неактивно','Q&A is not active yet') : txt('Комната не найдена','Session not found');
       speakerMetaEl.textContent = invalidEvent
-        ? `Мероприятие «${eventKey}» не существует. Проверьте QR-код или ссылку.`
+        ? txt(`Мероприятие «${eventKey}» не существует. Проверьте QR-код или ссылку.`, `Event “${eventKey}” does not exist. Check the QR code or link.`)
         : serviceBlock
-          ? 'Сейчас идёт организационный блок. Вопросы и новые голоса временно недоступны.'
+          ? txt('Сейчас идёт организационный блок. Вопросы и новые голоса временно недоступны.', 'A programme block is in progress. Questions and new upvotes are temporarily unavailable.')
           : noCurrentSession
-            ? 'Оператор ещё не выбрал текущий Q&A-блок мероприятия.'
-            : `Комната «${requestedRoomSlug}» не существует. Проверьте QR-код или ссылку.`;
+            ? txt('Оператор ещё не выбрал текущий Q&A-блок мероприятия.', 'The operator has not selected the current Q&A session yet.')
+            : txt(`Комната «${requestedRoomSlug}» не существует. Проверьте QR-код или ссылку.`, `Session “${requestedRoomSlug}” does not exist. Check the QR code or link.`);
 
       panelParticipants.style.display = 'none';
       mobilePanelParticipants.hidden = true;
@@ -1002,12 +1006,12 @@
       formCard.style.display = 'none';
       closedBanner.style.display = 'none';
       countBadge.textContent = '0';
-      questionsList.innerHTML = '<div class="empty"><div class="empty-title">Вопросы недоступны</div></div>';
+      questionsList.innerHTML = `<div class="empty"><div class="empty-title">${txt('Вопросы недоступны','Questions unavailable')}</div></div>`;
 
       const indicator = document.getElementById('receptionIndicator');
       const label = document.getElementById('receptionLabel');
       indicator.className = 'reception-indicator closed';
-      label.textContent = 'Недоступно';
+      label.textContent = txt('Недоступно','Unavailable');
       document.getElementById('realtimeStatus').hidden = true;
       return true;
     }
@@ -1035,7 +1039,7 @@
 
     function reportRefreshError(error) {
       console.error('Guest data refresh failed', error);
-      showToast('Не удалось обновить данные. Проверьте соединение.', 'error');
+      showToast(txt('Не удалось обновить данные. Проверьте соединение.','Could not refresh data. Check your connection.'), 'error');
     }
 
     function queueRefresh() {
@@ -1219,20 +1223,20 @@
           } catch (e) {
             const message = String(e?.message || '');
             if (message.includes('SESSION_NOT_CURRENT')) {
-              showToast('Сессия уже сменилась. Голос не применён.', 'error');
+              showToast(txt('Сессия уже сменилась. Голос не применён.','The session has changed. Your upvote was not saved.'), 'error');
               queueRefresh();
             } else if (message.includes('CANNOT_VOTE_OWN_QUESTION')) {
-              showToast('Нельзя голосовать за свой вопрос.', 'error');
+              showToast(txt('Нельзя голосовать за свой вопрос.','You cannot upvote your own question.'), 'error');
             } else {
-              showToast(alreadyVoted ? 'Не удалось снять голос' : 'Не удалось поставить +1', 'error');
+              showToast(alreadyVoted ? txt('Не удалось снять голос','Could not remove upvote') : txt('Не удалось поставить +1','Could not upvote'), 'error');
             }
           }
           const stillSameRoom = state.room?.id === operationRoomId && activeRoomSlug === operationRoomSlug;
           try {
             if (voteSaved && stillSameRoom) await refresh();
-            else if (voteSaved) showToast(alreadyVoted ? 'Голос снят в предыдущей сессии.' : 'Голос учтён в предыдущей сессии.', 'success');
+            else if (voteSaved) showToast(alreadyVoted ? txt('Голос снят в предыдущей сессии.','Upvote removed from the previous session.') : txt('Голос учтён в предыдущей сессии.','Upvote saved in the previous session.'), 'success');
           } catch (e) {
-            showToast('Голос сохранён, но данные не удалось обновить.', 'error');
+            showToast(txt('Голос сохранён, но данные не удалось обновить.','Upvote saved, but the page could not refresh.'), 'error');
           } finally {
             pendingVoteIds.delete(id);
             if (state.room) render();
@@ -1262,18 +1266,18 @@
       target.innerHTML = state.speakers.length
         ? state.speakers.map((speaker) => {
           const participantId = String(speaker.id);
-          const label = getParticipantName(speaker) || 'Участник';
+          const label = getParticipantName(speaker) || txt('Участник','Participant');
           const expanded = participantId === state.expandedParticipantId;
           const regalia = String(speaker.regalia || '').trim();
           const detailsId = `${detailsPrefix}-${participantId}`;
-          const ariaLabel = `${expanded ? 'Скрыть' : 'Показать'} информацию об участнике: ${label}`;
+          const ariaLabel = `${expanded ? txt('Скрыть','Hide') : txt('Показать','Show')} ${txt('информацию об участнике','participant details')}: ${label}`;
           const ariaControls = regalia ? ` aria-controls="${escapeHtml(detailsId)}"` : '';
           const inlineRegalia = expanded && regalia
             ? `<div class="participant-inline-regalia" id="${escapeHtml(detailsId)}">${escapeHtml(regalia)}</div>`
             : '';
           return `<div class="participant-item"><button class="participant-chip" type="button" data-participant-id="${escapeHtml(participantId)}" aria-expanded="${expanded}"${ariaControls} aria-label="${escapeHtml(ariaLabel)}"><span>${escapeHtml(label)}</span><span class="participant-chip-chevron" aria-hidden="true"><svg class="icon inline" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span></button>${inlineRegalia}</div>`;
         }).join('')
-        : '<span style="font-size:12px; color:var(--muted);">Список участников уточняется.</span>';
+        : `<span style="font-size:12px; color:var(--muted);">${txt('Список участников уточняется.','Participant list to be confirmed.')}</span>`;
     }
 
     function renderPanelParticipants(isPanel) {
@@ -1298,8 +1302,8 @@
       mobileParticipantsCount.textContent = String(state.speakers.length);
       mobileParticipantsToggle.setAttribute('aria-expanded', String(state.mobileParticipantsExpanded));
       mobileParticipantsHint.textContent = state.mobileParticipantsExpanded
-        ? 'Нажмите на имя, чтобы посмотреть регалии'
-        : 'Нажмите, чтобы посмотреть участников';
+        ? txt('Нажмите на имя, чтобы посмотреть регалии','Tap a name to see participant details')
+        : txt('Нажмите, чтобы посмотреть участников','Tap to see participants');
       mobilePanelParticipantsContent.hidden = !state.mobileParticipantsExpanded;
       renderParticipantList(panelParticipantsList, 'panel-participant-regalia');
       if (state.mobileParticipantsExpanded) renderParticipantList(mobilePanelParticipantsList, 'mobile-panel-participant-regalia');
@@ -1359,17 +1363,17 @@
       } catch (e) {
         const message = String(e?.message || '');
         if (message.includes('SESSION_NOT_CURRENT')) {
-          showToast('Эта сессия уже не текущая. Страница обновляется.', 'error');
+          showToast(txt('Эта сессия уже не текущая. Страница обновляется.','This session is no longer current. Refreshing the page.'), 'error');
           queueRefresh();
         } else {
-          showToast(e.message || 'Не удалось отправить вопрос.', 'error');
+          showToast(isEnglishEvent ? 'Could not submit the question. Please try again.' : (e?.message || 'Не удалось отправить вопрос.'), 'error');
         }
       }
       try {
         const stillSameRoom = state.room?.id === operationRoom.id && activeRoomSlug === operationRoomSlug;
         if (questionSubmitted && stillSameRoom) await refresh();
       } catch (e) {
-        showToast('Вопрос сохранён, но данные не удалось обновить.', 'error');
+        showToast(txt('Вопрос сохранён, но данные не удалось обновить.','Question saved, but the page could not refresh.'), 'error');
       } finally {
         submittingQuestion = false;
         submitBtn.textContent = txt('Отправить вопрос','Submit question');
