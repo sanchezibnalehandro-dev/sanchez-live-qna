@@ -165,7 +165,7 @@
           <div class="event-entry-qna-state" id="askClosedState" role="status">
             <span class="kdw-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M12 8v4l3 2"/></svg></span>
             <strong>Q&amp;A пока закрыт</strong>
-            <span>Когда Q&amp;A откроется, здесь появится кнопка «Задать вопрос».</span>
+            <span class="ask-closed-copy">Когда Q&amp;A откроется, здесь появится кнопка «Задать вопрос».</span>
           </div>
           <a class="event-entry-action" id="audienceVoteLink" href="#" hidden>
             <strong>Vote · Audience Choice</strong>
@@ -224,7 +224,7 @@
     if (isEnglishEvent) {
       askLink.querySelector('strong').textContent = 'Ask a question';
       askClosedState.querySelector('strong').textContent = 'Q&A is currently closed';
-      askClosedState.querySelector('span').textContent = 'The Ask a question button will appear when Q&A opens.';
+      askClosedState.querySelector('.ask-closed-copy').textContent = 'The Ask a question button will appear when Q&A opens.';
       programLink.querySelector('strong').textContent = 'Event programme';
     }
 
