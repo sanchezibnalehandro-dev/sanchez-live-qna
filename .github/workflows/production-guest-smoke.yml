@@ -28,13 +28,22 @@ jobs:
                  curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/admin-auth.html?room=elina-28-session" -o "$tmp/admin" &&
                  curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/program.html?event=elina-28-2026" -o "$tmp/program" &&
                  curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/guest-network-background.js" -o "$tmp/network" &&
+                 curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/welcome.html?event=kdw-2026-finokhin" -o "$tmp/kdw-welcome" &&
+                 curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/participants.html?event=kdw-2026-finokhin" -o "$tmp/kdw-participants" &&
+                 curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/brand-presets/kdw-2026.js" -o "$tmp/kdw-brand" &&
+                 curl -fsSL --retry 2 --connect-timeout 10 --max-time 20                   "$origin/innostage.html" -o "$tmp/innostage" &&
                  grep -Fq 'guest-network-background.css' "$tmp/welcome" &&
                  grep -Fq 'audienceVoteLink' "$tmp/welcome" &&
                  grep -Fq 'id="ownStep"' "$tmp/vote" &&
                  grep -Fq 'JOIN THE SESSION' "$tmp/admin" &&
                  grep -Fq 'guest-network-background.css' "$tmp/program" &&
-                 grep -Fq 'initGuestNetworkBackground' "$tmp/network"; then
-                echo "PASS: $origin has ELINA welcome, voting, programme, network and English QR screen"
+                 grep -Fq 'initGuestNetworkBackground' "$tmp/network" &&
+                 grep -Fq "event === 'kdw-2026-finokhin'" "$tmp/kdw-welcome" &&
+                 grep -Fq "eventKey !== 'kdw-2026-finokhin'" "$tmp/kdw-participants" &&
+                 grep -Fq "key: 'kdw-2026'" "$tmp/kdw-brand" &&
+                 grep -Fq 'Закрытый клуб INNOSTAGE' "$tmp/innostage" &&
+                 grep -Fq 'https://sanchez-scramble.vercel.app/play/vnutri-tolko-svoi' "$tmp/innostage"; then
+                echo "PASS: $origin serves ELINA flow, KDW welcome/participants/preset and INNOSTAGE static landing"
                 return 0
               fi
               echo "Attempt $attempt/16 not ready on $origin"
