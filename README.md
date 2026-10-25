@@ -4,6 +4,8 @@ Live Q&A-инструмент для мероприятий: гости зада
 
 **Реестр событий и сценариев:** [EVENT_REGISTRY.md](docs/EVENT_REGISTRY.md) — SANCHEZ, TASIGO, ELINA 28, KDW / Финохин и гостевая страница INNOSTAGE 29.10 (без Q&A-комнаты). Статусы live проверять в Supabase, а не по датированному документу.
 
+**Текущее состояние проекта:** [PROJECT_STATE_2026-10-25.md](docs/PROJECT_STATE_2026-10-25.md) — датированный срез проверенных GitHub, Supabase и Vercel; при переносе в ChatGPT Project заменяет состояние от 13.10. Не использовать его как live-регистр переключателей.
+
 ## Стек
 
 Ванильный HTML/CSS/JS (ES-модули, без сборщиков), Supabase JS v2 через CDN (esm.sh). Основной статический фронтенд — Timeweb App Platform, резервный — Vercel.
