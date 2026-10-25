@@ -370,6 +370,7 @@ When state is ambiguous:
 - never guess the current room on behalf of the operator.
 
 Reliability and predictability are more important than removing one click.
+
 ## Dedicated event extensions remain bounded
 
 Audience Choice for ELINA 28 is separate from Q&A question votes. Its `audience_choice_polls` and `audience_choice_votes` tables exist in the **same** production Supabase. The accepted 2026-10-18 rule rejects votes for the guest's self-declared own team; that self-declaration is not proof of actual identity. Do not confuse it with `add_vote()` / `remove_vote()` for audience Q&A questions.
