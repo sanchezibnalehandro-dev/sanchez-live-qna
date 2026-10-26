@@ -42,7 +42,7 @@ jobs:
                  grep -Fq "eventKey !== 'kdw-2026-finokhin'" "$tmp/kdw-participants" &&
                  grep -Fq "key: 'kdw-2026'" "$tmp/kdw-brand" &&
                  grep -Fq 'Закрытый клуб INNOSTAGE' "$tmp/innostage" &&
-                 grep -Fq 'https://sanchez-scramble.vercel.app/play/vnutri-tolko-svoi' "$tmp/innostage"; then
+                 grep -Fq 'https://sanchezibnalehandro-dev-sanchez-scramble-c063.twc1.net/play/vnutri-tolko-svoi' "$tmp/innostage"; then
                 echo "PASS: $origin serves ELINA flow, KDW welcome/participants/preset and INNOSTAGE static landing"
                 return 0
               fi
