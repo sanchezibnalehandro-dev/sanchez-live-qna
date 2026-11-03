@@ -1,0 +1,157 @@
+@import url('./sanchez.css');
+
+/*
+ * «Код роста — 2026»: the existing ModeratorLive UI with Event Guide colours.
+ * This file is selected only for event=kod-rosta-2026 or one of its room slugs.
+ * No Q&A logic, Realtime or other event themes are changed.
+ */
+html[data-brand="kod-rosta-2026"] {
+  color-scheme: dark;
+
+  --bg: #090f0f;
+  --bg2: #102019;
+  --bg3: #1b3426;
+
+  --surface: #14231b;
+  --surface-2: #1b2d23;
+  --surface-3: #203328;
+
+  --border: #365044;
+  --border-2: #304237;
+
+  --text: #f3f1e9;
+  --muted: #acbdb0;
+  --muted-2: #849a8b;
+
+  --blue: #c5f18e;
+  --blue-light: #d6faa6;
+  --blue-glow: #9fd578;
+
+  --white: #f3f1e9;
+  --green: #9fd578;
+  --yellow: #e9bf82;
+  --danger: #ff9c8b;
+
+  --shadow-card: 0 12px 34px rgba(1, 9, 5, .27);
+  --shadow-btn: 0 4px 18px rgba(145, 204, 104, .18);
+
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg2);
+  --color-bg-glow-secondary: rgba(16, 42, 25, .36);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface);
+  --color-surface-dropdown: #203328;
+  --color-surface-raised-hover: #1e3527;
+  --color-surface-raised-active: #294433;
+  --color-surface-subtle: var(--surface-3);
+  --color-surface-hover: rgba(197, 241, 142, .07);
+  --color-surface-qr: #f3f1e9;
+
+  --color-text: var(--text);
+  --color-text-secondary: var(--muted);
+  --color-text-muted: var(--muted-2);
+  --color-text-on-accent: #142417;
+  --color-heading-gradient-start: #f3f1e9;
+  --color-heading-gradient-mid: #f3f1e9;
+  --color-heading-gradient-end: #c5f18e;
+  --color-speaker-name: #f3f1e9;
+
+  --color-accent: #c5f18e;
+  --color-accent-hover: #d6faa6;
+  --color-accent-soft: rgba(197, 241, 142, .14);
+  --color-accent-border: #57764c;
+  --color-accent-text: #c5f18e;
+  --color-accent-active-text: #ecffce;
+  --color-focus-ring: rgba(197, 241, 142, .45);
+
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-2);
+  --color-border-strong: #72926c;
+
+  --color-success: #9fd578;
+  --color-success-accent: #c5f18e;
+  --color-success-text: #c5f18e;
+  --color-success-soft: rgba(159, 213, 120, .14);
+
+  --color-warning: #e9bf82;
+  --color-warning-text: #f4d4a5;
+  --color-warning-soft: rgba(233, 191, 130, .12);
+  --color-danger: #ff9c8b;
+  --color-danger-text: #ffc0b1;
+  --color-danger-soft: rgba(255, 156, 139, .12);
+
+  --color-info-text: #c3dbbc;
+  --color-info-strong: #e3f2d9;
+  --color-neutral-text: #a7b9ab;
+  --color-neutral-soft: #213429;
+  --color-neutral-border: #365044;
+  --color-pinned-text: #c5f18e;
+
+  --font-body: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-console: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* The Event Guide uses an emerald/graphite field, not a navy backdrop. */
+html[data-brand="kod-rosta-2026"] body {
+  background: radial-gradient(ellipse at 15% 0%, #183322, transparent 62%), var(--color-bg);
+}
+html[data-brand="kod-rosta-2026"] body .card {
+  border-color: var(--color-border);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-card);
+}
+
+/* Keep the existing moderator's hierarchy and actions; change presentation only. */
+html[data-brand="kod-rosta-2026"] .moderator-console .moderator-live {
+  background: linear-gradient(115deg, #193524, #14251b 64%, #122119);
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .moderator-kicker {
+  color: var(--color-accent);
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .moderator-queue {
+  background: #14231b;
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .brand-logo-mark {
+  background: #c5f18e;
+  color: #142417;
+  box-shadow: none;
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .filter-tab.active {
+  background: #c5f18e;
+  color: #142417;
+  border-color: #c5f18e;
+  box-shadow: inset 3px 0 0 #9fd578;
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .filter-tab.active .filter-count,
+html[data-brand="kod-rosta-2026"] .moderator-console .filter-tab.active .filter-label {
+  color: #142417;
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .question-sort-btn.active {
+  background: #c5f18e;
+  color: #142417;
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .question-card {
+  border-color: var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .question-card.is-pinned {
+  border-color: var(--color-accent-border);
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .question-card.is-pending {
+  border-color: var(--color-warning);
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .btn.primary {
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+  border-color: var(--color-accent);
+}
+html[data-brand="kod-rosta-2026"] .moderator-console .btn.ghost:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
+}
