@@ -28,6 +28,19 @@ const KDW_2026_ROOM_BRAND = {
   stylesheetHref: './brands/kdw-2026.css'
 };
 
+// «Код роста» shares ModeratorLive's data and behavior, but uses the Event Guide identity.
+const KOD_ROSTA_EVENT_KEY = 'kod-rosta-2026';
+const KOD_ROSTA_ROOM_PREFIX = 'kod-rosta-2026-';
+const KOD_ROSTA_ROOM_BRAND = {
+  ...SANCHEZ_BRAND,
+  key: 'kod-rosta-2026',
+  name: 'КОД РОСТА · 2026',
+  mark: 'К',
+  productName: 'Вопросы аудитории',
+  csvPrefix: 'kod-rosta-2026-qna',
+  stylesheetHref: './brands/kod-rosta-2026.css'
+};
+
 const TASIGO_ESG_ROOM_PREFIX = 'tasigo-esg-';
 const TASIGO_ESG_ROOM_BRAND = {
   ...TASIGO_ESG_BRAND,
@@ -64,6 +77,9 @@ function initAdminAccordionInertGuard() {
 }
 
 export function getBrandForRoute(roomSlug, eventKey = null) {
+  if (eventKey === KOD_ROSTA_EVENT_KEY || roomSlug?.startsWith(KOD_ROSTA_ROOM_PREFIX)) {
+    return KOD_ROSTA_ROOM_BRAND;
+  }
   if (ELINA_28_EVENT_KEYS.has(eventKey) || roomSlug === ELINA_28_ROOM_SLUG) {
     return ELINA_28_ROOM_BRAND;
   }

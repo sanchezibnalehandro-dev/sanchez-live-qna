@@ -12,8 +12,9 @@
       const isKdw = room.startsWith('kdw-2026-') || event.startsWith('kdw-2026-');
       const isTasigo = room.startsWith('tasigo-esg-') || event.startsWith('tasigo-esg-');
       const isElina = event === 'elina-28-2026' || event === 'elina-28-rehearsal' || room === 'elina-28-session';
-      document.documentElement.dataset.brand = isElina ? 'elina-28' : isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
-      document.documentElement.style.backgroundColor = isElina ? '#080d15' : isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
+      const isKodRosta = event === 'kod-rosta-2026' || room.startsWith('kod-rosta-2026-');
+      document.documentElement.dataset.brand = isKodRosta ? 'kod-rosta-2026' : isElina ? 'elina-28' : isKdw ? 'kdw-2026' : isTasigo ? 'tasigo-esg' : 'sanchez';
+      document.documentElement.style.backgroundColor = isKodRosta ? '#090f0f' : isElina ? '#080d15' : isKdw ? '#041b20' : isTasigo ? '#101612' : '#020810';
       document.documentElement.style.colorScheme = 'dark';
     })();
   </script>
@@ -23,8 +24,9 @@
     (() => {
 
       const selectedBrand = document.documentElement.dataset.brand;
-      document.querySelector('[data-brand-stylesheet]').href = selectedBrand === 'kdw-2026'
-        ? './brands/kdw-2026.css'
+      document.querySelector('[data-brand-stylesheet]').href = selectedBrand === 'kod-rosta-2026'
+        ? './brands/kod-rosta-2026.css'
+        : selectedBrand === 'kdw-2026' ? './brands/kdw-2026.css'
         : selectedBrand === 'tasigo-esg' ? './brands/tasigo-esg.css'
         : selectedBrand === 'elina-28' ? './brands/elina-28.css' : './brands/sanchez.css';
     })();
