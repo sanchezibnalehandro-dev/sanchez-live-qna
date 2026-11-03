@@ -88,6 +88,9 @@
   --control-height: 40px;
   --control-height-touch: 44px;
   --role-density: 1;
+
+  /* Guest hero asset is intentionally absent until the approved event image is added. */
+  --tasigo-guest-hero-image: none;
 }
 
 html body {
@@ -261,6 +264,250 @@ body :focus-visible { outline-color: var(--color-accent-hover); }
     color: var(--color-text);
   }
   body .question-card:hover { background: var(--color-surface-hover); }
+}
+
+/* TASIGO guest hero direction.
+   This is deliberately presentation-only: no guest flow, routing, Realtime or RPC behavior changes. */
+body .guest-shell {
+  width: min(100% - 32px, 1120px);
+  max-width: 1120px;
+  gap: 18px;
+}
+
+body .guest-shell > .card:first-of-type {
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 82% 22%, rgba(135, 185, 114, 0.12), transparent 30%),
+    linear-gradient(135deg, rgba(26, 37, 28, 0.98), rgba(16, 22, 18, 0.98));
+  border-color: rgba(135, 185, 114, 0.28);
+  box-shadow: 0 22px 60px rgba(3, 8, 5, 0.34);
+}
+
+body .guest-shell > .card:first-of-type::after {
+  display: block;
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    linear-gradient(90deg, #101612 0%, rgba(16, 22, 18, 0.98) 21%, rgba(16, 22, 18, 0.72) 43%, rgba(16, 22, 18, 0.18) 71%, rgba(16, 22, 18, 0.06) 100%),
+    linear-gradient(180deg, rgba(16, 22, 18, 0.04) 47%, rgba(16, 22, 18, 0.82) 86%, #101612 100%),
+    var(--tasigo-guest-hero-image);
+  background-position: center, center, 72% center;
+  background-size: cover, cover, cover;
+  background-repeat: no-repeat;
+  content: '';
+  pointer-events: none;
+}
+
+body .guest-shell > .card:first-of-type .card-inner {
+  display: flex;
+  position: relative;
+  z-index: 1;
+  min-height: 520px;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 34px 38px 38px !important;
+}
+
+body .guest-shell > .card:first-of-type .card-inner > div:nth-of-type(2) {
+  order: 1;
+  width: min(100%, 620px);
+  margin-bottom: auto;
+}
+
+body .guest-shell > .card:first-of-type .surface-kicker {
+  order: 2;
+  margin: 64px 0 12px;
+  color: rgba(233, 228, 214, 0.72);
+  font-size: 0;
+  letter-spacing: 0.28em;
+}
+
+body .guest-shell > .card:first-of-type .surface-kicker::after {
+  content: 'ОТКРЫТЫЙ ДИАЛОГ';
+  font: 700 11px/1.2 var(--font-display);
+  letter-spacing: 0.28em;
+}
+
+body .guest-shell > .card:first-of-type #speakerName {
+  order: 3;
+  max-width: 12ch;
+  margin: 0;
+  color: #f1ede2;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(46px, 6vw, 76px);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+body .guest-shell > .card:first-of-type #speakerMeta {
+  order: 4;
+  max-width: 600px;
+  margin: 20px 0 0;
+  color: rgba(233, 228, 214, 0.82);
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+body .guest-shell > .card:first-of-type #panelParticipants {
+  order: 5;
+  max-width: 660px;
+}
+
+body .guest-shell > .card:first-of-type .brand-logo {
+  gap: 10px;
+}
+
+body .guest-shell > .card:first-of-type .brand-logo-mark {
+  width: 36px;
+  height: 36px;
+  border-color: rgba(233, 228, 214, 0.28);
+  background: rgba(16, 22, 18, 0.44);
+  color: #f1ede2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+body .guest-shell > .card:first-of-type .brand-logo-text {
+  max-width: 320px;
+  color: #f1ede2;
+  font: 700 13px/1.25 var(--font-display);
+  letter-spacing: 0.04em;
+  white-space: normal;
+}
+
+body .guest-shell > .card:first-of-type .reception-indicator {
+  background: rgba(16, 22, 18, 0.58);
+  border-color: rgba(164, 207, 145, 0.32);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+body .guest-shell > :not(.card:first-of-type) {
+  width: min(100%, 760px);
+  margin-inline: auto;
+}
+
+body .guest-shell > #formCard,
+body .guest-shell > .card:last-of-type,
+body .guest-shell > .mobile-panel-participants {
+  background: rgba(21, 30, 23, 0.84);
+  border-color: rgba(64, 82, 68, 0.74);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+body .guest-shell #formCard .textarea,
+body .guest-shell #formCard .input {
+  background: rgba(16, 22, 18, 0.72);
+}
+
+body .guest-shell #submitBtn {
+  min-height: 50px;
+  border-radius: 10px;
+  font: 800 15px/1 var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+body .guest-shell .question-card {
+  border-color: rgba(64, 82, 68, 0.72);
+  background: rgba(16, 22, 18, 0.62);
+}
+
+@media (max-width: 767px) {
+  body .guest-shell {
+    width: min(100% - 20px, 680px);
+    gap: 12px;
+  }
+
+  body .guest-shell > .card:first-of-type {
+    min-height: 500px;
+    border-radius: 0 0 18px 18px;
+  }
+
+  body .guest-shell > .card:first-of-type::after {
+    background-image:
+      linear-gradient(180deg, rgba(16, 22, 18, 0.12) 0%, rgba(16, 22, 18, 0.18) 32%, rgba(16, 22, 18, 0.72) 63%, #101612 92%),
+      linear-gradient(90deg, rgba(16, 22, 18, 0.38), rgba(16, 22, 18, 0.04) 70%),
+      var(--tasigo-guest-hero-image);
+    background-position: center, center, 68% 30%;
+    background-size: cover, cover, cover;
+  }
+
+  body .guest-shell > .card:first-of-type .card-inner {
+    min-height: 500px;
+    justify-content: flex-end;
+    padding: 20px 18px 24px !important;
+  }
+
+  body .guest-shell > .card:first-of-type .card-inner > div:nth-of-type(2) {
+    width: 100%;
+  }
+
+  body .guest-shell > .card:first-of-type .surface-kicker {
+    margin-top: 150px;
+    margin-bottom: 10px;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerName {
+    max-width: 14ch;
+    font-size: clamp(38px, 11vw, 54px);
+    line-height: 1;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerMeta {
+    margin-top: 14px;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  body .guest-shell > .card:first-of-type .brand-logo {
+    display: flex;
+    grid-template-columns: none;
+    align-items: center;
+    gap: 8px;
+  }
+
+  body .guest-shell > .card:first-of-type .brand-logo-text {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  body .guest-shell > .card:first-of-type .reception-indicator {
+    padding: 5px 9px;
+    font-size: 10px;
+  }
+
+  body .guest-shell > :not(.card:first-of-type) {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  body .guest-shell > .card:first-of-type .card-inner > div:nth-of-type(2) {
+    gap: 12px;
+  }
+
+  body .guest-shell > .card:first-of-type .brand-logo-mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  body .guest-shell > .card:first-of-type #speakerName {
+    font-size: clamp(36px, 10.5vw, 48px);
+  }
+}
+
+@media (hover: hover) {
+  body .guest-shell .question-card:hover {
+    background: rgba(36, 51, 41, 0.72);
+    border-color: rgba(98, 119, 99, 0.86);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
